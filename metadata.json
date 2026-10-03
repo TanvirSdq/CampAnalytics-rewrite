@@ -1,0 +1,6 @@
+{
+  "name": "CampAnalytics",
+  "description": "Cross-campaign participant retention, community health evaluation, and contributor influx analytics for Wikimedia campaigns.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

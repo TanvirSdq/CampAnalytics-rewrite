@@ -1,0 +1,64 @@
+{
+  "EVENT_MAP": {
+    "wlm": "Monuments",
+    "wle": "Earth",
+    "wlf": "Folklore",
+    "wla": "Africa",
+    "wlb": "Bangla"
+  },
+  "EVENT_DISPLAY_MAP": {
+    "all": "All Campaigns",
+    "wlm": "Wiki Loves Monuments",
+    "wle": "Wiki Loves Earth",
+    "wlf": "Wiki Loves Folklore",
+    "wla": "Wiki Loves Africa",
+    "wlb": "Wiki Loves Bangla"
+  },
+  "EVENT_COUNTRY_SCOPE": {
+    "wlm": "*",
+    "wle": "*",
+    "wlf": "*",
+    "wla": ["ng", "ke", "za", "gh", "tz", "eg", "tn", "ma", "dz", "sn", "ci", "rw", "ug"],
+    "wlb": {"countries": ["bd", "in"], "no_country_suffix": true}
+  },
+  "CATEGORY_NAME_OVERRIDE": {},
+  "COUNTRIES_WITH_THE": ["cz", "nl", "ph", "uk", "us"],
+  "KNOWN_BOTS": [
+    "Flickr upload bot",
+    "File Upload Bot (Magnus Manske)",
+    "CommonsDelinker",
+    "WLM-Bot",
+    "Cropbot",
+    "Rotbot",
+    "FlickrLickr",
+    "Wiki Loves Earth Bot",
+    "UploadWizard"
+  ],
+  "BOT_REGEX": "(?i)(?:bot|_bot|-bot|\\s+bot)$",
+  "COUNTRY_MAP": {
+    "dz": "Algeria", "ar": "Argentina", "au": "Australia", "at": "Austria",
+    "bd": "Bangladesh", "be": "Belgium", "br": "Brazil", "ca": "Canada",
+    "cl": "Chile", "co": "Colombia", "cz": "Czech_Republic", "eg": "Egypt",
+    "fi": "Finland", "fr": "France", "de": "Germany", "gh": "Ghana",
+    "gr": "Greece", "hu": "Hungary", "in": "India", "id": "Indonesia",
+    "it": "Italy", "ke": "Kenya", "my": "Malaysia", "mx": "Mexico",
+    "ma": "Morocco", "np": "Nepal", "nl": "Netherlands", "nz": "New_Zealand",
+    "ng": "Nigeria", "no": "Norway", "pk": "Pakistan", "pe": "Peru",
+    "ph": "Philippines", "pl": "Poland", "pt": "Portugal", "ro": "Romania",
+    "ru": "Russia", "rs": "Serbia", "za": "South_Africa", "es": "Spain",
+    "lk": "Sri_Lanka", "se": "Sweden", "ch": "Switzerland", "tz": "Tanzania",
+    "th": "Thailand", "tn": "Tunisia", "tr": "Turkey", "ua": "Ukraine",
+    "uk": "United_Kingdom", "us": "United_States", "ve": "Venezuela"
+  },
+  "REGION_COUNTRY_MAPPING": {
+    "South Asia": ["bd", "in", "pk", "np", "lk"],
+    "East, Southeast Asia, Pacific": ["id", "ph", "my", "au", "nz", "th"],
+    "Northern & Western Europe": ["de", "fr", "uk", "nl", "se", "no", "fi", "be", "at", "ch"],
+    "Southern Europe": ["it", "es", "pt", "gr"],
+    "Central & Eastern Europe": ["pl", "ua", "ru", "cz", "ro", "hu"],
+    "Middle East & North Africa": ["tr", "eg", "tn", "ma", "dz"],
+    "Latin America & Caribbean": ["br", "mx", "ar", "co", "pe", "cl", "ve"],
+    "Sub-Saharan Africa": ["ng", "ke", "za", "gh", "tz"],
+    "North America": ["us", "ca"]
+  }
+}
