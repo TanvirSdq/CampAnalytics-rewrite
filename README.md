@@ -1,303 +1,251 @@
 # CampAnalytics
 
-An analytics platform for Wikimedia Commons photography campaigns, providing longitudinal contributor retention metrics, cross-campaign ecosystem influx, and regional health benchmarking.
+An analytics platform for Wikimedia Commons photography campaigns, providing longitudinal contributor retention metrics, cross-campaign ecosystem influx, encyclopedic content utility, and regional health benchmarking.
 
 [![Hosted on Wikimedia Toolforge](https://img.shields.io/badge/Hosted%20on-Wikimedia%20Toolforge-006699?style=flat-square&logo=wikipedia)](https://campanalytics.toolforge.org/)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://campanalytics.streamlit.app/)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg?style=flat-square)](https://www.python.org/downloads/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=nodedotjs)](https://nodejs.org/)
 [![License: GPL-2.0+](https://img.shields.io/badge/License-GPL--2.0%2B-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-2.0.html)
 [![Affiliation: Project Korikath](https://img.shields.io/badge/Affiliation-Project%20Korikath-183f54?style=flat-square)](https://meta.wikimedia.org/wiki/Project_Korikath)
 
 ---
 
-## Live Deployments
-
-CampAnalytics is accessible through two web deployments:
-
-| Platform | URL | Description |
-|:---|:---|:---|
-| **Wikimedia Toolforge** | [campanalytics.toolforge.org](https://campanalytics.toolforge.org/) | Production Flask application running in the Wikimedia ecosystem |
-| **Streamlit Community Cloud** | [campanalytics.streamlit.app](https://campanalytics.streamlit.app/) | Interactive dashboard with reactive filters and exploratory charts |
-
-Both interfaces use the shared core analytics engine ([`analytics.py`](analytics.py)).
-
----
-
 ## Overview
 
-**CampAnalytics** is an open-source analytics platform for campaign organizers, program evaluators, and Wikimedia community leaders. It analyzes international Wiki Loves photography campaigns by querying live metadata directly from Wikimedia Commons and Toolforge replica databases.
+**CampAnalytics** is an open-source analytics platform developed for campaign organizers, Wikimedia affiliates, community researchers, and program evaluators. It analyzes international Wiki Loves photography campaigns by querying live metadata directly from Wikimedia Commons and Toolforge replica databases.
 
 ### Supported Campaigns
 
 | Code | Campaign | Focus | Commons Category Pattern |
 |:---|:---|:---|:---|
-| `wlm` | Wiki Loves Monuments | Built and architectural cultural heritage | `Images_from_Wiki_Loves_Monuments_YYYY_in_Country` |
-| `wle` | Wiki Loves Earth | Natural heritage and protected areas | `Images_from_Wiki_Loves_Earth_YYYY_in_Country` |
-| `wlf` | Wiki Loves Folklore | Intangible culture, traditions, and festivals | `Images_from_Wiki_Loves_Folklore_YYYY_in_Country` |
-| `wla` | Wiki Loves Africa | African cultural heritage and daily life | `Images_from_Wiki_Loves_Africa_YYYY_in_Country` |
-| `wlb` | Wiki Loves Bangla | Regional cultural and biodiversity heritage | `Images_from_Wiki_Loves_Bangla_YYYY` |
-| `all` | All Campaigns | Ecosystem combination per country | Scoped aggregate across active campaigns for the target country |
-
-### Core Evaluation Questions
-
-1. **Ecosystem Vitality**: How healthy is a campaign edition relative to regional peers?
-2. **Contributor Continuity**: How effectively do campaigns retain participant cohorts across consecutive editions?
-3. **True Newcomer Influx**: How many new contributors entered the movement across all national campaigns in a given year?
-4. **Encyclopedic Utility**: How frequently are uploaded media files integrated into Wikipedia articles and sister projects?
-5. **Quality Recognition**: What proportion of submissions achieve formal curatorial recognition (Quality Images, Featured Pictures, Valued Images)?
+| `wlm` | **Wiki Loves Monuments** | Built and architectural cultural heritage | `Images_from_Wiki_Loves_Monuments_YYYY_in_Country` |
+| `wle` | **Wiki Loves Earth** | Natural heritage and protected biodiversity areas | `Images_from_Wiki_Loves_Earth_YYYY_in_Country` |
+| `wlf` | **Wiki Loves Folklore** | Intangible culture, folk traditions, and festivals | `Images_from_Wiki_Loves_Folklore_YYYY_in_Country` |
+| `wla` | **Wiki Loves Africa** | African cultural expressions and daily life | `Images_from_Wiki_Loves_Africa_YYYY_in_Country` |
+| `wlb` | **Wiki Loves Bangla** | Regional cultural, linguistic, and ecological heritage | `Images_from_Wiki_Loves_Bangla_YYYY` |
+| `all` | **All Campaigns** | Ecosystem combination per country | Scoped aggregate across active campaigns for target country |
 
 ---
 
-## Features
+## Core Analytical Modules
 
-### 1. Health Evaluation (`/health`)
+CampAnalytics is organized into five specialized analytical tools accessible via top navigation or programmatic JSON APIs:
 
-Scores campaign editions on a 0–100 scale across five dimensions grouped into three pillars, benchmarked against regional reference thresholds:
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                   CAMPANALYTICS ANALYTICAL SUITE                       │
+├─────────────┬─────────────┬─────────────┬──────────────┬───────────────┤
+│   Tool 01   │   Tool 02   │   Tool 03   │   Tool 04    │    Tool 05    │
+│  Evaluation │  Retention  │   Influx    │   Utility    │    Quality    │
+│  (/health)  │ (/retention)│  (/influx)  │  (/utility)  │   (/quality)  │
+└─────────────┴─────────────┴─────────────┴──────────────┴───────────────┘
+```
 
-| Dimension | Weight | Pillar | Measurement Focus |
+### 1. Health Evaluation (`/health`, `/api/health`)
+Scores campaign editions on a 0–100 scale across five core dimensions grouped into three balanced pillars, benchmarked against regional peer thresholds:
+* **Retention Index ($S_{\text{ret}}$, 25%)**: Percentage of prior-edition participants who returned.
+* **Growth Capacity ($S_{\text{grow}}$, 25%)**: Proportion of active participants joining for the first time.
+* **Content Utility ($S_{\text{util}}$, 20%)**: Uploads embedded across Wikipedia language editions (`prop=globalusage`).
+* **Quality Recognition ($S_{\text{qual}}$, 15%)**: Share of uploads achieving Quality Image (QI), Featured Picture (FP), or Valued Image (VI) badges.
+* **Contributor Diversity ($S_{\text{div}}$, 15%)**: Upload distribution equity (inverse top-10% uploader concentration).
+
+**Interactive Visuals**:
+* Responsive **SVG Spider Radar Chart** comparing the campaign's scores against regional and global benchmark polygons.
+* Composite 4-tier grading badge:
+  * ★★★★★ **Outstanding** (85.0–100.0)
+  * ★★★★☆ **Strong** (70.0–84.9)
+  * ★★★☆☆ **Moderate** (50.0–69.9)
+  * ★★☆☆☆ **Emerging / Critical** (<50.0)
+
+### 2. Contributor Retention (`/retention`, `/api/retention`)
+* **Directional Persistence**: Evaluates exact retention between baseline and target editions ($A \to B$), preserving directional asymmetry:
+  $$\text{Retention}(A \to B) = \left( \frac{|U_A \cap U_B|}{|U_A|} \right) \times 100\%$$
+* **Multi-Cohort Matrices**: Compares multi-year editions across campaigns and countries with color-coded retention cells.
+* **Global Choropleth Geovisualization**: Interactive Plotly map with regional filtering and participant density shading.
+* **Pairwise Heatmap Charts**: Embedded SVG heatmaps illustrating cross-edition retention transitions.
+
+### 3. Contributor Influx & Growth (`/influx`, `/api/influx`)
+* **Dual-Axis Stacked Bar Chart**: Simultaneously visualizes annual active volumes (stacked newcomers $I_t$ + returning veterans $R_t$ on the left axis) and the de-duplicated **Cumulative Pool** trajectory ($P_t$ on the right axis).
+* **True Newcomer Acquisition**: De-duplicates participants across chronological sequences to isolate genuine movement acquisition from inter-campaign migration.
+* **Lifecycle Profiles**: Segments contributors into 1-time entrants, repeaters (2–3 editions), and core veterans (4+ editions).
+* **Multi-Preset Quick Selectors**: 1-click loading for single-campaign sequences (e.g., `wlmde20` $\to$ `wlmde24`) or cross-campaign ecosystems (`allde20` $\to$ `allde24`).
+
+### 4. Content Utility (`/utility`, `/api/utility`)
+* **Live Encyclopedic Reuse**: Measures media integration across all Wikipedia language editions, Wikidata, Wikivoyage, and Commons galleries via `prop=globalusage`.
+* **Summary Scorecards**: Displays Global Utility Rate, Total Global Embeds, Unique Articles Reached, and Top Consuming Project.
+* **Live Media Articles Table**: Interactive table with search, column sorting, pagination, and multi-format exporters (CSV, JSON, Wikitext).
+* **Photographer Utilization Leaderboard**: Ranks contributors whose uploads achieve the highest encyclopedic integration.
+
+### 5. Quality Recognition (`/quality`, `/api/quality`)
+* **Curatorial Peer-Reviewed Status**: Audits uploads for community distinction badges:
+  * **Quality Images (QI)**: Technical excellence verified by Commons reviewers.
+  * **Featured Pictures (FP)**: Finest photographic achievements chosen by community consensus.
+  * **Valued Images (VI)**: Most valuable illustrations for encyclopedic subjects.
+* **Documented Works Gallery**: Curatorial showcase with honor badges, contributor attribution, and direct Commons links.
+* **Photographer Hall of Fame**: Contributor leaderboard tracking individual honor counts (QI, FP, VI).
+
+---
+
+## Programmatic REST API
+
+All analytical modules provide direct RESTful JSON endpoints for programmatic integration, Wikimedia bots, and dashboard consumption:
+
+### Endpoints
+
+| Endpoint | Method | Key Parameters | Description |
 |:---|:---:|:---|:---|
-| **Retention Index** ($S_{\text{ret}}$) | **25%** | Community Vitality (50%) | Percentage of prior-edition participants who returned |
-| **Growth Capacity** ($S_{\text{grow}}$) | **25%** | Community Vitality (50%) | Proportion of participants joining for the first time |
-| **Content Utility** ($S_{\text{util}}$) | **20%** | Content Impact (35%) | Files embedded in Wikimedia projects (`prop=globalusage`) |
-| **Quality Recognition** ($S_{\text{qual}}$) | **15%** | Content Impact (35%) | Share of uploads designated as QI, FP, or VI on Commons |
-| **Contributor Diversity** ($S_{\text{div}}$) | **15%** | Participation Equity (15%) | Upload distribution equity (inverse top-10% uploader concentration) |
+| `/api/health` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns 5-dimension health scores, benchmark comparisons, and composite rating. |
+| `/api/retention` | `GET` | `target_campaigns` (e.g. `wlmde22 wlmde23 wlmde24`) | Computes full pairwise directional retention matrix and participant sets. |
+| `/api/influx` | `GET` | `influx_codes` (e.g. `wlmde20 wlmde21 wlmde22 wlmde23 wlmde24`) | Returns year-over-year newcomer influx, veteran counts, cumulative pool, and lifecycle profile. |
+| `/api/utility` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns global usage rates, article embed counts, wiki breakdown, and top utilized photographers. |
+| `/api/quality` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns QI/FP/VI counts, distinction rates, documented files, and hall-of-fame leaderboard. |
 
-**Rating Tiers**:
-- ★★★★★ **Outstanding** (85.0–100.0) — Exceeds regional and global benchmarks
-- ★★★★☆ **Strong** (70.0–84.9) — Meets or exceeds regional expectations
-- ★★★☆☆ **Moderate** (50.0–69.9) — Stable fundamentals with room for growth
-- ★★☆☆☆ **Emerging** (30.0–49.9) — Early-stage baseline requiring strategic focus
-- ★☆☆☆☆ **Critical** (0.0–29.9) — Low retention or high contributor concentration
+### Example API Request & Response
 
-### 2. Retention Analytics (`/retention`)
+```bash
+curl -s "http://localhost:3000/api/health?target_campaign=wlmde24" | jq .
+```
 
-- **Cohort Selection**: Build comparative matrices across events, countries, and years (e.g., `wlmde22`, `wlmbd24`).
-- **Directional Persistence**: Calculates exact retention between baseline and target editions ($A \to B$).
-- **Visualizations**: Interactive sortable data tables, pairwise Seaborn heatmaps, and global choropleth maps with regional filtering.
-
-### 3. Contributor Influx & Growth (`/influx`)
-
-- **Longitudinal Tracking**: Analyzes annual participation sequences from 2010 to 2040.
-- **Single-Campaign vs. Ecosystem Deduplication**:
-  - *Single Campaign*: Tracks consecutive editions of a single contest (e.g., `wlmde20` $\to$ `wlmde24`).
-  - *All Campaigns (`all[cc][YY]`)*: Deduplicates participants across all contests in a country to isolate true newcomer acquisition from inter-campaign movement.
-- **Cohort Categorization**: Segments contributors into 1-time entrants, repeaters (2–3 editions), and core veterans (4+ editions).
-- **Trajectory Visuals**: Dual-axis stacked charts showing annual newcomers ($I_t$), returning contributors ($R_t$), and cumulative participant pool ($P_t$).
-
-### 4. Content Utility (`/utility`)
-
-- **Cross-Wiki Deployment**: Queries the Commons Action API (`prop=globalusage`) to measure file usage across Wikipedia language editions, Wikidata, Wikivoyage, and Commons galleries.
-- **Output Metrics**: Global reuse rate, total article inclusions, project-level distribution, and contributor-level utilization rankings.
-
-### 5. Quality Recognition (`/quality`)
-
-- **Peer-Reviewed Status**: Audits uploads for community quality badges:
-  - **Quality Images (QI)**: Technical image quality validated by Commons reviewers.
-  - **Featured Pictures (FP)**: High-caliber images selected by community consensus.
-  - **Valued Images (VI)**: Canonical subject-matter reference images.
-- **Galleries & Exports**: Thumbnail gallery with photographer attribution, direct Commons links, and exportable data (CSV, Wikitext, JSON).
-
----
-
-## Methodology & Mathematical Models
-
-Detailed mathematical formulations and proofs are available in [METHODOLOGY.md](METHODOLOGY.md). Key formulations include:
-
-### 1. Directional Contributor Retention
-$$\text{Retention}(A \to B) = \left( \frac{|U_A \cap U_B|}{|U_A|} \right) \times 100\%$$
-*Note: $\text{Retention}(A \to B) \neq \text{Retention}(B \to A)$ when cohort sizes differ.*
-
-### 2. Contributor Growth Capacity
-$$\text{Growth}(A \to B) = \left( \frac{|U_B \setminus U_A|}{|U_B|} \right) \times 100\%$$
-
-### 3. Longitudinal & Ecosystem Influx
-For consecutive cohorts $(U_1, U_2, \dots, U_T)$ (or country-scoped ecosystem sets $U_t = \bigcup_{e \in E_{cc}} U_{e,t}$):
-- **New Influx**: $I_t = \left| U_t \setminus \bigcup_{j < t} U_j \right|$
-- **Returning**: $R_t = \left| U_t \cap \bigcup_{j < t} U_j \right|$
-- **Cumulative Pool**: $P_t = \left| \bigcup_{j \le t} U_j \right|$
-
-### 4. Continuous Relative Utility Curve
-Dimension metrics ($x$) map against regional benchmark ($B$) via a concave utility curve:
-$$S(x, B) = \begin{cases} 0.0 & \text{if } x \le 0 \\ 70.0 \times \left(\frac{x}{B}\right)^{0.75} & \text{if } 0 < x \le B \\ 70.0 + 30.0 \times \left(1 - \exp\left(-1.2 \times \frac{x - B}{B}\right)\right) & \text{if } x > B \end{cases}$$
-- **Zero-floor integrity**: $S(0) = 0$
-- **Benchmark alignment**: Meeting the regional benchmark yields $S(B) = 70.0$
-- **Concavity**: Sub-linear gains below benchmark; asymptotic damping capped at 100 above benchmark.
-
-### 5. Empirical Bayesian Benchmark Regularization
-To prevent small-sample volatility in sparse regions ($N \le 3$), benchmarks blend toward global baselines using shrinkage pseudo-count $M = 3.0$:
-$$B_{\text{effective}} = \frac{N}{N + M} \cdot \bar{B}_{\text{regional}} + \frac{M}{N + M} \cdot B_{\text{global}}$$
+```json
+{
+  "target_campaign": "wlmde24",
+  "health_results": [
+    {
+      "campaign": "wlmde24",
+      "composite_score": 78.4,
+      "tier": "Strong",
+      "stars": "★★★★☆",
+      "scores": {
+        "retention": 72.5,
+        "growth": 81.0,
+        "utility": 76.2,
+        "quality": 84.1,
+        "diversity": 78.0
+      },
+      "benchmarks": {
+        "region_name": "Northern & Western Europe",
+        "retention_bm": 28.5,
+        "growth_bm": 64.0,
+        "utility_bm": 14.2,
+        "quality_bm": 3.8,
+        "diversity_bm": 68.0
+      }
+    }
+  ]
+}
+```
 
 ---
 
-## Architecture & Tech Stack
+## Technical Architecture
 
 ```
 ========================================================================================
                           CAMPANALYTICS — SYSTEM ARCHITECTURE
 ========================================================================================
 
-      [ Wikimedia Community Analyst / Organiser Browser ]
-                             │
-                ┌────────────┴────────────┐
-                ▼ (Port 5001 locally / 8000 Toolforge)   ▼ (Port 8501)
-      ┌──────────────────────┐  ┌──────────────────────────────────┐
-      │      FLASK APP       │  │          STREAMLIT APP           │
-      │    (flask_app.py)    │  │       (streamlit_app.py)         │
-      │  • User Friendly UX  │  │   • Dark Slate Reactive UI       │
-      │  • Toolforge Ready   │  │   • Prototyping Explorer         │
-      └──────────┬───────────┘  └─────────────────┬────────────────┘
-                 │                                │
-                 └───────────────┬────────────────┘
-                                 ▼
-      ┌────────────────────────────────────────────────────────────┐
-      │                  SHARED ANALYTICS ENGINE                   │
-      │                      (analytics.py)                        │
-      ├────────────────────────────────────────────────────────────┤
-      │  • Dual Commons Ingestion: Toolforge DB + Action API       │
-      │  • Scoped All-Campaign Aggregator (Pseudo-Event 'all')     │
-      │  • Directional Contributor Retention Mathematics           │
-      │  • 5-Dimension Health Index & Regional Benchmark Engine    │
-      │  • Dual-Axis Influx & Longevity Profile Engine             │
-      │  • Visualizations (Agg Matplotlib, Seaborn, Plotly)        │
-      │  • In-Memory Thread-Safe TTL Caching Layer                 │
-      └──────────────────────────┬─────────────────────────────────┘
-                                 │
-                ┌────────────────┴────────────────┐
-                ▼                                 ▼
-     ┌────────────────────────┐       ┌────────────────────────────┐
-     │   Wikimedia Commons    │       │        config.json         │
-     │   Action API / DB      │       │  5 Campaigns · 51 Nations  │
-     │   (Live Metadata)      │       │  9 Regional Clusters       │
-     └────────────────────────┘       │  Country Scope Map         │
-                                      └────────────────────────────┘
-
+       [ Wikimedia Community Analyst / Organiser Browser / API Client ]
+                                      │
+                                      ▼ (Port 3000)
+       ┌────────────────────────────────────────────────────────────┐
+       │                EXPRESS APPLICATION SERVER                  │
+       │                        (server.ts)                         │
+       ├────────────────────────────────────────────────────────────┤
+       │  • Tool Routing & Middleware (Compression, JSON Parser)    │
+       │  • RESTful API Endpoints (/api/health, /api/influx, ...)   │
+       │  • Nunjucks SSR Engine with KaTeX Math Typesetting         │
+       │  • Scope Enforcer & Cross-Country Validation Gate         │
+       └──────────────────────────────┬─────────────────────────────┘
+                                      │
+                                      ▼
+       ┌────────────────────────────────────────────────────────────┐
+       │                  SHARED ANALYTICS ENGINE                   │
+       │                     (src/analytics.ts)                     │
+       ├────────────────────────────────────────────────────────────┤
+       │  • Dual-Axis Influx & Cumulative Pool SVG Chart Generator │
+       │  • 5-Dimension Spider Radar Chart SVG Generator            │
+       │  • Directional Retention Matrix & Cohort Intersections     │
+       │  • Content Utility & Quality Distinction Deep Evaluators   │
+       │  • Empirical Bayesian Regularization & Regional Benchmarks │
+       │  • In-Memory TTL Cache Layer & Wikimedia Bot Filter        │
+       └──────────────────────────────┬─────────────────────────────┘
+                                      │
+                      ┌───────────────┴───────────────┐
+                      ▼                               ▼
+       ┌────────────────────────────┐  ┌────────────────────────────┐
+       │ Wikimedia Commons APIs/DB  │  │        config.json         │
+       │ (Uploads, GlobalUsage, QI) │  │  5 Campaigns · 51 Nations  │
+       │                            │  │  9 Regional Benchmark Sets │
+       └────────────────────────────┘  └────────────────────────────┘
 ========================================================================================
 ```
-
-### Technology Stack
-- **Backend**: Python 3.9+, Flask, Gunicorn
-- **Dashboard**: Streamlit, Plotly, Seaborn, Matplotlib
-- **Data & Ingestion**: Wikimedia Commons Action API, Toolforge MariaDB replica databases (`PyMySQL`)
-- **Persistence & Caching**: SQLite (NFS mount), in-memory TTL caching, `Flask-Compress`
 
 ---
 
 ## Campaign Query Codes
 
-Campaigns are referenced using code format: `[event][country][YY]`
+Campaigns are referenced using standard three-segment codes: `[event][country][YY]`
 
 | Code | Campaign | Country | Year |
 |:---|:---|:---|:---|
 | `wlmde24` | Wiki Loves Monuments | Germany (`de`) | 2024 |
-| `wlein23` | Wiki Loves Earth | India (`in`) | 2023 |
-| `wlfbd22` | Wiki Loves Folklore | Bangladesh (`bd`) | 2022 |
+| `wleua21` | Wiki Loves Earth | Ukraine (`ua`) | 2021 |
+| `wlfin22` | Wiki Loves Folklore | India (`in`) | 2022 |
 | `wlang23` | Wiki Loves Africa | Nigeria (`ng`) | 2023 |
-| `wlbbd24` | Wiki Loves Bangla | Bangladesh (`bd`) | 2024 |
-| `allde24` | All Campaigns (Combined) | Germany (`de`) | 2024 |
+| `wlmbd24` | Wiki Loves Monuments | Bangladesh (`bd`) | 2024 |
+| `allde24` | All Campaigns (Combined Ecosystem) | Germany (`de`) | 2024 |
 
-**Supported country codes (51 nations)**:  
+**51 Supported Countries**:  
 `ar`, `at`, `au`, `bd`, `be`, `br`, `ca`, `ch`, `cl`, `co`, `cz`, `de`, `dz`, `eg`, `es`, `fi`, `fr`, `gh`, `gr`, `hu`, `id`, `in`, `it`, `ke`, `lk`, `ma`, `mx`, `my`, `ng`, `nl`, `no`, `np`, `nz`, `pe`, `ph`, `pk`, `pl`, `pt`, `ro`, `rs`, `ru`, `se`, `th`, `tn`, `tr`, `tz`, `ua`, `uk`, `us`, `ve`, `za`.
 
 ---
 
-## Installation & Local Usage
+## Installation & Local Development
 
 ### Prerequisites
-- Python 3.9 or higher
-- Git
+* **Node.js** v18+ (v20 or v22 recommended)
+* **npm** or **bun**
 
 ### Setup
 ```bash
 git clone https://github.com/TanvirSdq/CampAnalytics.git
 cd CampAnalytics
-pip install -r requirements.txt
+npm install
 ```
 
-### Run Flask Application
+### Run Development Server
 ```bash
-python3 app.py
+npm run dev
 ```
-Open [http://localhost:5001](http://localhost:5001) in your browser.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Run Streamlit Application
+### Build and Start for Production
 ```bash
-streamlit run streamlit_app.py
+npm run build
+npm start
 ```
-Open [http://localhost:8501](http://localhost:8501) in your browser.
-
-### Run Test Suite
-```bash
-python3 -m unittest discover tests
-```
-The automated test suite runs 58 unit tests covering routing, edge cases, scope restrictions, and data aggregation logic.
 
 ---
 
-## Deployment & Operations
+## Git & Deployment Workflow
 
-CampAnalytics is deployed as a Kubernetes webservice on **Wikimedia Toolforge** using the Toolforge Buildpacks service (Tekton CI/CD).
-
-### Deployment Workflow
-```bash
-# 1. SSH into the Toolforge bastion
-ssh <username>@login.toolforge.org
-
-# 2. Switch to the project tool account
-become campanalytics
-
-# 3. Trigger a container build from GitHub
-toolforge build start https://github.com/TanvirSdq/CampAnalytics.git
-
-# 4. Restart the webservice
-webservice --backend=kubernetes buildservice restart
-```
-
-### Production Runtime Configuration
-- **Process Model (`Procfile`)**:
-  ```procfile
-  web: gunicorn --workers=2 --threads=4 --timeout=240 --bind=0.0.0.0:8000 --limit-request-line=8190 --forwarded-allow-ips=* flask_app:app
-  ```
-  - `gthread` worker model with 2 processes and 4 threads per worker.
-  - 240-second request timeout to allow deep multi-category Commons metadata queries.
-  - `--forwarded-allow-ips=*` preserves client headers across Wikimedia ingress proxies.
-- **Response Compression**: `Flask-Compress` compresses analytical HTML responses from ~280 KB to ~27 KB (>85% reduction).
-- **Persistent Cache**: Container filesystems on Toolforge are ephemeral. The cache database is located on Toolforge NFS storage at `/data/project/campanalytics/campaign_cache.sqlite3` to persist multi-year metadata and global usage stats across restarts.
-- **Cache Pre-warming**: Run `python3 refresh_cache.py` to pre-fetch multi-year datasets offline.
-
----
-
-## Repository Layout
-
-```
-CampAnalytics/
-├── app.py                   # Local entry point & WSGI fallback
-├── flask_app.py             # Production Flask application & tool routing
-├── streamlit_app.py         # Streamlit interactive dashboard
-├── analytics.py             # Core analytics engine (Commons API, DB, scoring, plots)
-├── app_config.py            # Global UI styling, color palettes, and layout parameters
-├── campaign_cache.py        # Persistent cache interface (SQLite on NFS & MariaDB)
-├── refresh_cache.py         # Offline batch prefetcher and cache warmer
-├── config.json              # Campaign definitions, regional clusters, and country scopes
-├── METHODOLOGY.md           # Mathematical foundations, derivations, and benchmark definitions
-├── README.md                # Project documentation and setup guide
-├── styles.css               # Web interface styling and responsive design
-├── streamlit_styles.css     # Streamlit theme adjustments
-├── toolhub.yaml             # Wikimedia Toolhub 2.0.0 metadata specification
-├── toolinfo.json            # Wikimedia Toolinfo registry record
-├── Procfile                 # Toolforge Buildpacks process definition for Gunicorn
-├── requirements.txt         # Python package dependencies
-├── templates/
-│   ├── base.html            # Base template with navigation and layout structure
-│   └── index.html           # Main template for analytics tools and documentation
-└── tests/
-    ├── __init__.py          # Test suite package file
-    └── test_flask_app.py    # Automated test suite (58 unit tests)
-```
+### Safe Branching Workflow
+If you are developing new features while your repository serves a live deployment:
+1. **Always develop on a dedicated branch**:
+   ```bash
+   git checkout -b feature/analytics-enhancement
+   git add .
+   git commit -m "Enhance influx dual-axis chart and restore utility pipeline"
+   git push -u origin feature/analytics-enhancement
+   ```
+2. **Review via Pull Request**: Open a PR into `main` to inspect diffs and test compatibility before merging to production.
+3. **Production Branch**: Keep `main` (or a dedicated `production` branch) stable for live webhooks on Wikimedia Toolforge or container runtimes.
 
 ---
 
 ## License & Attribution
 
-- **License**: [GNU General Public License v2.0 or later (GPL-2.0+)](https://www.gnu.org/licenses/gpl-2.0.html)
-- **Affiliation**: Developed in support of [Project Korikath](https://meta.wikimedia.org/wiki/Project_Korikath)
-- **Data Attribution**: Metadata queried from [Wikimedia Commons](https://commons.wikimedia.org) under open licenses
+* **License**: [GNU General Public License v2.0 or later (GPL-2.0+)](https://www.gnu.org/licenses/gpl-2.0.html)
+* **Affiliation**: Developed in support of [Project Korikath](https://meta.wikimedia.org/wiki/Project_Korikath)
+* **Authors**: TanvirSdq & Kaim Amin
+* **Data Attribution**: Metadata queried from [Wikimedia Commons](https://commons.wikimedia.org) under open Creative Commons and public domain licenses.

@@ -931,6 +931,197 @@ async function handleQuality(req: Request, res: Response) {
 app.get('/quality', handleQuality);
 app.post('/quality', handleQuality);
 
+// ============================================================================
+// RESTFUL JSON API ENDPOINTS
+// ============================================================================
+async function computeHealthEvaluation(targetEvent: string, regionInput?: string) {
+  const match = analytics.CODE_RE.exec(targetEvent.toLowerCase());
+  if (!match) throw new Error(`Invalid campaign code format '${targetEvent}'`);
+  const [, eventType, targetCc, yearStr] = match;
+  const yearInt = parseInt(yearStr, 10);
+  const prevYearStr = String((yearInt - 1 + 100) % 100).padStart(2, '0');
+  const region = regionInput || analytics.COUNTRY_TO_REGION[targetCc] || 'Northern & Western Europe';
+  const baselineEvent = `${eventType}${targetCc}${prevYearStr}`;
+
+  const regionalCountries = analytics.REGION_COUNTRY_MAPPING[region] || [];
+  const scanPool = new Set<string>();
+  for (const cc of regionalCountries) {
+    scanPool.add(`${eventType}${cc}${yearStr}`);
+    scanPool.add(`${eventType}${cc}${prevYearStr}`);
+  }
+  scanPool.add(baselineEvent.toLowerCase());
+  scanPool.add(targetEvent.toLowerCase());
+
+  const allFetched = await analytics.fetchAllConcurrently(Array.from(scanPool));
+  const targetUsers = allFetched[targetEvent.toLowerCase()] || new Set<string>();
+  const baseUsers = allFetched[baselineEvent.toLowerCase()] || new Set<string>();
+
+  const peerVolumes = regionalCountries.map((cc) => {
+    const tCode = `${eventType}${cc}${yearStr}`;
+    return { cc, count: (allFetched[tCode] || new Set()).size };
+  });
+  peerVolumes.sort((a, b) => b.count - a.count);
+  const top3 = peerVolumes.slice(0, 3).map((p) => p.cc);
+
+  const structuralCodes = top3.map((cc) => `${eventType}${cc}${yearStr}`);
+  structuralCodes.push(targetEvent.toLowerCase());
+  const structuralMetrics = await analytics.fetchStructuralMetricsConcurrently(structuralCodes);
+
+  const repRetentions: number[] = [];
+  const repGrowths: number[] = [];
+  const repQualityRates: number[] = [];
+  const repDiversities: number[] = [];
+  const repUsages: number[] = [];
+
+  for (const cc of top3) {
+    const tCode = `${eventType}${cc}${yearStr}`;
+    const bCode = `${eventType}${cc}${prevYearStr}`;
+    const tU = allFetched[tCode] || new Set<string>();
+    const bU = allFetched[bCode] || new Set<string>();
+    const struct = structuralMetrics[tCode] || {};
+
+    if (bU.size > 0) {
+      let o = 0;
+      for (const u of tU) if (bU.has(u)) o++;
+      repRetentions.push((o / bU.size) * 100);
+    } else if (tU.size > 0) {
+      repRetentions.push(15.0);
+    }
+
+    if (tU.size > 0) {
+      let n = 0;
+      for (const u of tU) if (!bU.has(u)) n++;
+      repGrowths.push((n / tU.size) * 100);
+      if (struct.quality_image_share !== undefined) repQualityRates.push(struct.quality_image_share);
+      if (struct.top10_uploader_share !== undefined) repDiversities.push(struct.top10_uploader_share);
+      if (struct.usage_share !== undefined) repUsages.push(struct.usage_share);
+    }
+  }
+
+  function computeBayesianBenchmark(arr: number[], baselineGlobal: number, priorWeight = 3.0): number {
+    if (!arr.length) return baselineGlobal;
+    const n = arr.length;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const bRegional = n >= 3 ? sorted[Math.floor(n * 0.75)] : arr.reduce((a, b) => a + b, 0) / n;
+    const lambda = n / (n + priorWeight);
+    const bEffective = lambda * bRegional + (1.0 - lambda) * baselineGlobal;
+    return parseFloat(bEffective.toFixed(1));
+  }
+
+  const benchmarks = {
+    retention: computeBayesianBenchmark(repRetentions, analytics.GLOBAL_MOVEMENT_BASELINES.retention),
+    growth: computeBayesianBenchmark(repGrowths, analytics.GLOBAL_MOVEMENT_BASELINES.growth),
+    quality: computeBayesianBenchmark(repQualityRates, analytics.GLOBAL_MOVEMENT_BASELINES.quality),
+    diversity: computeBayesianBenchmark(repDiversities, analytics.GLOBAL_MOVEMENT_BASELINES.diversity),
+    usage: computeBayesianBenchmark(repUsages, analytics.GLOBAL_MOVEMENT_BASELINES.usage)
+  };
+
+  const targetStructural = structuralMetrics[targetEvent.toLowerCase()] || {
+    quality_image_share: 0.0,
+    top10_uploader_share: 100.0,
+    usage_share: 0.0,
+    total_uploads: 0
+  };
+
+  const metrics = analytics.generateHealthMetrics(targetUsers, baseUsers, targetStructural, benchmarks);
+  let overlap = 0;
+  for (const u of targetUsers) if (baseUsers.has(u)) overlap++;
+  const counts = { target: targetUsers.size, base: baseUsers.size, overlap };
+  const insights = analytics.generateInsights(metrics, region.split(' (')[0], benchmarks, counts);
+
+  return {
+    target_campaign: targetEvent.toLowerCase(),
+    baseline_campaign: baselineEvent.toLowerCase(),
+    region,
+    target_users_count: targetUsers.size,
+    baseline_users_count: baseUsers.size,
+    overlap_users_count: overlap,
+    composite_score: metrics.composite_score,
+    tier: metrics.tier,
+    stars: metrics.stars,
+    dimensions: metrics.dimensions,
+    benchmarks,
+    insights
+  };
+}
+
+app.get('/api/health', async (req: Request, res: Response) => {
+  const targetCampaign = ((req.query.target_campaign as string) || '').trim();
+  if (!targetCampaign) return res.status(400).json({ error: 'Missing target_campaign parameter' });
+  const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
+  if (!m) return res.status(400).json({ error: `Invalid campaign code format '${targetCampaign}'` });
+  const [, evt, cc] = m;
+  const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
+  if (scopeNotice) return res.status(400).json({ error: scopeNotice });
+  try {
+    const healthResult = await computeHealthEvaluation(targetCampaign, req.query.region as string);
+    res.json(healthResult);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/retention', async (req: Request, res: Response) => {
+  const targetCampaigns = ((req.query.target_campaigns as string) || '').trim();
+  if (!targetCampaigns) return res.status(400).json({ error: 'Missing target_campaigns parameter' });
+  const rawCodes = targetCampaigns.split(/\s+/).filter(Boolean);
+  const valid = rawCodes.map((c) => c.replace(/\s+/g, '').toLowerCase()).filter((c) => analytics.CODE_RE.test(c));
+  if (!valid.length) return res.status(400).json({ error: 'No valid campaign codes found' });
+  try {
+    const participantResults = await analytics.fetchAllConcurrently(valid);
+    const matrix = analytics.computeRetentionPercentages(participantResults);
+    res.json({ target_campaigns: valid, matrix });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/influx', async (req: Request, res: Response) => {
+  const influxCodes = ((req.query.influx_codes as string) || '').trim();
+  if (!influxCodes) return res.status(400).json({ error: 'Missing influx_codes parameter' });
+  const rawCodes = influxCodes.split(/\s+/).filter(Boolean);
+  const valid = rawCodes.map((c) => c.replace(/\s+/g, '').toLowerCase()).filter((c) => analytics.CODE_RE.test(c));
+  if (!valid.length) return res.status(400).json({ error: 'No valid campaign codes found' });
+  try {
+    const result = await analytics.computeYoYInflux(valid);
+    res.json({ influx_codes: valid, records: result.records, profile: result.lifecycle, summary: result.summary });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/utility', async (req: Request, res: Response) => {
+  const targetCampaign = ((req.query.target_campaign as string) || '').trim();
+  if (!targetCampaign) return res.status(400).json({ error: 'Missing target_campaign parameter' });
+  const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
+  if (!m) return res.status(400).json({ error: `Invalid campaign code format '${targetCampaign}'` });
+  const [, evt, cc] = m;
+  const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
+  if (scopeNotice) return res.status(400).json({ error: scopeNotice });
+  try {
+    const utilityResult = await analytics.computeContentUtilityDeep(targetCampaign);
+    res.json(utilityResult);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/quality', async (req: Request, res: Response) => {
+  const targetCampaign = ((req.query.target_campaign as string) || '').trim();
+  if (!targetCampaign) return res.status(400).json({ error: 'Missing target_campaign parameter' });
+  const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
+  if (!m) return res.status(400).json({ error: `Invalid campaign code format '${targetCampaign}'` });
+  const [, evt, cc] = m;
+  const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
+  if (scopeNotice) return res.status(400).json({ error: scopeNotice });
+  try {
+    const qualityResult = await analytics.computeQualityRecognitionDeep(targetCampaign);
+    res.json(qualityResult);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 404 handler
 app.use((req: Request, res: Response) => {
   res.status(404).render('index.html', {
