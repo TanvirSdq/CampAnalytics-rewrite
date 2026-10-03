@@ -7,6 +7,10 @@ desktop.ini
 .Spotlight-V100
 .Trashes
 
+# Node
+node_modules/
+dist/
+
 # Python
 __pycache__/
 *.py[cod]

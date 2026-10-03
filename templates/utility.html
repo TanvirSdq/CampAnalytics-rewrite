@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
+            <div>
+                <h1 class="page-title" style="margin-bottom: 4px;">Content Utility Analytics</h1>
+                <p class="page-subtitle" style="margin-bottom: 0;">Global usage footprint, Wikimedia project propagation, and cross-wiki integration across Wikimedia Commons uploads.</p>
+            </div>
+            <a href="/documentation#utility-guide" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; background: #ffffff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 4px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <span>Tool Usage &amp; Process Guide</span>
+                <span aria-hidden="true">&rarr;</span>
+            </a>
+        </div>
+
+        <form action="/utility" method="GET" id="utility-form" onsubmit="syncUtilityBuilder()">
+            <!-- Structured Panel: Selection Builder -->
+            <div class="display-panel">
+                <div class="display-panel-header">
+                    <span>What to look up · Selection Builder</span>
+                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Configure Campaign Target</span>
+                </div>
+                <div class="display-panel-body">
+                    <div class="builder-layout">
+                        <!-- Left: Form Controls -->
+                        <div>
+                            <!-- Event Matrix Radios -->
+                            <div class="form-group">
+                                <label class="form-label">Campaign Type</label>
+                                <div class="pill-group" id="utility-pill-group">
+                                    {% for event_key, event_val in EVENT_MAP.items() %}
+                                        <input type="radio" name="utility_event_type" value="{{ event_key }}" id="util-evt-{{ event_key }}" class="pill-checkbox" {% if (utility_event_type or 'wlm') == event_key %}checked{% endif %} onchange="syncUtilityBuilder()">
+                                        <label for="util-evt-{{ event_key }}" class="pill-label">{{ event_val }}</label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Target Country & Year in Grid -->
+                            <div class="form-row-2col">
+                                <div class="form-group">
+                                    <label for="utility_country" class="form-label">Target Country</label>
+                                    <select id="utility_country" name="utility_country" class="form-control" onchange="syncUtilityBuilder()">
+                                        <option value="">-- Select Country --</option>
+                                        {% for country_key in COUNTRY_OPTIONS %}
+                                            <option value="{{ country_key }}" {% if utility_country == country_key %}selected{% endif %}>
+                                                {{ COUNTRY_MAP[country_key].replace('_', ' ') }} ({{ country_key|upper }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="utility_year" class="form-label">Campaign Edition Year</label>
+                                    <input type="number" id="utility_year" name="utility_year" value="{{ utility_year or (CURRENT_YEAR - 1) }}" min="2010" max="2040" class="form-control" onchange="syncUtilityBuilder()" oninput="syncUtilityBuilder()">
+                                </div>
+                            </div>
+
+                            <!-- Campaign Code Input -->
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="target_campaign_utility" class="form-label">Target Campaign Code</label>
+                                <input type="text" id="target_campaign_utility" name="target_campaign" value="{{ target_campaign if target_campaign else '' }}" placeholder="e.g. wlmde24" class="form-control form-control-code" style="max-width: 280px;" oninput="parseCodeToUtilityBuilder()">
+                                <div class="form-hint" id="utility-scope-hint">Single campaign code for content utility &amp; global usage analysis.</div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Quick Presets -->
+                        <div class="example-box">
+                            <div class="example-box-title">Quick Preset Examples</div>
+                            <div class="preset-tags">
+                                <button type="button" class="preset-tag-btn" onclick="loadUtilityPreset('wlm', 'de', 2024)">
+                                    <strong>wlmde24</strong>
+                                    <span class="preset-tag-label">Monuments Germany 2024</span>
+                                </button>
+                                <button type="button" class="preset-tag-btn" onclick="loadUtilityPreset('wlm', 'de', 2023)">
+                                    <strong>wlmde23</strong>
+                                    <span class="preset-tag-label">Monuments Germany 2023</span>
+                                </button>
+                                <button type="button" class="preset-tag-btn" onclick="loadUtilityPreset('wle', 'ua', 2021)">
+                                    <strong>wleua21</strong>
+                                    <span class="preset-tag-label">Earth Ukraine 2021</span>
+                                </button>
+                                <button type="button" class="preset-tag-btn" onclick="loadUtilityPreset('wlf', 'in', 2022)">
+                                    <strong>wlfin22</strong>
+                                    <span class="preset-tag-label">Folklore India 2022</span>
+                                </button>
+                                <button type="button" class="preset-tag-btn" onclick="loadUtilityPreset('wlm', 'bd', 2024)">
+                                    <strong>wlmbd24</strong>
+                                    <span class="preset-tag-label">Monuments Bangladesh 2024</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Priority Action Bar at Base of Utility Tool -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: #f8fafc; border-top: 1px solid var(--border-color); border-radius: 0 0 8px 8px; flex-wrap: wrap; gap: 12px; margin: 18px -18px -18px -18px;">
+                        <div style="font-size: 0.84rem; color: var(--text-muted);">
+                            Configure campaign edition above or pick a preset to analyze global article usage and pageviews.
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="padding: 10px 28px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(54, 89, 227, 0.25);" onclick="setLoadingState(this, 'Evaluating Utility…')">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <span>Evaluate Content Utility</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% if not utility_result and not error %}
+            <!-- Initial Empty State / Prompt on Default Landing for Utility -->
+            <div class="empty-state-panel" style="margin-top: 20px; padding: 44px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 8px;">
+                <div style="width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: #f0f6ff; display: flex; align-items: center; justify-content: center; color: var(--wiki-blue);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Content Utility</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.5;">
+                    Configure campaign edition parameters above, or select a preset example in the builder, then click <strong>Evaluate Content Utility</strong> to inspect multi-language Wikipedia article integration, high-value image usages, and global readership footprint.
+                </p>
+            </div>
+        {% endif %}
+
+        {% if utility_result %}
+            <!-- Summary Metric Cards -->
+            <div class="display-panel" style="margin-top: 24px;">
+                <div class="display-panel-header">
+                    <span>Campaign Utility Summary · {{ utility_result.code|upper }}</span>
+                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">{{ utility_result.year }} Edition</span>
+                </div>
+                <div class="display-panel-body">
+                    <div class="scorecard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                        <div class="dimension-card">
+                            <div class="dim-title">Global Utility Rate</div>
+                            <div class="dim-score-val" style="color: var(--wiki-blue); font-size: 1.8rem; font-weight: 700;">
+                                {{ utility_result.global_utility_rate_pct }}%
+                            </div>
+                            <div class="dim-metric-subtext">Uploads used across Wikimedia projects</div>
+                        </div>
+                        <div class="dimension-card">
+                            <div class="dim-title">Total Global Usages</div>
+                            <div class="dim-score-val" style="color: #7c3aed; font-size: 1.8rem; font-weight: 700;">
+                                {{ utility_result.total_global_usages }}
+                            </div>
+                            <div class="dim-metric-subtext">Cumulative page embeds across wikis</div>
+                        </div>
+                        <div class="dimension-card">
+                            <div class="dim-title">Unique Articles Reached</div>
+                            <div class="dim-score-val" style="color: #16a34a; font-size: 1.8rem; font-weight: 700;">
+                                {{ utility_result.unique_articles_count }}
+                            </div>
+                            <div class="dim-metric-subtext">Distinct articles illustrating content</div>
+                        </div>
+                        <div class="dimension-card">
+                            <div class="dim-title">Top Consuming Project</div>
+                            <div class="dim-score-val" style="color: var(--text-ink); font-size: 1.35rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                {{ utility_result.top_consuming_project }}
+                            </div>
+                            <div class="dim-metric-subtext">Leading consumer wiki domain</div>
+                        </div>
+                        <div class="dimension-card">
+                            <div class="dim-title">Evaluated Upload Pool</div>
+                            <div class="dim-score-val" style="color: var(--text-muted); font-size: 1.8rem; font-weight: 700;">
+                                {{ utility_result.total_sampled }}
+                            </div>
+                            <div class="dim-metric-subtext">Sampled competition submissions</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Utility Formula Card (Collapsible Methodology Accordion) -->
+            <details class="methodology-details" style="margin-top: 20px; margin-bottom: 20px;">
+                <summary class="methodology-summary">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--wiki-blue);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>Encyclopedic Content Utility &amp; Article Deployment Formulations</span>
+                    </span>
+                    <span style="font-size: 0.76rem; color: var(--wiki-blue); font-weight: 500;">Methodology &amp; Formulations ▾</span>
+                </summary>
+                <div class="methodology-content">
+                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
+                        \[ F_{\text{in-use}} = \{ f \in F \mid |P(f)| > 0 \}, \quad \text{Utility Rate } U_r = \left(\frac{|F_{\text{in-use}}|}{|F|}\right) \times 100\%, \quad I_{\text{total}} = \sum_{f \in F} |P(f)| \]
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                        Evaluates live media integration across all Wikimedia language editions, Wikidata, and sister projects via prop=globalusage with mainspace article filtering.
+                        <a href="/documentation#utility-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Full Documentation →</a>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Media Articles Breakdown Table -->
+            <div class="display-panel" style="margin-top: 24px;">
+                <div class="display-panel-header">
+                    <span>Live Media Articles Utilization Breakdown</span>
+                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">{{ utility_result.media_usages|length }} Documented Embeds</span>
+                </div>
+                <div class="display-panel-body" style="padding: 0;">
+                    <div class="table-interactive-wrapper" data-table-id="utility-media-table">
+                        <div class="table-toolbar">
+                            <div class="table-toolbar-left">
+                                <div class="table-search-wrapper">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <input type="text" class="table-search-input" placeholder="Search file, article, wiki..." oninput="CampTableSuite.filterTable('utility-media-table', this.value)">
+                                </div>
+                            </div>
+                            <div class="table-toolbar-right">
+                                <div class="btn-export-group">
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportCSV('utility-media-table', '{{ utility_result.code }}_content_utility.csv')">Export CSV</button>
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportWikitext('utility-media-table')">Export Wikitext</button>
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportJSON('utility-media-table', '{{ utility_result.code }}_content_utility.json')">Export JSON</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-scroll-container">
+                            <table class="data-table" id="utility-media-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 56px;">Preview</th>
+                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-media-table', 1)">File Title</th>
+                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-media-table', 2)">Utilizing Article</th>
+                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-media-table', 3)">Wiki Project</th>
+                                        <th style="width: 80px; text-align: center;">Commons</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in utility_result.media_usages %}
+                                        <tr>
+                                            <td>
+                                                {% if row.thumb_url %}
+                                                    <img src="{{ row.thumb_url }}" alt="Thumb" class="media-thumb-img" loading="lazy">
+                                                {% else %}
+                                                    <div class="media-thumb-img" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.7rem;">File</div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ row.commons_url }}" target="_blank" rel="noopener noreferrer" class="media-file-link">
+                                                    {{ row.file_title }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <strong>{{ row.article }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="wiki-project-badge">{{ row.wiki }}</span>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <a href="{{ row.commons_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="padding: 2px 8px; font-size: 0.76rem;">
+                                                    View &rarr;
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                                                No global usage embeds detected for sampled files in this cohort.
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination-bar" data-target="utility-media-table">
+                            <div class="table-pagination-info">Showing rows...</div>
+                            <div class="table-pagination-nav"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Utilized Photographers Leaderboard -->
+            <div class="display-panel" style="margin-top: 24px;">
+                <div class="display-panel-header">
+                    <span>Top Utilized Photographers Leaderboard</span>
+                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Impact by Contributor</span>
+                </div>
+                <div class="display-panel-body" style="padding: 0;">
+                    <div class="table-interactive-wrapper" data-table-id="utility-photographers-table">
+                        <div class="table-toolbar">
+                            <div class="table-toolbar-left">
+                                <div class="table-search-wrapper">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <input type="text" class="table-search-input" placeholder="Search contributor..." oninput="CampTableSuite.filterTable('utility-photographers-table', this.value)">
+                                </div>
+                            </div>
+                            <div class="table-toolbar-right">
+                                <div class="btn-export-group">
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportCSV('utility-photographers-table', '{{ utility_result.code }}_utilized_photographers.csv')">Export CSV</button>
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportWikitext('utility-photographers-table')">Export Wikitext</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-scroll-container">
+                            <table class="data-table" id="utility-photographers-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px; text-align: center;">Rank</th>
+                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-photographers-table', 1)">Contributor</th>
+                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-photographers-table', 2)" style="text-align: right;">Utilized Files</th>
+                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-photographers-table', 3)" style="text-align: right;">Total Article Usages</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in utility_result.top_photographers %}
+                                        <tr>
+                                            <td style="text-align: center; font-weight: 600;">#{{ p.rank }}</td>
+                                            <td>
+                                                <a href="https://commons.wikimedia.org/wiki/User:{{ p.uploader | replace(' ', '_') }}" target="_blank" rel="noopener noreferrer" style="color: var(--wiki-blue); text-decoration: none; font-weight: 500;">
+                                                    {{ p.uploader }}
+                                                </a>
+                                            </td>
+                                            <td style="text-align: right; font-weight: 600;">{{ p.used_files_count }}</td>
+                                            <td style="text-align: right; font-weight: 700; color: #7c3aed;">{{ p.total_usages }}</td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                                                No contributor data available.
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination-bar" data-target="utility-photographers-table">
+                            <div class="table-pagination-info">Showing rows...</div>
+                            <div class="table-pagination-nav"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+    {# ====================================================================== #}
+    {# 5. QUALITY RECOGNITION ANALYTICS VIEW                                   #}
+    {# ====================================================================== #}
+{% endblock %}

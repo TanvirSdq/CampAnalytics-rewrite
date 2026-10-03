@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="page-title">Info &amp; Documentation</h1>
+        <p class="page-subtitle">Technical specifications, statistical formulations, and analytical usage guidelines for the Campaign Analytics platform.</p>
+
+        <!-- ================================================================== -->
+        <!-- 1. EVALUATION SECTION                                              -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="health-guide">
+            <div class="display-panel-header">
+                <div>
+                    <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 01</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Evaluation</span>
+                </div>
+                <a href="/health" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                    Go To Tool →
+                </a>
+            </div>
+            <div class="display-panel-body">
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    The Evaluation module computes a multi-dimensional campaign vitality score (0–100) calibrated dynamically against contemporary regional peer performance:
+                </p>
+
+                <h4 style="margin: 14px 0 8px 0; color: var(--text-ink); font-size: 0.95rem;">Step-by-Step Tool Usage &amp; Evaluation Process</h4>
+                <ol style="color: var(--text-ink); line-height: 1.7; padding-left: 20px;">
+                    <li><strong>Target Campaign Code:</strong> Enter the official identifier for the campaign edition you want to evaluate (e.g. <code>wlmbd24</code> for Wiki Loves Monuments 2024 Bangladesh, or <code>wlede23</code> for Wiki Loves Earth Germany).</li>
+                    <li><strong>Baseline Reference Edition:</strong> Select <em>Previous Year Baseline</em> to measure progression against the immediately preceding year (e.g. 2023 vs 2024), or specify a custom baseline edition for multi-year comparisons. Both cohorts must have active upload records.</li>
+                    <li><strong>Regional Peer Calibration:</strong> The tool automatically identifies your country's regional cluster (e.g. South Asia, Northern &amp; Western Europe, ESEAP). Regional benchmarks are computed from active peer campaigns in this group to ensure fair comparison between emerging and veteran communities.</li>
+                    <li><strong>Evaluation Scorecard &amp; Report:</strong> Review the 5 dimension scores, qualitative star ratings, quantitative participant counts, and diagnostic insights. Use the <strong>Export Report</strong> button to generate ready-to-copy summaries for Wikimedia grant reporting, talk pages, or organizing retrospectives.</li>
+                </ol>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Evaluation Weighting Model</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 10px 0;">
+                        The composite evaluation score is calculated on a 0–100 scale across five core dimensions organized into complementary structural pairs:
+                    </p>
+                    <div class="math-formula" style="margin: 10px 0 14px 0;">
+                        \[ \text{Evaluation Index} = 0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}} \]
+                    </div>
+                    <ul style="color: var(--text-ink); font-size: 0.88rem; line-height: 1.7; margin: 0; padding-left: 20px;">
+                        <li><strong>Retention Index (25%):</strong> Percentage of baseline cohort participants who contributed to the target edition. Reflects multi-year community volunteer continuity.</li>
+                        <li><strong>Growth Capacity (25%):</strong> Percentage of target edition uploaders who are first-time entrants. Measures new contributor recruitment velocity.</li>
+                        <li><strong>Content Utility (20%):</strong> Share of uploaded images actively integrated into Wikimedia project articles (<code>prop=globalusage</code>). Measures direct encyclopedic deployment.</li>
+                        <li><strong>Quality Recognition (15%):</strong> Share of submissions awarded formal community quality designations (Quality Images or Featured Pictures).</li>
+                        <li><strong>Contributor Diversity (15%):</strong> Distribution equity of contributions, measured inversely against the top 10% uploader concentration to evaluate participation breadth.</li>
+                    </ul>
+                </div>
+
+                <div class="math-panel" style="margin-bottom: 0;">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Empirical Bayesian Shrinkage &amp; Benchmarks</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; line-height: 1.6;">
+                        Regional reference thresholds are computed from active peer campaigns within each geographic cluster. To prevent distortion in regions with small sample sizes (\(N \le 3\)), Empirical Bayesian shrinkage blends regional peer metrics with global movement baselines:
+                    </p>
+                    <div class="math-formula" style="margin: 8px 0;">
+                        \[ B_{\text{effective}} = \frac{N}{N + 3} B_{\text{regional}} + \frac{3}{N + 3} B_{\text{global}} \]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 2. RETENTION ANALYTICS SECTION                                     -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="retention-guide">
+            <div class="display-panel-header">
+                <div>
+                    <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 02</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Retention</span>
+                </div>
+                <a href="/retention" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                    Go To Tool →
+                </a>
+            </div>
+            <div class="display-panel-body">
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    The Retention Analytics interface evaluates participant continuity between successive campaign editions and cross-event contributor migration:
+                </p>
+                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
+                    <li><strong>Campaign Selection:</strong> Select one or more configured Wiki Loves campaigns (such as Monuments <code>wlm</code>, Earth <code>wle</code>, Folklore <code>wlf</code>, Africa <code>wla</code>, or Bangla <code>wlb</code>). Query codes follow the standard format <code>[event][country][year]</code> (e.g. <code>wlmbd24</code>, <code>wlede22</code>).</li>
+                    <li><strong>Geographic &amp; Temporal Parameters:</strong> Select a target country, regional cluster, or all available countries (50+ global nations), and define the longitudinal year span. Use the <strong>Replace Codes</strong> or <strong>Append Codes</strong> buttons to populate the target codes input.</li>
+                    <li><strong>Quick Presets:</strong> Pre-configured comparison vectors are available in the presets panel for common evaluation pairs (e.g. Monuments Germany, Earth India, Folklore Bangladesh).</li>
+                    <li><strong>Analytical Projection Models:</strong> Choose the desired visualization output:
+                        <ul style="margin-top: 4px; padding-left: 18px;">
+                            <li><strong>Data Table:</strong> Tabular breakdown of baseline cohort size, target cohort size, intersecting participant count, and directional retention rate.</li>
+                            <li><strong>Heatmap Matrix:</strong> Color-coded matrix displaying pairwise retention shares across consecutive editions.</li>
+                            <li><strong>Choropleth World Map:</strong> Spatial distribution of country-level average or median retention metrics across international campaigns.</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Directional Longitudinal Retention</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        Directional retention from a baseline campaign cohort \(A\) to a subsequent target cohort \(B\) is defined as the proportion of unique contributors in cohort \(A\) who also submitted media in cohort \(B\):
+                    </p>
+                    <div class="math-formula">
+                        \[ \text{Retention}(A \to B) = \frac{|U_A \cap U_B|}{|U_A|} \times 100\% \]
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
+                        Where \(U_A\) and \(U_B\) denote the discrete sets of verified upload accounts in each respective category. Retention is non-symmetric: \(\text{Retention}(A \to B) \neq \text{Retention}(B \to A)\) when total cohort sizes differ.
+                    </p>
+                </div>
+
+                <div class="math-panel" style="margin-bottom: 0;">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Data Extraction Pipeline &amp; Limitations</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.6;">
+                        Data is extracted in real time directly from Wikimedia Commons. The primary ingestion pathway queries Toolforge replica tools (<code>ptools.toolforge.org</code>) for low-latency category membership enumeration, with automatic failover to the official Wikimedia Commons Action API (<code>commons.wikimedia.org/w/api.php</code>) utilizing the <code>categorymembers</code> generator with automatic pagination and exponential backoff.
+                    </p>
+                    <ul style="color: var(--text-muted); font-size: 0.82rem; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li>Evaluations reflect observable on-wiki upload records and do not account for offline organizing contributions.</li>
+                        <li>Incomplete or unheld campaign categories are identified as missing data and excluded from evaluation to prevent erroneous zero-scoring.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 3. NEW USER INFLUX SECTION                                         -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="influx-guide">
+            <div class="display-panel-header">
+                <div>
+                    <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 03</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Influx</span>
+                </div>
+                <a href="/influx" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                    Go To Tool →
+                </a>
+            </div>
+            <div class="display-panel-body">
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    The Influx Analytics module assesses continuous community renewal, newcomer acquisition, and long-term contributor mobilization:
+                </p>
+                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
+                    <li><strong>Series Selection:</strong> Choose a campaign type (or All Campaigns), country, and consecutive year span (e.g. {{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }}).</li>
+                    <li><strong>Generated Campaign Sequence:</strong> Chronological campaign sequence automatically assembled or customized to evaluate longitudinal trends.</li>
+                    <li><strong>Trend Visualizations &amp; Outputs:</strong>
+                        <ul style="margin-top: 4px; padding-left: 18px;">
+                            <li><strong>Summary KPI Cards:</strong> Cumulative Community Footprint, Peak Influx Year, Peak Overall Edition, and Contributor Longevity (recurring participants).</li>
+                            <li><strong>Visual Influx Dynamics:</strong> Dual-axis stacked bar chart showing first-time newcomers (\(I_t\)) stacked with returning veterans (\(R_t\)) alongside the cumulative pool trajectory.</li>
+                            <li><strong>Cohort Lifecycle Segmentation:</strong> Categorization into 1-Time Entrants (one-off contributors), Repeaters (2–3 editions), and Core Veterans (4+ editions).</li>
+                            <li><strong>Detailed Data Table:</strong> Comprehensive table with YoY Net Growth, Newcomer Share, Direct Retention, and CSV export capability.</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year Newcomer Influx &amp; Retention</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        For edition \(C_t\) in a chronological series, newcomer influx isolates contributors not seen in any prior recorded edition \(U_{&lt; t}\):
+                    </p>
+                    <div class="math-formula">
+                        \[ \text{Influx}(C_t) = |U_t \setminus U_{&lt; t}|, \quad \text{Newcomer Share} = \left(\frac{\text{Influx}(C_t)}{|U_t|}\right) \times 100\% \]
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
+                        Returning veterans are defined as \(R_t = |U_t \cap U_{&lt; t}|\), and direct retention from the immediate prior edition is given by \(\text{Retention}(C_{t-1} \to C_t) = \frac{|U_t \cap U_{t-1}|}{|U_{t-1}|} \times 100\%\).
+                    </p>
+                </div>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Multi-Campaign Ecosystem Influx &amp; De-duplication</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        When analyzing all campaigns together (<code>all[country][year]</code>), participant sets across all active Wiki Loves photography contests in edition year \(t\) are aggregated into a unified ecosystem cohort \(U_t\):
+                    </p>
+                    <div class="math-formula">
+                        \[ U_t = \bigcup_{e \in E} U_{e, t}, \quad I_t = U_t \setminus \bigcup_{j &lt; t} U_j, \quad R_t = U_t \cap \bigcup_{j &lt; t} U_j \]
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
+                        Where \(E = \{\text{WLM}, \text{WLE}, \text{WLF}, \text{WLA}, \text{WLB}\}\). Contributor cross-participation across contests is de-duplicated, measuring the total net new individuals brought into the Wikimedia movement annually.
+                    </p>
+                </div>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Cumulative Movement Footprint</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        The cumulative community pool milestone measures the total distinct individuals who have engaged across the evaluated series up to edition year \(t\):
+                    </p>
+                    <div class="math-formula">
+                        \[ \text{Cumulative Pool}_t = \left|\bigcup_{j \le t} U_j\right| \]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 4. CONTENT UTILITY SECTION                                         -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="utility-guide">
+            <div class="display-panel-header">
+                <div>
+                    <span class="tool-card-badge" style="background-color: #ede9fe; color: #6d28d9; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 04</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Content Utility</span>
+                </div>
+                <a href="/utility" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                    Go To Tool →
+                </a>
+            </div>
+            <div class="display-panel-body">
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    The Content Utility module evaluates the direct encyclopedic deployment of campaign media across all Wikimedia projects via live <code>prop=globalusage</code> API queries:
+                </p>
+                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
+                    <li><strong>Target Campaign Selection:</strong> Choose a campaign, country, and edition year (e.g. <code>wlmde24</code> or <code>wlmbd23</code>).</li>
+                    <li><strong>Usage Harvesting &amp; Namespace Filtering:</strong> Analyzes uploaded files to identify whether they are embedded in encyclopedic articles (Mainspace 0) or user/discussion pages.</li>
+                    <li><strong>Analytics &amp; Output Breakdown:</strong>
+                        <ul style="margin-top: 4px; padding-left: 18px;">
+                            <li><strong>Overall Utility Rate (\(U_r\)):</strong> Percentage of uploaded files actively utilized in at least one Wikimedia project.</li>
+                            <li><strong>Article Inclusions:</strong> Cumulative count of live article instances illustrating encyclopedic knowledge.</li>
+                            <li><strong>Cross-Wiki Footprint:</strong> Distribution across Wikipedia language editions (e.g. English, German, French, Bengali), Wikidata, Wikivoyage, and Commons galleries.</li>
+                            <li><strong>Contributor Impact Leaderboard:</strong> Top photographers ranked by total downstream article usage.</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Encyclopedic Utility Rate Formulation</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        For campaign file collection \(F\), let \(P(f)\) denote the set of pages where file \(f\) is actively integrated:
+                    </p>
+                    <div class="math-formula">
+                        \[ F_{\text{in-use}} = \{ f \in F \mid |P(f)| > 0 \}, \quad \text{Utility Rate } U_r = \left(\frac{|F_{\text{in-use}}|}{|F|}\right) \times 100\% \]
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
+                        Total article deployment volume is given by \(I_{\text{total}} = \sum_{f \in F} |P(f)|\).
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 5. QUALITY RECOGNITION SECTION                                     -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="quality-guide">
+            <div class="display-panel-header">
+                <div>
+                    <span class="tool-card-badge" style="background-color: #fef9c3; color: #a16207; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 05</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Quality Recognition</span>
+                </div>
+                <a href="/quality" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                    Go To Tool →
+                </a>
+            </div>
+            <div class="display-panel-body">
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    The Quality Recognition module audits formal community curatorial designations awarded to campaign submissions by Wikimedia Commons peer-review committees:
+                </p>
+                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
+                    <li><strong>Campaign Query:</strong> Select target event, country, and year (e.g. <code>wlmde24</code>, <code>wleua21</code>).</li>
+                    <li><strong>Commons Category Tree Harvesting:</strong> Traverses structured subcategories including <code>Quality images from [Campaign]</code>, <code>Featured pictures from [Campaign]</code>, and <code>Valued images from [Campaign]</code>.</li>
+                    <li><strong>Honors &amp; Showcase Outputs:</strong>
+                        <ul style="margin-top: 4px; padding-left: 18px;">
+                            <li><strong>Overall Quality Rate (\(Q_r\)):</strong> Percentage of submissions achieving formal quality recognition.</li>
+                            <li><strong>Honors Breakdown:</strong> Itemized counts of Quality Images (QI), Featured Pictures (FP), and Valued Images (VI).</li>
+                            <li><strong>Recognized Files Showcase:</strong> Interactive media gallery with lazy-loaded thumbnails, file titles, badge tags, and direct Commons links.</li>
+                            <li><strong>Honored Photographers Hall of Fame:</strong> Distinct accredited photographers whose works were honored by the community.</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Quality Distinction Rate Formulation</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        For campaign upload portfolio \(F\), let \(F_{\text{honored}}\) denote files awarded QI, FP, or VI status:
+                    </p>
+                    <div class="math-formula">
+                        \[ Q_r = \left(\frac{|F_{\text{honored}}|}{|F|}\right) \times 100\%, \quad \text{Honored Photographers } H = |\{ \text{uploader}(f) \mid f \in F_{\text{honored}} \}| \]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 6. ACADEMIC REFERENCES & GLOSSARY                                  -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="glossary-guide">
+            <div class="display-panel-header">
+                <span style="font-weight: 700; font-size: 1.05rem;">Academic Literature &amp; Metric Glossary</span>
+            </div>
+            <div class="display-panel-body">
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Academic Literature &amp; Foundational Research</h4>
+                    <ul style="color: var(--text-ink); font-size: 0.85rem; line-height: 1.6; margin: 0; padding-left: 20px;">
+                        <li><strong>Halfaker, A., Geiger, R. S., Morgan, J. T., &amp; Riedl, J. (2013).</strong> <em>The Rise and Decline of an Open Collaboration System: How Wikipedia's reaction to popularity is causing its decline.</em> American Behavioral Scientist, 57(5), 664–688. <a href="https://doi.org/10.1177/0002764212469365" target="_blank" style="color: var(--wiki-blue);">doi:10.1177/0002764212469365</a> (Informs retention weighting and newcomer survivorship models).</li>
+                        <li><strong>Morgan, J. T., &amp; Halfaker, A. (2018).</strong> <em>Evaluating the Impact of Wikimedia Grants and Contributor Retention.</em> Wikimedia Research Report, Wikimedia Foundation. (Framework for longitudinal cohort survival analysis).</li>
+                        <li><strong>Kittur, A., Chi, E., Pendleton, B. A., Suh, B., &amp; Mytkowicz, T. (2007).</strong> <em>He says, she says: conflict and coordination in Wikipedia.</em> Proceedings of the SIGCHI Conference on Human Factors in Computing Systems, 453–462. (Concentration metrics and power-law distribution in peer production).</li>
+                    </ul>
+                </div>
+
+                <div class="math-panel" style="margin-bottom: 0;">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Metric Glossary &amp; Data Dictionary</h4>
+                    <table class="data-table" style="font-size: 0.82rem; margin-top: 8px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 24%;">Metric / Symbol</th>
+                                <th style="width: 28%;">Formal Definition</th>
+                                <th>Operational Description &amp; Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Evaluation Index</strong></td>
+                                <td>\(0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}}\)</td>
+                                <td>Composite 0–100 campaign health score regularized with Empirical Bayesian shrinkage against regional peers.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Directional Retention (\(R_{A \to B}\))</strong></td>
+                                <td>\(\frac{|U_A \cap U_B|}{|U_A|} \times 100\%\)</td>
+                                <td>Percentage of distinct uploaders from cohort \(A\) who returned to submit at least one file in subsequent edition \(B\).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Growth Capacity (\(S_{\text{grow}}\))</strong></td>
+                                <td>\(\frac{|U_{\text{target}} \setminus U_{\text{base}}|}{|U_{\text{target}}|} \times 100\%\)</td>
+                                <td>Proportion of target edition uploaders who are first-time entrants relative to the baseline edition.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Content Utility (\(S_{\text{util}}\) / \(U_r\))</strong></td>
+                                <td>\(\frac{|F_{\text{in-use}}|}{|F_{\text{total}}|} \times 100\%\)</td>
+                                <td>Proportion of campaign uploads embedded across Wikipedia articles, Wikidata, Wikivoyage, or sister projects via <code>prop=globalusage</code>.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quality Recognition (\(S_{\text{qual}}\) / \(Q_r\))</strong></td>
+                                <td>\(\frac{|F_{\text{honored}}|}{|F_{\text{total}}|} \times 100\%\)</td>
+                                <td>Proportion of submissions receiving formal Commons designations (Quality Images, Featured Pictures, Valued Images).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Newcomer Influx (\(I_t\))</strong></td>
+                                <td>\(U_t \setminus \bigcup_{j < t} U_j\)</td>
+                                <td>First-time participants in edition \(t\) with no prior upload history in any previous edition of the evaluated contest series.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cumulative Pool</strong></td>
+                                <td>\(\left|\bigcup_{j \le t} U_j\right|\)</td>
+                                <td>Total unique contributors ever mobilized by the campaign series through edition year \(t\).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Top-10% Concentration (\(S_{\text{div}}\))</strong></td>
+                                <td>\(\frac{\sum_{i=1}^{\lfloor 0.1 N \rfloor} u_i}{\sum_{i=1}^N u_i} \times 100\%\)</td>
+                                <td>Share of total submissions uploaded by the most active 10% of participants; measures structural reliance on power users.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Regional 75th Percentile</strong></td>
+                                <td>\(P_{75}(X_{\text{region}})\)</td>
+                                <td>Upper-quartile performance threshold computed across peer campaigns in the same geographic sub-region (e.g. South Asia, Western Europe).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+        </div>
+    </div>
+
+    {# ====================================================================== #}
+    {# CLIENT-SIDE LOGIC & BUILDER AUTO-SYNC                                  #}
+    {# ====================================================================== #}
+{% endblock %}

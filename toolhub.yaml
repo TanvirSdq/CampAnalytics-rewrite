@@ -1,0 +1,9 @@
+---
+- name: camptools
+  title: CampTools (Rewrite)
+  description: Analytics suite for Wikimedia Commons campaigns.
+  url: https://camptools.toolforge.org/
+  repository: https://github.com/TanvirSdq/CampAnalytics-rewrite
+  keywords:
+    - commons
+    - analytics

@@ -1,18 +1,21 @@
+
 :root {
-    --nav-teal: #183f54;
-    --nav-accent: #72ded6;
-    --bg-canvas: #ffffff;
-    --bg-subtle: #fbfcfd;
-    --text-ink: #202122;
-    --text-muted: #54595d;
-    --border-color: #e0e0e0;
-    --border-input: #c8ccd1;
+    --bg-canvas: #e2e8f0;
+    --bg-surface: #f1f5f9;
+    --text-main: #0f172a;
+    --border-subtle: #cbd5e1;
+    --accent-blue: #3366cc;
     --wiki-blue: #3366cc;
-    --wiki-blue-hover: #14428e;
-    --card-light: #ffffff;
-    --card-subtle: #f8f9fa;
-    --star-gold: #e67300;
+    --text-muted: #64748b;
+    --border-color: #cbd5e1;
+    --text-ink: #1e293b;
 }
+
+body {
+    background-color: var(--bg-canvas);
+    color: var(--text-main);
+}
+
 
 *, *::before, *::after {
     box-sizing: border-box;
@@ -45,7 +48,7 @@ html, body {
     background-color: rgba(24, 63, 84, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    color: #ffffff;
+    color: var(--bg-surface);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -78,7 +81,7 @@ html, body {
     justify-content: center;
     background: transparent;
     border: none;
-    color: #ffffff;
+    color: var(--bg-surface);
     padding: 8px;
     margin-right: 4px;
     border-radius: 6px;
@@ -122,10 +125,7 @@ html, body {
     gap: 0;
 }
 
-.brand-bold {
-    font-weight: 700;
-    color: #ffffff;
-}
+.brand-bold { font-weight: 700; color: var(--text-main); }
 
 .brand-accent {
     font-weight: 500;
@@ -167,15 +167,15 @@ html, body {
 }
 
 .nav-tab-link:hover {
-    color: #ffffff;
+    color: var(--bg-surface);
     opacity: 1;
     background-color: rgba(255, 255, 255, 0.08);
 }
 
 .nav-tab-link.active {
-    color: #ffffff;
+    color: var(--bg-surface);
     font-weight: 600;
-    border-bottom: 3px solid #ffffff;
+    border-bottom: 3px solid var(--bg-surface);
     background-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -199,7 +199,7 @@ html, body {
 }
 
 .nav-util-link:hover {
-    color: #ffffff;
+    color: var(--bg-surface);
     background-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -269,7 +269,7 @@ html, body {
     bottom: 0;
     width: 320px;
     max-width: 85vw;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--text-ink);
     z-index: 2000;
     display: flex;
@@ -291,7 +291,7 @@ html, body {
     justify-content: space-between;
     padding: 16px 20px;
     background: var(--nav-teal);
-    color: #ffffff;
+    color: var(--bg-surface);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -315,7 +315,7 @@ html, body {
 .mobile-nav-close {
     background: transparent;
     border: none;
-    color: #ffffff;
+    color: var(--bg-surface);
     padding: 6px;
     display: flex;
     align-items: center;
@@ -359,11 +359,11 @@ html, body {
 }
 
 .mobile-nav-item:hover {
-    background: #f1f5f9;
+    background: var(--bg-canvas);
 }
 
 .mobile-nav-item.active {
-    background: #eef6ff;
+    background: var(--bg-canvas);
     color: var(--wiki-blue);
     font-weight: 600;
 }
@@ -378,12 +378,12 @@ html, body {
     flex-shrink: 0;
 }
 
-.icon-eval { background: #fef3c7; color: #b45309; }
-.icon-ret { background: #e0f2fe; color: #0284c7; }
-.icon-influx { background: #dcfce7; color: #15803d; }
-.icon-utility { background: #ede9fe; color: #7c3aed; }
-.icon-quality { background: #fef9c3; color: #a16207; }
-.icon-info { background: #f1f5f9; color: var(--text-muted); }
+.icon-eval { background: transparent; color: var(--text-main); }
+.icon-ret { background: transparent; color: var(--text-main); }
+.icon-influx { background: transparent; color: var(--text-main); }
+.icon-utility { background: transparent; color: var(--text-main); }
+.icon-quality { background: transparent; color: var(--text-main); }
+.icon-info { background: transparent; color: var(--text-main); }
 
 .mobile-nav-item-content {
     flex: 1;
@@ -409,13 +409,13 @@ html, body {
     font-weight: 700;
     padding: 2px 6px;
     border-radius: 4px;
-    background: #f1f5f9;
+    background: var(--bg-canvas);
     color: var(--text-muted);
 }
 
 .mobile-nav-item.active .mobile-nav-tag {
     background: var(--wiki-blue);
-    color: #ffffff;
+    color: var(--bg-surface);
 }
 
 .mobile-nav-divider {
@@ -428,7 +428,7 @@ html, body {
     margin-top: auto;
     padding: 16px 20px;
     border-top: 1px solid var(--border-color);
-    background: #f8fafc;
+    background: var(--bg-surface);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -465,7 +465,7 @@ html, body {
    Display Structured Panels ("What to look up", "Output", "Examples")
    ========================================================================== */
 .display-panel {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 8px;
     margin-bottom: 20px;
@@ -544,7 +544,7 @@ html, body {
     display: inline-flex;
     align-items: center;
     padding: 6px 14px;
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-input);
     border-radius: 20px;
     font-size: 0.85rem;
@@ -568,7 +568,7 @@ html, body {
 .pill-checkbox:checked + .pill-label {
     background-color: var(--wiki-blue);
     border-color: var(--wiki-blue);
-    color: #ffffff;
+    color: var(--bg-surface);
     box-shadow: 0 1px 3px rgba(51, 102, 204, 0.25);
 }
 
@@ -585,7 +585,7 @@ html, body {
     font-size: 0.9rem;
     border: 1px solid var(--border-input);
     border-radius: 6px;
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     color: var(--text-ink);
     font-family: inherit;
     transition: border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -696,7 +696,7 @@ textarea.form-control {
     width: 100%;
     box-sizing: border-box;
     text-align: left;
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 9px 12px;
@@ -750,7 +750,7 @@ textarea.form-control {
     align-items: center;
     width: 100%;
     box-sizing: border-box;
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 5px;
     padding: 7px 11px;
@@ -835,7 +835,7 @@ button:focus-visible {
 
 .btn-primary {
     background-color: var(--wiki-blue);
-    color: #ffffff;
+    color: var(--bg-surface);
     border: 1px solid var(--wiki-blue);
     font-weight: 600;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
@@ -844,7 +844,7 @@ button:focus-visible {
 .btn-primary:hover {
     background-color: var(--wiki-blue-hover);
     border-color: var(--wiki-blue-hover);
-    color: #ffffff;
+    color: var(--bg-surface);
     transform: translateY(-1px);
     box-shadow: 0 3px 8px rgba(51, 102, 204, 0.25);
 }
@@ -855,7 +855,7 @@ button:focus-visible {
 }
 
 .btn-secondary {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     color: var(--text-ink);
     border: 1px solid var(--border-input);
     font-weight: 500;
@@ -872,7 +872,7 @@ button:focus-visible {
 }
 
 .btn-outline-primary {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     color: var(--wiki-blue);
     border: 1px solid var(--wiki-blue);
     font-weight: 600;
@@ -914,7 +914,7 @@ button:focus-visible {
 }
 
 .notice-error {
-    background-color: #fff1f0;
+    background-color: var(--bg-surface)1f0;
     border: 1px solid #ffccc7;
     color: #a8071a;
 }
@@ -925,7 +925,7 @@ button:focus-visible {
 .table-interactive-wrapper {
     position: relative;
     margin-top: 14px;
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     overflow: hidden;
@@ -939,7 +939,7 @@ button:focus-visible {
     flex-wrap: wrap;
     gap: 10px;
     padding: 10px 14px;
-    background: #f8fafc;
+    background: var(--bg-surface);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -982,7 +982,7 @@ button:focus-visible {
     border-radius: 4px;
     width: 220px;
     font-family: inherit;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--text-ink);
     transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -1007,7 +1007,7 @@ button:focus-visible {
     font-size: 0.82rem;
     border: 1px solid var(--border-input);
     border-radius: 4px;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--text-ink);
     font-family: inherit;
     cursor: pointer;
@@ -1034,7 +1034,7 @@ button:focus-visible {
     font-size: 0.78rem;
     font-weight: 500;
     font-family: inherit;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--wiki-blue);
     border: 1px solid #c8dafc;
     border-radius: 4px;
@@ -1045,7 +1045,7 @@ button:focus-visible {
 }
 
 .btn-export:hover {
-    background: #eef6ff;
+    background: var(--bg-canvas);
     border-color: var(--wiki-blue);
     color: var(--wiki-blue-hover);
 }
@@ -1097,7 +1097,7 @@ table.data-table {
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.88rem;
-    background: #ffffff;
+    background: var(--bg-surface);
     font-variant-numeric: tabular-nums;
     margin: 0;
 }
@@ -1156,7 +1156,7 @@ table.data-table th:first-child,
 table.data-table td:first-child {
     position: sticky;
     left: 0;
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     z-index: 5;
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
 }
@@ -1202,7 +1202,7 @@ table.data-table tfoot td:first-child {
     align-items: center;
     justify-content: space-between;
     padding: 8px 14px;
-    background: #f8fafc;
+    background: var(--bg-surface);
     border-top: 1px solid var(--border-color);
     font-size: 0.82rem;
     color: var(--text-muted);
@@ -1225,7 +1225,7 @@ table.data-table tfoot td:first-child {
     padding: 3px 8px;
     font-size: 0.8rem;
     border: 1px solid var(--border-input);
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--text-ink);
     border-radius: 3px;
     cursor: pointer;
@@ -1239,7 +1239,7 @@ table.data-table tfoot td:first-child {
 }
 
 .btn-page-nav:hover:not(:disabled) {
-    background: #f1f5f9;
+    background: var(--bg-canvas);
     border-color: #94a3b8;
 }
 
@@ -1250,7 +1250,7 @@ table.data-table tfoot td:first-child {
 
 .btn-page-nav.active {
     background: var(--wiki-blue);
-    color: #ffffff;
+    color: var(--bg-surface);
     border-color: var(--wiki-blue);
     font-weight: 600;
 }
@@ -1282,7 +1282,7 @@ table.data-table tfoot td:first-child {
 }
 
 .wikitext-modal {
-    background: #ffffff;
+    background: var(--bg-surface);
     border-radius: 8px;
     max-width: 760px;
     width: 100%;
@@ -1299,7 +1299,7 @@ table.data-table tfoot td:first-child {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #f8fafc;
+    background: var(--bg-surface);
     border-radius: 8px 8px 0 0;
 }
 
@@ -1351,7 +1351,7 @@ table.data-table tfoot td:first-child {
     border: 1px solid var(--border-input);
     border-radius: 4px;
     padding: 12px;
-    background: #f8fafc;
+    background: var(--bg-surface);
     color: #1e293b;
     resize: vertical;
     white-space: pre;
@@ -1371,7 +1371,7 @@ table.data-table tfoot td:first-child {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    background: #f8fafc;
+    background: var(--bg-surface);
     border-radius: 0 0 8px 8px;
 }
 
@@ -1379,7 +1379,7 @@ table.data-table tfoot td:first-child {
    KaTeX Formula Cards (Health Evaluation & Mathematical Typesetting)
    ========================================================================== */
 .health-formula-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-left: 4px solid var(--nav-teal);
     border-radius: 6px;
@@ -1424,7 +1424,7 @@ table.data-table tfoot td:first-child {
 }
 
 .health-dimension-math-item {
-    background: #f8fafc;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 10px 14px;
@@ -1439,7 +1439,7 @@ table.data-table tfoot td:first-child {
 }
 
 .chart-container {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 16px;
@@ -1456,7 +1456,7 @@ table.data-table tfoot td:first-child {
    Health Scorecard & Insights
    ========================================================================== */
 .scorecard-header-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 20px;
@@ -1493,7 +1493,7 @@ table.data-table tfoot td:first-child {
 }
 
 .scorecard-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 16px;
@@ -1591,7 +1591,7 @@ table.data-table tfoot td:first-child {
 }
 
 .tool-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid rgba(0, 0, 0, 0.09);
     border-radius: 8px;
     padding: 24px;
@@ -1718,7 +1718,7 @@ table.data-table tfoot td:first-child {
     gap: 6px;
     font-size: 0.88rem;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--bg-surface);
     background-color: var(--wiki-blue);
     padding: 10px 18px;
     border-radius: 6px;
@@ -1751,7 +1751,7 @@ table.data-table tfoot td:first-child {
 }
 
 .math-panel {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 8px;
     padding: 20px;
@@ -1781,7 +1781,7 @@ table.data-table tfoot td:first-child {
    ========================================================================== */
 .toolforge-footer {
     border-top: 1px solid var(--border-color);
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     padding: 24px 20px;
     text-align: center;
     font-size: 0.82rem;
@@ -2222,7 +2222,7 @@ table.data-table tfoot td:first-child {
     font-size: 0.78rem;
     font-weight: 500;
     font-family: inherit;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--wiki-blue);
     border: 1px solid #c8dafc;
     border-radius: 4px;
@@ -2233,7 +2233,7 @@ table.data-table tfoot td:first-child {
 }
 
 .share-btn:hover {
-    background: #eef6ff;
+    background: var(--bg-canvas);
     border-color: var(--wiki-blue);
 }
 
@@ -2266,7 +2266,7 @@ table.data-table tfoot td:first-child {
     font-size: 0.78rem;
     font-weight: 500;
     font-family: inherit;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--nav-teal);
     border: 1px solid #b2dfdb;
     border-radius: 4px;
@@ -2289,7 +2289,7 @@ table.data-table tfoot td:first-child {
 .export-format-toggle {
     display: inline-flex;
     gap: 4px;
-    background: #f1f5f9;
+    background: var(--bg-canvas);
     padding: 3px;
     border-radius: 4px;
     border: 1px solid #e2e8f0;
@@ -2308,7 +2308,7 @@ table.data-table tfoot td:first-child {
 }
 
 .export-format-btn.active {
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--wiki-blue);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
@@ -2319,7 +2319,7 @@ table.data-table tfoot td:first-child {
     width: 12px;
     height: 12px;
     border: 2px solid rgba(255, 255, 255, 0.4);
-    border-top-color: #ffffff;
+    border-top-color: var(--bg-surface);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
     margin-right: 7px;
@@ -2376,7 +2376,7 @@ table.data-table tfoot td:first-child {
     object-fit: cover;
     border-radius: 4px;
     border: 1px solid var(--border-color);
-    background: #f8fafc;
+    background: var(--bg-surface);
     flex-shrink: 0;
 }
 
@@ -2392,7 +2392,7 @@ table.data-table tfoot td:first-child {
 }
 
 .wiki-project-badge {
-    background: #f1f5f9;
+    background: var(--bg-canvas);
     color: var(--text-ink);
     border: 1px solid var(--border-input);
     padding: 2px 7px;
@@ -2433,7 +2433,7 @@ table.data-table tfoot td:first-child {
 
 /* Modern Cockpit Bar */
 .cockpit-panel {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     margin-bottom: 20px;
@@ -2448,7 +2448,7 @@ table.data-table tfoot td:first-child {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: #ffffff;
+    background: var(--bg-surface);
 }
 
 .cockpit-query-summary {
@@ -2512,7 +2512,7 @@ table.data-table tfoot td:first-child {
 
 .campaign-token-remove:hover {
     background: #d73a49;
-    color: #ffffff;
+    color: var(--bg-surface);
 }
 
 /* Quick Presets Strip */
@@ -2540,7 +2540,7 @@ table.data-table tfoot td:first-child {
     padding: 4px 10px;
     font-size: 0.78rem;
     font-weight: 500;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--text-ink);
     border: 1px solid #d8dde3;
     border-radius: 4px;
@@ -2576,7 +2576,7 @@ table.data-table tfoot td:first-child {
     padding: 7px 12px;
     font-size: 0.84rem;
     font-weight: 500;
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--text-muted);
     border: 1px solid var(--border-color);
     border-radius: 5px;
@@ -2591,7 +2591,7 @@ table.data-table tfoot td:first-child {
 }
 
 .btn-toggle-builder.active {
-    background: #eef6ff;
+    background: var(--bg-canvas);
     color: var(--wiki-blue);
     border-color: #bcd4f7;
 }
@@ -2599,7 +2599,7 @@ table.data-table tfoot td:first-child {
 /* Collapsible Builder Drawer */
 .builder-drawer {
     border-top: 1px solid var(--border-color);
-    background: #ffffff;
+    background: var(--bg-surface);
     padding: 18px;
     animation: drawerFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -2637,7 +2637,7 @@ table.data-table tfoot td:first-child {
 }
 
 .map-scope-btn.active {
-    background: #ffffff;
+    background: var(--bg-surface);
     color: var(--wiki-blue);
     font-weight: 600;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -2655,7 +2655,7 @@ table.data-table tfoot td:first-child {
 
 .methodology-details[open] {
     border-color: #d0d7de;
-    background: #ffffff;
+    background: var(--bg-surface);
 }
 
 .methodology-summary {
@@ -2682,6 +2682,253 @@ table.data-table tfoot td:first-child {
 .methodology-content {
     padding: 12px 16px 14px;
     border-top: 1px solid var(--border-color);
-    background: #ffffff;
+    background: var(--bg-surface);
 }
 
+
+/* Mobile UI/UX Optimizations */
+@media (max-width: 768px) {
+    .preset-strip {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px 12px 10px !important;
+        scrollbar-width: none;
+    }
+    .preset-strip::-webkit-scrollbar {
+        display: none;
+    }
+    .influx-preset-tags {
+        display: flex;
+        flex-direction: row !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 8px;
+        padding-bottom: 4px;
+    }
+    .influx-preset-tags::-webkit-scrollbar {
+        display: none;
+    }
+    .influx-preset-btn {
+        flex: 0 0 auto;
+        width: auto !important;
+        white-space: nowrap;
+    }
+    .chart-container, .heatmap-card {
+        padding: 4px !important;
+    }
+    .retention-heatmap-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .app-main-content {
+        padding: 10px !important;
+    }
+}
+
+.heatmap-card {
+    margin-bottom: 0;
+    padding: 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+/* ----------------------------------------------------------- */
+/* CampTools Redesign: Sidebar Layout & List View             */
+/* ----------------------------------------------------------- */
+
+/* App Layout Grid */
+.app-layout { display: grid; grid-template-columns: 1fr; min-height: 100vh; background-color: var(--bg-canvas); }
+
+/* Sidebar */
+.desktop-sidebar { width: 240px; background-color: var(--bg-surface); border-right: 1px solid var(--border-subtle); flex-shrink: 0; display: none; height: 100vh; position: sticky; top: 0; overflow-y: auto; border-right: 1px solid var(--border-subtle); flex-shrink: 0; display: none; height: 100vh; position: sticky; top: 0; overflow-y: auto; }
+
+@media (min-width: 900px) {
+    .app-layout {
+        grid-template-columns: 240px 1fr;
+    }
+    .desktop-sidebar {
+        display: block;
+    }
+    .top-navbar .nav-tabs {
+        display: none !important; /* Hide old top nav tabs completely on desktop */
+    }
+    .main-wrapper {
+        padding: 32px 40px !important;
+        margin: 0 !important;
+        width: 100%;
+        min-width: 0; /* Prevents grid blowout */
+    }
+}
+
+.sidebar-nav-menu {
+    padding: 0 12px;
+}
+.sidebar-nav-section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin: 20px 12px 8px;
+}
+.sidebar-nav-divider {
+    height: 1px;
+    background-color: var(--border-subtle);
+    margin: 16px 12px;
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    color: var(--text-ink);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+.sidebar-nav-item:hover {
+    background-color: #f0f6ff;
+    color: var(--wiki-blue);
+    text-decoration: none;
+}
+.sidebar-nav-item.active {
+    background-color: #e8f0fe;
+    color: var(--wiki-blue-dark);
+    font-weight: 600;
+}
+.sidebar-nav-item-icon {
+    margin-right: 12px;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tool List Container (Landing Page) */
+.tool-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 800px;
+}
+
+.tool-list-row {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.tool-list-row:hover {
+    border-color: var(--wiki-blue);
+    box-shadow: 0 4px 12px rgba(54, 89, 227, 0.08);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.tool-list-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 20px;
+}
+
+.tool-list-content {
+    flex-grow: 1;
+}
+
+.tool-list-title {
+    margin: 0 0 4px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-ink);
+}
+
+.tool-list-desc {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.tool-list-action {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--wiki-blue);
+    margin-left: 20px;
+    white-space: nowrap;
+}
+
+.tool-list-action .arrow-icon {
+    margin-left: 6px;
+    transition: transform 0.2s;
+}
+
+.tool-list-row:hover .arrow-icon {
+    transform: translateX(4px);
+}
+
+/* Make header full width and stick properly above sidebar */
+.slim-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Tweak top-navbar styles to hide tabs properly */
+@media (max-width: 899px) {
+    .tool-list-row {
+        flex-direction: column;
+        align-items: flex-start;
+        position: relative;
+    }
+    .tool-list-icon {
+        margin-bottom: 12px;
+    }
+    .tool-list-action {
+        margin-left: 0;
+        margin-top: 12px;
+    }
+}
+
+.slim-header .nav-util-link {
+    color: var(--text-main) !important;
+}
+.slim-header .nav-hamburger-btn {
+    color: var(--text-main) !important;
+}
+
+@media (min-width: 900px) {
+    .slim-header {
+        display: none !important;
+    }
+}
+
+.builder-layout.single-column-builder {
+    grid-template-columns: 1fr;
+}
+
+.sidebar-nav-item.active .sidebar-icon, .mobile-nav-item.active .mobile-icon {
+    color: var(--accent-blue);
+}

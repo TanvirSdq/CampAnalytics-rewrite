@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node --import tsx server.ts"
+    "start": "node dist/server.js",
+    "start:ts": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/routes.e2e.test.ts",
+    "test:curl": "bash tests/verify_routes.sh"
   },
   "dependencies": {
     "compression": "^1.7.5",

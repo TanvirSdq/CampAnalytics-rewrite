@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
+            <div>
+                <h1 class="page-title" style="margin-bottom: 4px;">Retention Analytics</h1>
+                <p class="page-subtitle" style="margin-bottom: 0;">Longitudinal contributor retention and cohort overlap across Wiki Loves campaigns.</p>
+            </div>
+            <a href="/documentation#retention-guide" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; background: #ffffff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 4px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <span>Tool Usage &amp; Process Guide</span>
+                <span aria-hidden="true">&rarr;</span>
+            </a>
+        </div>
+
+        <form action="/retention" method="GET" id="retention-form" onsubmit="syncRetentionBeforeSubmit(event)">
+            <!-- Main Campaign Selection Tool (High Priority) -->
+            <div class="display-panel" style="margin-bottom: 20px;">
+                <div class="display-panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600; font-size: 0.95rem;">Configure Retention Cohorts</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Step 1: Select Campaigns &amp; Scope</span>
+                    </div>
+                </div>
+
+                <div class="display-panel-body" style="padding-bottom: 0;">
+                    <!-- Quick Presets Bar at Top of Tool -->
+                    <div class="preset-strip" style="margin: -16px -16px 16px -16px; padding: 10px 16px; border-bottom: 1px solid var(--border-color); border-top: none; background: #fafbfc;">
+                        <span class="preset-strip-title">Quick Presets:</span>
+                        <button type="button" class="preset-chip global-chip" onclick="selectAllCountries(); document.getElementById('retention-form').submit();" title="Analyze all 50+ countries globally">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            <span>Global (50+ Countries)</span>
+                        </button>
+                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmde21 wlmde22')">Germany (WLM)</button>
+                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmit21 wlmit22 wlmit23')">Italy (WLM)</button>
+                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlein21 wlein22')">India (WLE)</button>
+                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmbd22 wlmbd23')">Bangladesh (WLM)</button>
+                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('allde21 allde22')">All Germany</button>
+                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('allbd22 allbd23')">All Bangladesh</button>
+                    </div>
+
+                    <div class="builder-layout">
+                        <!-- Left: Core Selection Controls -->
+                        <div>
+                            <!-- Event Matrix Checkboxes -->
+                            <div class="form-group">
+                                <label class="form-label">Event Matrix</label>
+                                <div class="pill-group" id="event-pill-group">
+                                    <input type="checkbox" name="builder_events" value="all" id="evt-all" class="pill-checkbox" onchange="onRetentionEventChange(this)" onclick="onRetentionEventChange(this)">
+                                    <label for="evt-all" class="pill-label" onclick="setTimeout(() => onRetentionEventChange(document.getElementById('evt-all')), 10)">All Campaigns</label>
+                                    {% for event_key, event_val in EVENT_MAP.items() %}
+                                        <input type="checkbox" name="builder_events" value="{{ event_key }}" id="evt-{{ event_key }}" class="pill-checkbox" onchange="onRetentionEventChange(this)" onclick="onRetentionEventChange(this)">
+                                        <label for="evt-{{ event_key }}" class="pill-label" onclick="setTimeout(() => onRetentionEventChange(document.getElementById('evt-{{ event_key }}')), 10)">{{ event_val }}</label>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-hint">Select one or more campaign types to compare.</div>
+                            </div>
+
+                            <!-- Target Country & Year Range in Grid -->
+                            <div class="form-row-2col">
+                                <div class="form-group">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                        <label for="builder_country" class="form-label" style="margin-bottom: 0;">Target Country</label>
+                                        <div style="display: flex; gap: 6px; align-items: center;">
+                                            <button type="button" class="btn btn-sm" onclick="selectAllCountries();" title="Select all available countries" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 0.78rem; background: #eef6ff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 3px; cursor: pointer; font-weight: 500;">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                <span>Select All (Global)</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm" onclick="clearCountrySelection()" title="Clear country selection" style="padding: 2px 8px; font-size: 0.78rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer;">
+                                                Clear
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <select id="builder_country" name="builder_country" class="form-control" onchange="syncRetentionBuilder()">
+                                        <option value="">-- Select Country Matrix --</option>
+                                        <option value="ALL" style="font-weight: 600; color: var(--wiki-blue);">All Countries (Global Analysis — 50+ Countries)</option>
+                                        <optgroup label="Regional Clusters">
+                                            {% for reg_name, reg_ccs in REGION_COUNTRY_MAPPING.items() %}
+                                                <option value="REG:{{ reg_ccs|join(',') }}">{{ reg_name }} ({{ reg_ccs|join(', ')|upper }})</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                        <optgroup label="Individual Countries">
+                                            {% for country_key in COUNTRY_OPTIONS %}
+                                                <option value="{{ country_key }}">{{ COUNTRY_MAP[country_key].replace('_', ' ') }} ({{ country_key|upper }})</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Longitudinal Year Range</label>
+                                    <div class="year-range-row">
+                                        <input type="number" id="builder_yr_start" name="builder_yr_start" value="{{ CURRENT_YEAR - 2 }}" min="2010" max="2040" class="form-control" onchange="syncRetentionBuilder()" oninput="syncRetentionBuilder()">
+                                        <span class="year-separator">to</span>
+                                        <input type="number" id="builder_yr_end" name="builder_yr_end" value="{{ CURRENT_YEAR }}" min="2010" max="2040" class="form-control" onchange="syncRetentionBuilder()" oninput="syncRetentionBuilder()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Synchronized Target Campaign Codes Textarea -->
+                            <div class="form-group" style="margin-bottom: 14px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label for="target_campaigns" class="form-label" style="margin-bottom: 0;">
+                                        Campaign Code String (Live-Synchronized)
+                                    </label>
+                                    <button type="button" class="btn btn-sm" onclick="clearTargetCampaigns()" title="Clear target campaigns" style="padding: 2px 8px; font-size: 0.78rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer;">
+                                        Clear Codes
+                                    </button>
+                                </div>
+                                <textarea id="target_campaigns" name="target_campaigns" rows="2" placeholder="e.g. wlmde21 wlmde22 wlmde23" class="form-control form-control-code" oninput="parseCodeToRetentionBuilder(); renderCampaignTokens();">{{ target_campaigns if target_campaigns else '' }}</textarea>
+                                <div class="form-hint">Selections automatically populate this code array. You can also paste codes directly here.</div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Projection Model & Metric Settings -->
+                        <div class="example-box">
+                            <div class="example-box-title">Output &amp; Projection Settings</div>
+                            <div class="form-group">
+                                <label class="form-label">Visual Projection</label>
+                                <select name="view_mode" class="form-control" style="font-size: 0.85rem;">
+                                    <option value="Both" {% if view_mode == 'Both' or not view_mode %}selected{% endif %}>Choropleth Map, Tables &amp; Heatmaps</option>
+                                    <option value="Table" {% if view_mode == 'Table' %}selected{% endif %}>Choropleth &amp; Sortable Tables Only</option>
+                                    <option value="Matrix Heatmaps" {% if view_mode == 'Matrix Heatmaps' %}selected{% endif %}>Choropleth &amp; Heatmap Matrices Only</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label class="form-label" style="margin-bottom: 6px;">Map Metric Choice</label>
+                                <div class="radio-options">
+                                    <label class="radio-option" style="font-size: 0.82rem; padding: 6px 10px;">
+                                        <input type="radio" name="metric_choice" value="Average" {% if metric_choice == 'Average' or not metric_choice %}checked{% endif %}>
+                                        Average Retention
+                                    </label>
+                                    <label class="radio-option" style="font-size: 0.82rem; padding: 6px 10px;">
+                                        <input type="radio" name="metric_choice" value="Median" {% if metric_choice == 'Median' %}checked{% endif %}>
+                                        Median Retention
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 12px;">
+                                💡 <strong>Tip:</strong> Selecting <em>All Countries (Global)</em> analyzes 50+ national editions simultaneously.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Primary Selection Action Bar: Takes priority at bottom of selection tool -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: #f8fafc; border-top: 1px solid var(--border-color); border-radius: 0 0 8px 8px; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);">Active Cohorts:</span>
+                        <div id="active-campaign-tokens" class="campaign-token-list">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-run-retention" class="btn btn-primary" style="padding: 10px 28px; font-size: 0.95rem; font-weight: 600; box-shadow: 0 2px 6px rgba(54, 89, 227, 0.25);" onclick="setLoadingState(this, 'Running Analysis…')">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span>Run Retention Analysis</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        {# Analytical Results Panel #}
+        {% if (tables and tables|length > 0) or (heatmaps and heatmaps|length > 0) or worldmap_html %}
+            <div class="display-panel" id="retention-results">
+                <div class="display-panel-header">
+                    <span>Unified Analysis Dashboard</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Longitudinal Contributor Overlap</span>
+                        <button type="button" class="share-btn" onclick="copyCurrentURL(this)" title="Copy shareable link to these results">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <span>Share Results</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="display-panel-body">
+                    {% if worldmap_html %}
+                        <div class="chart-container" style="margin-bottom: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                                <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-ink); font-weight: 600;">Global Choropleth Projection</h3>
+                                <div class="map-scope-group">
+                                    <span style="font-size: 0.72rem; color: var(--text-muted); padding: 0 4px; font-weight: 600; text-transform: uppercase;">Scope:</span>
+                                    <button type="button" class="map-scope-btn active" onclick="setChoroplethScope('world', this)">World</button>
+                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('europe', this)">Europe</button>
+                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('africa', this)">Africa</button>
+                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('asia', this)">Asia</button>
+                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('north america', this)">Americas</button>
+                                </div>
+                            </div>
+                            {{ worldmap_html | safe }}
+                        </div>
+                    {% endif %}
+
+                    {% if tables %}
+                        <!-- Collapsible Methodology Accordion (Clean Progressive Disclosure) -->
+                        <details class="methodology-details">
+                            <summary class="methodology-summary">
+                                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--wiki-blue);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                    <span>Longitudinal Cohort Retention Formulation</span>
+                                </span>
+                                <span style="font-size: 0.76rem; color: var(--wiki-blue); font-weight: 500;">Methodology &amp; Derivation ▾</span>
+                            </summary>
+                            <div class="methodology-content">
+                                <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
+                                    \[ \text{Retention}(C_A \to C_B) = \frac{|U_A \cap U_B|}{|U_A|} \times 100\% \]
+                                </div>
+                                <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                                    Measures discrete account survival: percentage of participants from prior cohort \(U_A\) who returned to submit at least one photograph in subsequent cohort \(U_B\).
+                                    <a href="/documentation#retention-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Full Documentation →</a>
+                                </div>
+                            </div>
+                        </details>
+
+                        {% for table_html in tables %}
+                            <div class="table-interactive-wrapper" id="retention-table-wrap-{{ loop.index }}">
+                                <div class="table-toolbar">
+                                    <div class="table-toolbar-left">
+                                        <div class="table-search-wrapper">
+                                            <span class="table-search-icon">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <circle cx="11" cy="11" r="8"></circle>
+                                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                                </svg>
+                                            </span>
+                                            <input type="text" class="table-search-input" placeholder="Search rows..." data-target="retention-data-table-{{ loop.index }}">
+                                        </div>
+                                        <div class="table-page-size-wrap">
+                                            <span>Show:</span>
+                                            <select class="table-page-size" data-target="retention-data-table-{{ loop.index }}">
+                                                <option value="10">10</option>
+                                                <option value="25" selected>25</option>
+                                                <option value="50">50</option>
+                                                <option value="all">All</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="table-toolbar-right">
+                                        <div class="btn-export-group">
+                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'csv', 'campanalytics_retention')">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                </svg>
+                                                <span>CSV</span>
+                                            </button>
+                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'wikitext', 'campanalytics_retention')">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                                </svg>
+                                                <span>Wikitext</span>
+                                            </button>
+                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'json', 'campanalytics_retention')">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                                </svg>
+                                                <span>JSON</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-scroll-container">
+                                    {{ table_html | replace('<table ', '<table id="retention-data-table-' ~ loop.index ~ '" data-sortable="true" ') | safe }}
+                                </div>
+                                <div class="table-pagination-bar" data-target="retention-data-table-{{ loop.index }}">
+                                    <div class="table-pagination-info">Showing rows...</div>
+                                    <div class="table-pagination-nav"></div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if heatmaps %}
+                        <div style="margin-top: 32px; margin-bottom: 16px; border-top: 1px solid var(--border-color); padding-top: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+                                <div>
+                                    <h3 style="font-size: 1.1rem; color: var(--text-ink); margin-bottom: 4px;">Regional Heatmap Matrix</h3>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">Cross-campaign cohort intersections by country.</div>
+                                </div>
+                                {% if total_heatmaps_count > heatmaps|length %}
+                                    <div id="heatmap-counter" style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500;">
+                                        Showing <span id="heatmap-shown-count">{{ heatmaps|length }}</span> of {{ total_heatmaps_count }} matrices
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div id="retention-heatmap-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(30%, 1fr)); gap: 16px;">
+                                {% for country_title, heatmap_b64 in heatmaps %}
+                                    <div class="chart-container heatmap-card">
+                                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-ink); margin-bottom: 8px; text-align: center;">{{ country_title }}</div>
+                                        <img src="{% if heatmap_b64 and heatmap_b64.startsWith('data:') %}{{ heatmap_b64 }}{% else %}data:image/svg+xml;base64,{{ heatmap_b64 }}{% endif %}" alt="{{ country_title }} Retention Heatmap" style="width: 100%; height: auto; border-radius: 4px; cursor: zoom-in;" onclick="this.classList.toggle('zoomed-img')">
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            {% if remaining_heatmaps_count > 0 %}
+                                <div id="heatmap-load-more-wrap" style="text-align: center; margin-top: 24px; padding: 16px 0;">
+                                    <button type="button" id="btn-load-more-heatmaps" class="btn btn-primary" onclick="loadMoreHeatmaps()" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 22px; font-weight: 600; font-size: 0.9rem; border-radius: 4px; cursor: pointer;">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                        <span id="btn-load-more-text">Load More Matrices ({{ remaining_heatmaps_count }} remaining)</span>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Initial Empty State / Prompt on Default Landing -->
+            <div class="empty-state-panel" style="margin-top: 20px; padding: 44px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 8px;">
+                <div style="width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: #f0f6ff; display: flex; align-items: center; justify-content: center; color: var(--wiki-blue);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                </div>
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Contributor Retention</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.5;">
+                    Configure your campaign events, target country, and year range above, or choose a preset in the builder, then click <strong>Run Retention Analysis</strong> to generate the choropleth map, cohort overlap matrices, and survival rankings.
+                </p>
+            </div>
+        {% endif %}
+
+    {# ====================================================================== #}
+    {# 2. HEALTH EVALUATION VIEW                                              #}
+    {# ====================================================================== #}
+{% endblock %}

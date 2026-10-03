@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="margin-bottom: 28px; padding-top: 4px;">
+    <h1 class="page-title" style="margin-bottom: 8px; font-size: 1.85rem; letter-spacing: -0.4px;">CampTools — Campaign Analytics Suite</h1>
+    <p class="page-subtitle" style="margin-bottom: 0; font-size: 0.98rem; color: var(--text-muted); max-width: 760px; line-height: 1.6;">
+        Evaluate longitudinal participant retention, community health scorecards, and newcomer contributor influx across Wikimedia photography competitions.
+    </p>
+</div>
+
+<!-- Tool Cards Grid -->
+<div class="methodology-cards-grid">
+    <!-- Tool 01: Health Evaluation -->
+    <a href="/health" class="tool-card">
+        <div>
+            <div class="tool-card-top-row">
+                <div class="tool-card-icon-wrap" style="background-color: #fef6ee; color: #d97706;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                </div>
+                <span class="tool-card-badge" style="background-color: #fef3c7; color: #92400e;">Tool 01 · Health Evaluation</span>
+            </div>
+            <h3 class="tool-card-title">Health Evaluation</h3>
+            <p class="tool-card-desc">Evaluate campaign vitality across five weighted structural indicators calibrated against regional peer performance benchmarks.</p>
+            <ul class="tool-card-features">
+                <li class="tool-card-feature-item"><span>Standardized composite score (0–100)</span></li>
+                <li class="tool-card-feature-item"><span>Bayesian-regularized regional benchmarks</span></li>
+                <li class="tool-card-feature-item"><span>GlobalUsage &amp; Quality Image tracking</span></li>
+            </ul>
+        </div>
+        <div class="tool-card-btn"><span>Launch Evaluation</span><span class="arrow-icon">&rarr;</span></div>
+    </a>
+
+    <!-- Tool 02: Retention Analytics -->
+    <a href="/retention" class="tool-card">
+        <div>
+            <div class="tool-card-top-row">
+                <div class="tool-card-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="6"></circle><circle cx="15" cy="12" r="6"></circle></svg>
+                </div>
+                <span class="tool-card-badge">Tool 02 · Retention Analytics</span>
+            </div>
+            <h3 class="tool-card-title">Retention Analytics</h3>
+            <p class="tool-card-desc">Track longitudinal contributor movement and retention across multi-year editions. Analyze pairwise heatmaps and spatial choropleth maps across 50+ countries.</p>
+            <ul class="tool-card-features">
+                <li class="tool-card-feature-item"><span>Directional cohort intersect shares</span></li>
+                <li class="tool-card-feature-item"><span>Consecutive edition heatmaps</span></li>
+                <li class="tool-card-feature-item"><span>Global choropleth distribution map</span></li>
+            </ul>
+        </div>
+        <div class="tool-card-btn"><span>Launch Retention</span><span class="arrow-icon">&rarr;</span></div>
+    </a>
+
+    <!-- Tool 03: Participant Influx -->
+    <a href="/influx" class="tool-card">
+        <div>
+            <div class="tool-card-top-row">
+                <div class="tool-card-icon-wrap" style="background-color: #f0fdf4; color: #16a34a;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+                <span class="tool-card-badge" style="background-color: #dcfce7; color: #15803d;">Tool 03 · Participant Influx</span>
+            </div>
+            <h3 class="tool-card-title">Participant Influx</h3>
+            <p class="tool-card-desc">Analyze newcomer acquisition, returning veteran retention, and community expansion over multi-year series with stacked cohort visual charts.</p>
+            <ul class="tool-card-features">
+                <li class="tool-card-feature-item"><span>First-time entrants vs. returning veterans</span></li>
+                <li class="tool-card-feature-item"><span>Multi-edition participant lifecycle</span></li>
+                <li class="tool-card-feature-item"><span>Annual recruitment rate milestones</span></li>
+            </ul>
+        </div>
+        <div class="tool-card-btn"><span>Launch Influx</span><span class="arrow-icon">&rarr;</span></div>
+    </a>
+
+    <!-- Tool 04: Content Utility -->
+    <a href="/utility" class="tool-card">
+        <div>
+            <div class="tool-card-top-row">
+                <div class="tool-card-icon-wrap" style="background-color: #f5f3ff; color: #7c3aed;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </div>
+                <span class="tool-card-badge" style="background-color: #ede9fe; color: #6d28d9;">Tool 04 · Content Utility</span>
+            </div>
+            <h3 class="tool-card-title">Content Utility</h3>
+            <p class="tool-card-desc">Track global usage propagation across Wikimedia projects, article distribution, and media consumption footprints across Wikimedia Commons uploads.</p>
+            <ul class="tool-card-features">
+                <li class="tool-card-feature-item"><span>Global usage rate &amp; article reach</span></li>
+                <li class="tool-card-feature-item"><span>Cross-wiki project usage breakdown</span></li>
+                <li class="tool-card-feature-item"><span>Top utilized photographers leaderboard</span></li>
+            </ul>
+        </div>
+        <div class="tool-card-btn"><span>Launch Utility</span><span class="arrow-icon">&rarr;</span></div>
+    </a>
+
+    <!-- Tool 05: Quality Recognition -->
+    <a href="/quality" class="tool-card">
+        <div>
+            <div class="tool-card-top-row">
+                <div class="tool-card-icon-wrap" style="background-color: #fefce8; color: #ca8a04;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </div>
+                <span class="tool-card-badge" style="background-color: #fef9c3; color: #a16207;">Tool 05 · Quality Recognition</span>
+            </div>
+            <h3 class="tool-card-title">Quality Recognition</h3>
+            <p class="tool-card-desc">Evaluate curatorial excellence, community recognition, Quality Images (QI), and Featured Pictures (FP) with contributor honor rolls.</p>
+            <ul class="tool-card-features">
+                <li class="tool-card-feature-item"><span>QI, FP &amp; Valued Image (VI) ratios</span></li>
+                <li class="tool-card-feature-item"><span>Live Commons recognition showcase</span></li>
+                <li class="tool-card-feature-item"><span>Photographer hall of fame leaderboard</span></li>
+            </ul>
+        </div>
+        <div class="tool-card-btn"><span>Launch Quality</span><span class="arrow-icon">&rarr;</span></div>
+    </a>
+</div>
+
+<!-- Documentation Card -->
+<div class="display-panel" style="margin-top: 10px;">
+    <div class="display-panel-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 20px 24px;">
+        <div>
+            <h4 style="margin: 0 0 4px 0; font-size: 0.98rem; color: var(--text-ink); font-weight: 600;">Need Technical Documentation or Mathematical Formulations?</h4>
+            <p style="margin: 0; font-size: 0.86rem; color: var(--text-muted); line-height: 1.5;">
+                Read formal definitions, weighting models, and analytical specifications in the documentation.
+            </p>
+        </div>
+        <a href="/documentation" class="btn btn-secondary" style="padding: 8px 18px; font-size: 0.85rem; font-weight: 600; white-space: nowrap;">
+            View Info &amp; Documentation &rarr;
+        </a>
+    </div>
+</div>
+{% endblock %}

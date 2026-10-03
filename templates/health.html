@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
+            <div>
+                <h1 class="page-title" style="margin-bottom: 4px;">Evaluation</h1>
+                <p class="page-subtitle" style="margin-bottom: 0;">Multi-dimensional campaign health evaluation calibrated against regional peer performance benchmarks.</p>
+            </div>
+            <a href="/documentation#health-guide" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; background: #ffffff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 4px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <span>Tool Usage &amp; Process Guide</span>
+                <span aria-hidden="true">&rarr;</span>
+            </a>
+        </div>
+
+        <form action="/health" method="GET" id="health-form" onsubmit="syncHealthBuilderToCode()">
+            <!-- Structured Panel: What to look up -->
+            <div class="display-panel">
+                <div class="display-panel-header">
+                    <span>What to look up · Campaign Benchmark Parameters</span>
+                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Step 1: Configure Target &amp; Calibration Baseline</span>
+                </div>
+                <div class="display-panel-body">
+                    <div class="builder-layout single-column-builder">
+                        <!-- Left: Form Controls with Selection Builder -->
+                        <div>
+                            <!-- Campaign Type Selector -->
+                            
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; background: #fafbfc; border: 1px solid #eaecf0; border-radius: 6px;">
+                                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;">Quick Presets:</span>
+                                <button type="button" class="preset-chip" onclick="loadHealthPreset('allde22', 'Northern & Western Europe', '')">Germany (WLM '22)</button>
+                                <button type="button" class="preset-chip" onclick="loadHealthPreset('wlmit23', 'Southern Europe', '')">Italy (WLM '23)</button>
+                                <button type="button" class="preset-chip" onclick="loadHealthPreset('allbd{{ CURRENT_YEAR % 100 }}', 'South Asia', '')">All Bangladesh</button>
+                                <button type="button" class="preset-chip" onclick="loadHealthPreset('wlein22', 'South Asia', '')">India (WLE '22)</button>
+                            </div>
+
+                            
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; background: #fafbfc; border: 1px solid #eaecf0; border-radius: 6px;">
+                                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;">Quick Presets:</span>
+                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('wlm', 'de', 2024)">Germany (WLM '24)</button>
+                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('wlf', 'it', 2024)">Italy (WLF '24)</button>
+                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('wle', 'in', 2024)">India (WLE '24)</button>
+                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('all', 'bd', 2024)">All Bangladesh '24</button>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Campaign Type</label>
+                                <div class="pill-group" id="health-event-group">
+                                    <input type="radio" name="health_event_type" value="all" id="health-evt-all" class="pill-checkbox" {% if target_event and target_event.startswith('all') %}checked{% endif %} onchange="syncHealthBuilderToCode()" onclick="syncHealthBuilderToCode()">
+                                    <label for="health-evt-all" class="pill-label" onclick="setTimeout(syncHealthBuilderToCode, 10)">All Campaigns</label>
+                                    {% for event_key, event_val in EVENT_MAP.items() %}
+                                        <input type="radio" name="health_event_type" value="{{ event_key }}" id="health-evt-{{ event_key }}" class="pill-checkbox" {% if (target_event and target_event.startswith(event_key)) or (not target_event and event_key == 'wlm') %}checked{% endif %} onchange="syncHealthBuilderToCode()" onclick="syncHealthBuilderToCode()">
+                                        <label for="health-evt-{{ event_key }}" class="pill-label" onclick="setTimeout(syncHealthBuilderToCode, 10)">{{ event_val }}</label>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-hint">Select the Wikimedia campaign program to audit.</div>
+                            </div>
+
+                            <!-- Country & Year in 2-Column Grid -->
+                            <div class="form-row-2col">
+                                <div class="form-group">
+                                    <label for="health_country" class="form-label">Target Country</label>
+                                    <select id="health_country" name="health_country" class="form-control" onchange="syncHealthBuilderToCode()">
+                                        <option value="">-- Select Country --</option>
+                                        {% for country_key in COUNTRY_OPTIONS %}
+                                            <option value="{{ country_key }}" {% if target_event and target_event.slice(3, 5) == country_key %}selected{% endif %}>{{ COUNTRY_MAP[country_key].replace('_', ' ') }} ({{ country_key|upper }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="health_year" class="form-label">Campaign Year</label>
+                                    <input type="number" id="health_year" name="health_year" value="{{ CURRENT_YEAR }}" min="2010" max="2040" class="form-control" onchange="syncHealthBuilderToCode()" oninput="syncHealthBuilderToCode()">
+                                </div>
+                            </div>
+
+                            <!-- Target Campaign Registry Code (Auto-synced from builder) -->
+                            <div class="form-group">
+                                <label for="target_event" class="form-label">
+                                    Target Campaign Registry Code
+                                    <span style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">(Auto-assembled from selection or editable)</span>
+                                </label>
+                                <input type="text" id="target_event" name="target_event" value="{{ target_event if target_event else '' }}" placeholder="e.g., wlmde24" class="form-control form-control-code" required oninput="parseCodeToHealthBuilder()">
+                                <div class="form-hint" id="health-scope-hint">Standard event code syntax: prefix (all / wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmde24, allde24, wlang23).</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Benchmark Baseline</label>
+                                <div class="radio-options">
+                                    <label class="radio-option">
+                                        <input type="radio" name="comp_mode" value="Previous Year Baseline" id="comp-prev" {% if comp_mode == 'Previous Year Baseline' or not comp_mode %}checked{% endif %} onchange="toggleCustomBaseline()">
+                                        <strong>Previous Year Baseline</strong>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="comp_mode" value="Custom Verification Code" id="comp-custom" {% if comp_mode == 'Custom Verification Code' %}checked{% endif %} onchange="toggleCustomBaseline()">
+                                        <strong>Custom Baseline Campaign</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="custom-baseline-group" style="{% if comp_mode != 'Custom Verification Code' %}display: none;{% endif %}">
+                                <label for="baseline_event" class="form-label">Custom Baseline Campaign Code</label>
+                                <input type="text" id="baseline_event" name="baseline_event" value="{{ baseline_event if baseline_event else '' }}" placeholder="e.g., wlmde22" class="form-control form-control-code">
+                                <div class="form-hint">Specify prior reference edition for custom longitudinal comparison.</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="region" class="form-label">Geographic Standardization Framework</label>
+                                <select id="region" name="region" class="form-control">
+                                    <option value="">-- Auto-Detect from Country --</option>
+                                    {% for reg in REGION_COUNTRY_MAPPING.keys() %}
+                                        <option value="{{ reg }}" {% if region == reg %}selected{% endif %}>{{ reg }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-hint">Regional benchmark norms are calibrated against top peer campaigns in this geographic cluster (auto-detected from country).</div>
+                            </div>
+                        </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Priority Action Bar at Base of Health Tool -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: #f8fafc; border-top: 1px solid var(--border-color); border-radius: 0 0 8px 8px; flex-wrap: wrap; gap: 12px; margin: 18px -18px -18px -18px;">
+                        <div style="font-size: 0.84rem; color: var(--text-muted);">
+                            Configure parameters above or select a preset to evaluate community vitality.
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="padding: 10px 28px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(54, 89, 227, 0.25);" onclick="setLoadingState(this, 'Evaluating Health…')">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                            <span>Evaluate Campaign Health</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% if not metrics and not error %}
+            <!-- Initial Empty State / Prompt on Default Landing for Health -->
+            <div class="empty-state-panel scorecard-grid-placeholder" style="margin-top: 20px; padding: 44px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 8px;">
+                <div class="scorecard-grid" style="display: none;"></div>
+                <div style="width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: #f0f6ff; display: flex; align-items: center; justify-content: center; color: var(--wiki-blue);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                </div>
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Campaign Vitality</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.5;">
+                    Configure your target campaign edition and baseline reference above, or choose a benchmark preset in the builder, then click <strong>Evaluate Campaign Health</strong> to generate the multi-dimensional scorecard, qualitative star ratings, and peer benchmarks.
+                </p>
+            </div>
+        {% endif %}
+
+        {# Scorecard & Diagnostic Output #}
+        {% if metrics %}
+            <!-- Scorecard Summary Header Card -->
+            <div class="scorecard-header-card" id="health-results">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--nav-teal);">Evaluation Scorecard</span>
+                        <span style="color: #cbd5e1;">·</span>
+                        <a href="/documentation#health-guide" style="font-size: 0.78rem; color: var(--wiki-blue); text-decoration: none; font-weight: 500;">Info &amp; Documentation →</a>
+                    </div>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-ink);">Campaign: {{ target_event|upper }}</div>
+                    <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 2px;">Regional Calibration Framework: {{ region }}</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+                    <div class="overall-score-display">
+                        <span class="overall-score-number">{{ metrics['Overall'] }}</span>
+                        <span class="overall-score-max">/ 100</span>
+                    </div>
+                    <div class="scorecard-header-actions">
+                        <button type="button" class="export-report-btn" onclick="CampTableSuite.openExportReportModal()" title="Export evaluation report in Wikitext or Markdown">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                            </svg>
+                            <span>Export Report</span>
+                        </button>
+                        <button type="button" class="share-btn" onclick="copyCurrentURL(this)" title="Copy shareable link to this scorecard">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <span>Share Scorecard</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5-Dimension Scorecard Grid -->
+            <div class="scorecard-grid">
+                <!-- Dimension 1: Retention -->
+                <div class="scorecard-card">
+                    <div>
+                        <div class="scorecard-card-title">
+                            <span>Retention Index</span>
+                            <span class="scorecard-card-weight">Weight {{ metrics['Retention']['weight'] }}%</span>
+                        </div>
+                        <div class="scorecard-card-value">{{ metrics['Retention']['raw'] }}</div>
+                        <div class="scorecard-card-stars">{{ metrics['Retention']['stars'] }}</div>
+                    </div>
+                    <div class="scorecard-card-score">Score: {% if metrics['Retention']['score'] is not none %}{{ "%.1f"|format(metrics['Retention']['score']) }} / 100{% else %}Inaugural (N/A){% endif %}</div>
+                </div>
+
+                <!-- Dimension 2: Growth Capacity -->
+                <div class="scorecard-card">
+                    <div>
+                        <div class="scorecard-card-title">
+                            <span>Growth Capacity</span>
+                            <span class="scorecard-card-weight">Weight {{ metrics['Growth']['weight'] }}%</span>
+                        </div>
+                        <div class="scorecard-card-value">{{ metrics['Growth']['raw'] }}</div>
+                        <div class="scorecard-card-stars">{{ metrics['Growth']['stars'] }}</div>
+                    </div>
+                    <div class="scorecard-card-score">Score: {{ "%.1f"|format(metrics['Growth']['score']) }} / 100</div>
+                </div>
+
+                <!-- Dimension 3: Content Utility -->
+                <div class="scorecard-card">
+                    <div>
+                        <div class="scorecard-card-title">
+                            <span>Content Utility</span>
+                            <span class="scorecard-card-weight">Weight {{ metrics['Usage']['weight'] }}%</span>
+                        </div>
+                        <div class="scorecard-card-value">{{ "%.1f"|format(metrics['Usage']['raw']) }}%</div>
+                        <div class="scorecard-card-stars">{{ metrics['Usage']['stars'] }}</div>
+                    </div>
+                    <div class="scorecard-card-score">Score: {{ "%.1f"|format(metrics['Usage']['score']) }} / 100</div>
+                </div>
+
+                <!-- Dimension 4: Quality Recognition -->
+                <div class="scorecard-card">
+                    <div>
+                        <div class="scorecard-card-title">
+                            <span>Quality Recognition</span>
+                            <span class="scorecard-card-weight">Weight {{ metrics['Quality']['weight'] }}%</span>
+                        </div>
+                        <div class="scorecard-card-value">{{ "%.1f"|format(metrics['Quality']['raw']) }}%</div>
+                        <div class="scorecard-card-stars">{{ metrics['Quality']['stars'] }}</div>
+                    </div>
+                    <div class="scorecard-card-score">Score: {{ "%.1f"|format(metrics['Quality']['score']) }} / 100</div>
+                </div>
+
+                <!-- Dimension 5: Contributor Diversity -->
+                <div class="scorecard-card">
+                    <div>
+                        <div class="scorecard-card-title">
+                            <span>Contributor Diversity</span>
+                            <span class="scorecard-card-weight">Weight {{ metrics['Diversity']['weight'] }}%</span>
+                        </div>
+                        <div class="scorecard-card-value">{{ "%.1f"|format(metrics['Diversity']['raw']) }}%</div>
+                        <div class="scorecard-card-stars">{{ metrics['Diversity']['stars'] }}</div>
+                    </div>
+                    <div class="scorecard-card-score">Score: {{ "%.1f"|format(metrics['Diversity']['score']) }} / 100</div>
+                </div>
+            </div>
+
+            <!-- Health Formula Card & Methodology Anchor Link -->
+            <!-- Health Formula Card (Collapsible Methodology Accordion) -->
+            <details class="methodology-details">
+                <summary class="methodology-summary">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--wiki-blue);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>Composite Community Health Weighting Formula</span>
+                    </span>
+                    <span style="font-size: 0.76rem; color: var(--wiki-blue); font-weight: 500;">Methodology &amp; Weights ▾</span>
+                </summary>
+                <div class="methodology-content">
+                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
+                        \[ \text{Evaluation Index} = 0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}} \]
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                        Evaluated via continuous concave utility scaling with zero-floor preservation. Regional benchmarks are stabilized using Empirical Bayesian shrinkage against global movement baselines.
+                        <a href="/documentation#health-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Full Documentation →</a>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Health Scorecard Data Table & Universal Exports -->
+            <div class="table-interactive-wrapper" style="margin-top: 14px;">
+                <div class="table-toolbar">
+                    <div class="table-toolbar-left">
+                        <span style="font-weight: 600; font-size: 0.88rem; color: var(--text-ink);">Scorecard Dimension Breakdown</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">(Target vs Regional 75th-Percentile Benchmark)</span>
+                    </div>
+                    <div class="table-toolbar-right">
+                        <div class="btn-export-group">
+                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'campanalytics_health_scorecard')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>CSV</span>
+                            </button>
+                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'campanalytics_health_scorecard')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                </svg>
+                                <span>Wikitext</span>
+                            </button>
+                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'json', 'campanalytics_health_scorecard')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                </svg>
+                                <span>JSON</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-scroll-container">
+                    <table class="data-table" id="health-data-table">
+                        <thead>
+                            <tr>
+                                <th>Dimension</th>
+                                <th>Weight</th>
+                                <th>Observed Value</th>
+                                <th>Regional Benchmark (75th)</th>
+                                <th>Normalized Score</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 600;">Retention Index</td>
+                                <td>{{ metrics['Retention']['weight'] }}%</td>
+                                <td>{{ metrics['Retention']['raw'] }}</td>
+                                <td>{{ "%.1f"|format(metrics['Retention']['benchmark']) }}%</td>
+                                <td style="font-weight: 600; color: var(--wiki-blue);">{% if metrics['Retention']['score'] is not none %}{{ "%.1f"|format(metrics['Retention']['score']) }} / 100{% else %}Inaugural (N/A){% endif %}</td>
+                                <td>{{ metrics['Retention']['stars'] if metrics['Retention']['stars'] else '—' }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Growth Capacity</td>
+                                <td>{{ metrics['Growth']['weight'] }}%</td>
+                                <td>{{ metrics['Growth']['raw'] }}</td>
+                                <td>{{ "%.1f"|format(metrics['Growth']['benchmark']) }}%</td>
+                                <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Growth']['score']) }} / 100</td>
+                                <td>{{ metrics['Growth']['stars'] }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Content Utility</td>
+                                <td>{{ metrics['Usage']['weight'] }}%</td>
+                                <td>{{ "%.1f"|format(metrics['Usage']['raw']) }}%</td>
+                                <td>{{ "%.1f"|format(metrics['Usage']['benchmark']) }}%</td>
+                                <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Usage']['score']) }} / 100</td>
+                                <td>{{ metrics['Usage']['stars'] }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Quality Recognition</td>
+                                <td>{{ metrics['Quality']['weight'] }}%</td>
+                                <td>{{ "%.1f"|format(metrics['Quality']['raw']) }}%</td>
+                                <td>{{ "%.1f"|format(metrics['Quality']['benchmark']) }}%</td>
+                                <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Quality']['score']) }} / 100</td>
+                                <td>{{ metrics['Quality']['stars'] }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">Contributor Diversity</td>
+                                <td>{{ metrics['Diversity']['weight'] }}%</td>
+                                <td>{{ "%.1f"|format(metrics['Diversity']['raw']) }}%</td>
+                                <td>{{ "%.1f"|format(metrics['Diversity']['benchmark']) }}%</td>
+                                <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Diversity']['score']) }} / 100</td>
+                                <td>{{ metrics['Diversity']['stars'] }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td style="font-weight: 700;">Composite Overall</td>
+                                <td style="font-weight: 700;">100%</td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td style="font-weight: 700; color: var(--nav-teal); font-size: 0.98rem;">{{ metrics['Overall'] }} / 100</td>
+                                <td>—</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Diagnostic Insights Panel -->
+            {% if insights %}
+                <div class="display-panel">
+                    <div class="display-panel-header">
+                        <span>Campaign Organizer Diagnostic Insights</span>
+                        <a href="/methodology#health-guide" style="font-weight: 500; font-size: 0.8rem; color: var(--wiki-blue); text-decoration: none;">
+                            How are benchmarks &amp; insights computed? →
+                        </a>
+                    </div>
+                    <div class="display-panel-body">
+                        {% for insight in insights %}
+                            <div class="insight-callout">
+                                {{ insight }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Longitudinal Footprints & Contributor Volume -->
+            <div class="display-panel">
+                <div class="display-panel-header">
+                    <span>Longitudinal Footprints &amp; Contributor Volumes</span>
+                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Quantified Pool Metrics</span>
+                </div>
+                <div class="display-panel-body">
+                    <div class="footprint-strip">
+                        <div class="footprint-stat">
+                            <div class="footprint-val">{{ target_users_count }}</div>
+                            <div class="footprint-lbl">Target Cohort Participants</div>
+                        </div>
+                        <div class="footprint-stat">
+                            <div class="footprint-val">{{ base_users_count }}</div>
+                            <div class="footprint-lbl">Baseline Reference Participants</div>
+                        </div>
+                        <div class="footprint-stat">
+                            <div class="footprint-val">{{ intersect_users_count }}</div>
+                            <div class="footprint-lbl">Retained Contributors</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+    {# ====================================================================== #}
+    {# 3. NEW USER INFLUX VIEW                                                #}
+    {# ====================================================================== #}
+{% endblock %}

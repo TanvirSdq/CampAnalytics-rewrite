@@ -2,11 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { HealthEvaluationResult } from './types.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load config.json
-const configPath = path.resolve(__dirname, '../config.json');
+const configPath = path.resolve(__dirname, '../../config.json');
 const rawConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
 export const EVENT_MAP: Record<string, string> = rawConfig.EVENT_MAP;
@@ -1511,3 +1513,121 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
     leaderboard: leaderboard
   };
 }
+
+export async function computeHealthEvaluation(
+  targetEvent: string,
+  regionInput?: string
+): Promise<HealthEvaluationResult> {
+  const match = CODE_RE.exec(targetEvent.toLowerCase());
+  if (!match) throw new Error(`Invalid campaign code format '${targetEvent}'`);
+  const [, eventType, targetCc, yearStr] = match;
+  const yearInt = parseInt(yearStr, 10);
+  const prevYearStr = String((yearInt - 1 + 100) % 100).padStart(2, '0');
+  const region = regionInput || COUNTRY_TO_REGION[targetCc] || 'Northern & Western Europe';
+  const baselineEvent = `${eventType}${targetCc}${prevYearStr}`;
+
+  const regionalCountries = REGION_COUNTRY_MAPPING[region] || [];
+  const scanPool = new Set<string>();
+  for (const cc of regionalCountries) {
+    scanPool.add(`${eventType}${cc}${yearStr}`);
+    scanPool.add(`${eventType}${cc}${prevYearStr}`);
+  }
+  scanPool.add(baselineEvent.toLowerCase());
+  scanPool.add(targetEvent.toLowerCase());
+
+  const allFetched = await fetchAllConcurrently(Array.from(scanPool));
+  const targetUsers = allFetched[targetEvent.toLowerCase()] || new Set<string>();
+  const baseUsers = allFetched[baselineEvent.toLowerCase()] || new Set<string>();
+
+  const peerVolumes = regionalCountries.map((cc) => {
+    const tCode = `${eventType}${cc}${yearStr}`;
+    return { cc, count: (allFetched[tCode] || new Set()).size };
+  });
+  peerVolumes.sort((a, b) => b.count - a.count);
+  const top3 = peerVolumes.slice(0, 3).map((p) => p.cc);
+
+  const structuralCodes = top3.map((cc) => `${eventType}${cc}${yearStr}`);
+  structuralCodes.push(targetEvent.toLowerCase());
+  const structuralMetrics = await fetchStructuralMetricsConcurrently(structuralCodes);
+
+  const repRetentions: number[] = [];
+  const repGrowths: number[] = [];
+  const repQualityRates: number[] = [];
+  const repDiversities: number[] = [];
+  const repUsages: number[] = [];
+
+  for (const cc of top3) {
+    const tCode = `${eventType}${cc}${yearStr}`;
+    const bCode = `${eventType}${cc}${prevYearStr}`;
+    const tU = allFetched[tCode] || new Set<string>();
+    const bU = allFetched[bCode] || new Set<string>();
+    const struct = structuralMetrics[tCode] || {};
+
+    if (bU.size > 0) {
+      let o = 0;
+      for (const u of tU) if (bU.has(u)) o++;
+      repRetentions.push((o / bU.size) * 100);
+    } else if (tU.size > 0) {
+      repRetentions.push(15.0);
+    }
+
+    if (tU.size > 0) {
+      let n = 0;
+      for (const u of tU) if (!bU.has(u)) n++;
+      repGrowths.push((n / tU.size) * 100);
+      if (struct.quality_image_share !== undefined) repQualityRates.push(struct.quality_image_share);
+      if (struct.top10_uploader_share !== undefined) repDiversities.push(struct.top10_uploader_share);
+      if (struct.usage_share !== undefined) repUsages.push(struct.usage_share);
+    }
+  }
+
+  function computeBayesianBenchmark(arr: number[], baselineGlobal: number, priorWeight = 3.0): number {
+    if (!arr.length) return baselineGlobal;
+    const n = arr.length;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const bRegional = n >= 3 ? sorted[Math.floor(n * 0.75)] : arr.reduce((a, b) => a + b, 0) / n;
+    const lambda = n / (n + priorWeight);
+    const bEffective = lambda * bRegional + (1.0 - lambda) * baselineGlobal;
+    return parseFloat(bEffective.toFixed(1));
+  }
+
+  const benchmarks = {
+    retention: computeBayesianBenchmark(repRetentions, GLOBAL_MOVEMENT_BASELINES.retention),
+    growth: computeBayesianBenchmark(repGrowths, GLOBAL_MOVEMENT_BASELINES.growth),
+    quality: computeBayesianBenchmark(repQualityRates, GLOBAL_MOVEMENT_BASELINES.quality),
+    diversity: computeBayesianBenchmark(repDiversities, GLOBAL_MOVEMENT_BASELINES.diversity),
+    usage: computeBayesianBenchmark(repUsages, GLOBAL_MOVEMENT_BASELINES.usage)
+  };
+
+  const targetStructural = structuralMetrics[targetEvent.toLowerCase()] || {
+    quality_image_share: 0.0,
+    top10_uploader_share: 100.0,
+    usage_share: 0.0,
+    total_uploads: 0
+  };
+
+  const metrics = generateHealthMetrics(targetUsers, baseUsers, targetStructural, benchmarks);
+  let overlap = 0;
+  for (const u of targetUsers) if (baseUsers.has(u)) overlap++;
+  const counts = { target: targetUsers.size, base: baseUsers.size, overlap };
+  const insights = generateInsights(metrics, region.split(' (')[0], benchmarks, counts);
+
+    const compositeScore = metrics.Overall ?? 0;
+    const tier = compositeScore >= 80 ? 'Tier 1' : compositeScore >= 60 ? 'Tier 2' : 'Tier 3';
+    const stars = calculateStars(compositeScore);
+
+    return {
+      target_campaign: targetEvent.toLowerCase(),
+      baseline_campaign: baselineEvent.toLowerCase(),
+      region,
+      target_users_count: targetUsers.size,
+      baseline_users_count: baseUsers.size,
+      overlap_users_count: overlap,
+      composite_score: compositeScore,
+      tier,
+      stars,
+      dimensions: metrics,
+      benchmarks,
+      insights
+    };
+  }

@@ -1,0 +1,9 @@
+{
+    "name": "camptools",
+    "title": "CampTools (Rewrite)",
+    "description": "A high-performance analytics suite for Wikimedia Commons campaigns, longitudinal contributor retention analysis, and cross-campaign ecosystem influx.",
+    "url": "https://camptools.toolforge.org/",
+    "keywords": ["commons", "analytics", "campaigns", "retention", "metrics"],
+    "author": "TanvirSdq, Kaim Amin",
+    "repository": "https://github.com/TanvirSdq/CampAnalytics-rewrite"
+}

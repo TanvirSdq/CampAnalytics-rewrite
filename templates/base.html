@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ PAGE_TITLE }}</title>
-    <meta name="description" content="CampAnalytics — Cross-campaign participant retention, community health evaluation, and contributor influx analytics for Wikimedia campaigns and photo competitions.">
+    <meta name="description" content="CampTools — Cross-campaign participant retention, community health evaluation, and contributor influx analytics for Wikimedia campaigns and photo competitions.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://campanalytics.toolforge.org/">
-    <meta property="og:title" content="CampAnalytics — Wikimedia Campaign &amp; Contributor Analytics">
+    <meta property="og:title" content="CampTools — Wikimedia Campaign &amp; Contributor Analytics">
     <meta property="og:description" content="Cross-campaign participant retention, community health evaluation, and contributor influx analytics for Wikimedia campaigns and photo competitions. Hosted on Toolforge.">
     <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Project_Korikath_Logo-dark.svg/1280px-Project_Korikath_Logo-dark.svg.png">
     <meta property="og:image:width" content="1280">
     <meta property="og:image:height" content="1280">
-    <meta property="og:image:alt" content="Project Korikath CampAnalytics Logo">
+    <meta property="og:image:alt" content="Project Korikath CampTools Logo">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="CampAnalytics — Wikimedia Campaign &amp; Contributor Analytics">
+    <meta name="twitter:title" content="CampTools — Wikimedia Campaign &amp; Contributor Analytics">
     <meta name="twitter:description" content="Cross-campaign participant retention, community health evaluation, and contributor influx analytics for Wikimedia campaigns.">
     <meta name="twitter:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Project_Korikath_Logo-dark.svg/1280px-Project_Korikath_Logo-dark.svg.png">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23183f54'/><circle cx='16' cy='16' r='9' stroke='%2372ded6' stroke-width='1.8' fill='none'/><ellipse cx='16' cy='16' rx='4.5' ry='9' stroke='%2372ded6' stroke-width='1.4' fill='none'/><line x1='7' y1='16' x2='25' y2='16' stroke='%2372ded6' stroke-width='1.4'/><circle cx='20.5' cy='11.5' r='2' fill='%23ffffff'/><circle cx='11.5' cy='20.5' r='1.5' fill='%2372ded6'/></svg>">
@@ -45,16 +45,14 @@
         document.addEventListener("DOMContentLoaded", renderMath);
         window.addEventListener("load", renderMath);
     </script>
-    <style>
-        {{ CUSTOM_CSS | safe }}
-    </style>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <!-- Top Navigation Bar -->
-    <header class="top-navbar">
+    
+    <header class="top-navbar slim-header">
         <div class="navbar-container">
             <div class="navbar-left">
-                <!-- Mobile Navigation Hamburger (XTools Mobile Ergonomics) -->
                 <button type="button" class="nav-hamburger-btn" onclick="toggleMobileNav(true)" aria-label="Open Navigation Menu" title="Open Navigation Drawer">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -66,37 +64,13 @@
                     <a href="https://meta.wikimedia.org/wiki/Project_Korikath" class="nav-korikath-link" target="_blank" rel="noopener noreferrer" title="Project Korikath — Wikimedia Community Initiative">
                         <img src="{{ KORIKATH_LOGO_URL }}" alt="Project Korikath Logo" class="korikath-navbar-logo">
                     </a>
-                    <a href="/" class="navbar-brand" title="CampAnalytics Home">
-                        <span class="brand-bold">Camp</span><span class="brand-accent">Analytics</span>
+                    <a href="/" class="navbar-brand" title="CampTools Home">
+                        <span class="brand-bold">Camp</span><span class="brand-accent">Tools</span>
                     </a>
                 </div>
             </div>
-
-            <nav class="navbar-nav">
-                <ul class="nav-tabs">
-                    <li class="nav-tab-item">
-                        <a href="/health" class="nav-tab-link {% if mode == 'Health Evaluation' or mode == 'Evaluation' or request.path == '/health' %}active{% endif %}">Evaluation</a>
-                    </li>
-                    <li class="nav-tab-item">
-                        <a href="/retention" class="nav-tab-link {% if mode == 'Retention Analytics' or mode == 'Retention' or request.path == '/retention' %}active{% endif %}">Retention</a>
-                    </li>
-                    <li class="nav-tab-item">
-                        <a href="/influx" class="nav-tab-link {% if mode == 'New User Influx' or mode == 'Participant Influx' or mode == 'Influx' or request.path == '/influx' %}active{% endif %}">Influx</a>
-                    </li>
-                    <li class="nav-tab-item">
-                        <a href="/utility" class="nav-tab-link {% if mode == 'Content Utility' or mode == 'Utility' or request.path == '/utility' %}active{% endif %}">Utility</a>
-                    </li>
-                    <li class="nav-tab-item">
-                        <a href="/quality" class="nav-tab-link {% if mode == 'Quality Recognition' or mode == 'Quality' or request.path == '/quality' %}active{% endif %}">Quality</a>
-                    </li>
-                    <li class="nav-tab-item">
-                        <a href="/documentation" class="nav-tab-link {% if mode == 'Info & Documentation' or mode == 'Documentation' or mode == 'Methodology' or mode == 'Methodology & Usage' or mode == 'Info' or request.path == '/documentation' or request.path == '/info' or request.path == '/methodology' %}active{% endif %}">Documentation</a>
-                    </li>
-                </ul>
-            </nav>
-
             <div class="navbar-right">
-                <a href="https://github.com/TanvirSdq/CampAnalytics" class="nav-util-link" target="_blank" rel="noopener noreferrer" title="View Source on GitHub">
+                <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite" class="nav-util-link" target="_blank" rel="noopener noreferrer" title="View Source on GitHub">
                     <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" fill="currentColor">
                         <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
                     </svg>
@@ -105,6 +79,7 @@
             </div>
         </div>
     </header>
+
 
     <!-- Mobile Off-Canvas Navigation Drawer Backdrop -->
     <div id="mobile-nav-backdrop" class="mobile-nav-backdrop" onclick="toggleMobileNav(false)" aria-hidden="true"></div>
@@ -193,12 +168,22 @@
         </nav>
         <div class="mobile-nav-footer">
             <!-- Space reserved for future Mobile App download link -->
-            <a href="https://toolhub.wikimedia.org/tools/toolforge-campanalytics" target="_blank" rel="noopener noreferrer" class="mobile-nav-footer-link">
+            <a href="https://toolhub.wikimedia.org/tools/toolforge-camptools" target="_blank" rel="noopener noreferrer" class="mobile-nav-footer-link">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                 <span>Toolhub Record</span>
             </a>
         </div>
-    </aside>
+    
+            <div style="margin-top: auto; padding: 20px 16px; border-top: 1px solid #eaecf0;">
+                <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500;">
+                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                    </svg>
+                    Source Code
+                </a>
+            </div>
+
+        </aside>
 
     <script>
         function toggleMobileNav(open) {
@@ -223,9 +208,79 @@
     </script>
 
     <!-- Main Content Area -->
-    <main class="main-wrapper">
+    
+    <div class="app-layout">
+        <aside class="desktop-sidebar" style="display: flex; flex-direction: column;">
+
+            <div class="sidebar-brand-group" style="padding: 16px 20px 24px; display: flex; align-items: center; gap: 10px;">
+                <a href="https://meta.wikimedia.org/wiki/Project_Korikath" target="_blank" rel="noopener noreferrer" title="Project Korikath">
+                    <img src="{{ KORIKATH_LOGO_URL }}" alt="Project Korikath Logo" style="height: 28px; width: auto;">
+                </a>
+                <a href="/" style="text-decoration: none; color: #202124; font-size: 1.2rem; display: flex; align-items: baseline;">
+                    <span style="font-weight: 700;">Camp</span><span style="font-weight: 300; color: #36c;">Tools</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav-menu">
+                <div class="sidebar-nav-section-label">Analytical Tools Suite</div>
+                <a href="/health" class="sidebar-nav-item {% if mode == 'Health Evaluation' or mode == 'Evaluation' or request.path == '/health' %}active{% endif %}">
+                    <div class="sidebar-nav-item-icon icon-eval">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                    </div>
+                    <div class="sidebar-nav-item-title">Evaluation</div>
+                </a>
+                <a href="/retention" class="sidebar-nav-item {% if mode == 'Retention Analytics' or mode == 'Retention' or request.path == '/retention' %}active{% endif %}">
+                    <div class="sidebar-nav-item-icon icon-ret">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="6"></circle><circle cx="15" cy="12" r="6"></circle></svg>
+                    </div>
+                    <div class="sidebar-nav-item-title">Retention</div>
+                </a>
+                <a href="/influx" class="sidebar-nav-item {% if mode == 'New User Influx' or mode == 'Participant Influx' or mode == 'Influx' or request.path == '/influx' %}active{% endif %}">
+                    <div class="sidebar-nav-item-icon icon-influx">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    </div>
+                    <div class="sidebar-nav-item-title">Influx</div>
+                </a>
+                <a href="/utility" class="sidebar-nav-item {% if mode == 'Content Utility' or mode == 'Utility' or request.path == '/utility' %}active{% endif %}">
+                    <div class="sidebar-nav-item-icon icon-utility">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </div>
+                    <div class="sidebar-nav-item-title">Utility</div>
+                </a>
+                <a href="/quality" class="sidebar-nav-item {% if mode == 'Quality Recognition' or mode == 'Quality' or request.path == '/quality' %}active{% endif %}">
+                    <div class="sidebar-nav-item-icon icon-quality">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    </div>
+                    <div class="sidebar-nav-item-title">Quality</div>
+                </a>
+                
+                <div class="sidebar-nav-divider"></div>
+                <div class="sidebar-nav-section-label">Documentation</div>
+                <a href="/documentation" class="sidebar-nav-item {% if mode == 'Info & Documentation' or mode == 'Documentation' or mode == 'Methodology' or mode == 'Methodology & Usage' or mode == 'Info' or request.path == '/documentation' or request.path == '/info' or request.path == '/methodology' %}active{% endif %}">
+                    <div class="sidebar-nav-item-icon icon-info">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    </div>
+                    <div class="sidebar-nav-item-title">Methodology</div>
+                </a>
+            </nav>
+        </aside>
+        <main class="main-wrapper">
+        {% if error %}
+            <div class="notice-banner notice-error" role="alert" style="margin-bottom: 20px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; color: #b45309;">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <div><strong>Notice:</strong> {{ error }}</div>
+            </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
-    </main>
+    
+        </main>
+    </div> <!-- .app-layout -->
+
 
     <!-- Wikimedia Toolforge Compact Footer -->
     <footer class="toolforge-footer">
@@ -233,16 +288,1533 @@
             <div>
                 Hosted on <a href="https://toolforge.org" target="_blank" rel="noopener noreferrer">Wikimedia Toolforge</a> ·
                 Released under the <a href="https://www.gnu.org/licenses/gpl-2.0.html" target="_blank" rel="noopener noreferrer">GPL-2.0+</a> ·
-                by <a href="https://commons.wikimedia.org/wiki/User_talk:TanvirSdq" target="_blank" rel="noopener noreferrer">TanvirSdq</a> & <a href="https://commons.wikimedia.org/wiki/User_talk:Kaim Amin" target="_blank" rel="noopener noreferrer">Kaim Amin</a>
+                Made by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">TanvirSdq</a> & <a href="https://commons.wikimedia.org/wiki/User:Kaim_Amin" target="_blank" rel="noopener noreferrer">Kaim Amin</a> <br>
+                Rewrite by <a href="https://www.linkedin.com/in/tanvirsdq" target="_blank" rel="noopener noreferrer">TanvirSdq</a>
             </div>
             <div class="toolforge-footer-links">
-                <a href="https://github.com/siddiquetanvir/CampAnalytics/issues" target="_blank" rel="noopener noreferrer">Create an issue</a>
+                <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite/issues" target="_blank" rel="noopener noreferrer">Create an issue</a>
                 <span>·</span>
-                <a href="https://toolhub.wikimedia.org/tools/toolforge-campanalytics">Toolhub</a>
+                <a href="https://toolhub.wikimedia.org/tools/toolforge-camptools">Toolhub</a>
                 <span>·</span>
                 <a href="https://meta.wikimedia.org/wiki/Project_Korikath" target="_blank" rel="noopener noreferrer">Project Korikath</a>
             </div>
         </div>
     </footer>
+    <script>
+        const ALL_COUNTRY_CODES = {{ COUNTRY_OPTIONS | tojson }};
+        const EVENT_SCOPE_MAP = {{ EVENT_COUNTRY_SCOPE | tojson }};
+        const COUNTRY_NAME_MAP = {{ COUNTRY_MAP | tojson }};
+
+        // Choropleth Regional Scope Selector
+        function setChoroplethScope(scopeName, btn) {
+            if (typeof Plotly !== 'undefined' && document.getElementById('retention-worldmap')) {
+                Plotly.relayout('retention-worldmap', {
+                    'geo.scope': scopeName
+                });
+                document.querySelectorAll('.map-scope-btn').forEach(b => b.classList.remove('active'));
+                if (btn) btn.classList.add('active');
+            }
+        }
+
+        // Toggle the collapsible selection builder drawer
+        function toggleRetentionBuilder() {
+            const drawer = document.getElementById('retention-builder-drawer');
+            const btn = document.getElementById('btn-toggle-retention-builder');
+            const text = document.getElementById('btn-toggle-text');
+            if (!drawer) return;
+            const isHidden = drawer.style.display === 'none' || getComputedStyle(drawer).display === 'none';
+            if (isHidden) {
+                drawer.style.display = 'block';
+                if (btn) btn.classList.add('active');
+                if (text) text.textContent = 'Hide Selection Builder ▲';
+            } else {
+                drawer.style.display = 'none';
+                if (btn) btn.classList.remove('active');
+                if (text) text.textContent = 'Customize Cohorts ▾';
+            }
+        }
+
+        // Render Active Campaign Tokens in Cockpit
+        function renderCampaignTokens() {
+            const container = document.getElementById('active-campaign-tokens');
+            const targetInput = document.getElementById('target_campaigns');
+            if (!container || !targetInput) return;
+            const codes = targetInput.value.trim().split(/\s+/).filter(Boolean);
+            if (codes.length === 0) {
+                container.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">No cohorts selected</span>';
+                return;
+            }
+            container.innerHTML = codes.map(c => `
+                <span class="campaign-token" title="Cohort: ${c}">
+                    <span>${c}</span>
+                    <button type="button" class="campaign-token-remove" onclick="removeCampaignToken('${c}')" title="Remove ${c}" aria-label="Remove ${c}">×</button>
+                </span>
+            `).join('');
+        }
+
+        function removeCampaignToken(codeToRemove) {
+            const targetInput = document.getElementById('target_campaigns');
+            if (!targetInput) return;
+            const codes = targetInput.value.trim().split(/\s+/).filter(Boolean);
+            const remaining = codes.filter(c => c.toLowerCase() !== codeToRemove.toLowerCase());
+            targetInput.value = remaining.join(' ');
+            parseCodeToRetentionBuilder();
+            renderCampaignTokens();
+        }
+
+        function getScopeNoticeJS(evt, cc) {
+            if (!evt || evt === 'all' || !cc) return null;
+            const scope = EVENT_SCOPE_MAP[evt];
+            if (!scope || scope === '*') return null;
+            const cName = (COUNTRY_NAME_MAP[cc] || cc.toUpperCase()).replace(/_/g, ' ');
+            if (evt === 'wlb') {
+                const allowed = (scope && typeof scope === 'object' && scope.countries) ? scope.countries : scope;
+                if (!allowed.includes(cc)) {
+                    return `Wiki Loves Bangla is dedicated to the global Bengali community (primarily Bangladesh and India). It does not hold separate national editions in ${cName}.`;
+                }
+            } else if (evt === 'wla') {
+                const allowed = Array.isArray(scope) ? scope : [];
+                if (!allowed.includes(cc)) {
+                    return `Wiki Loves Africa is a continental initiative organized exclusively within African nations. It does not operate national competitions in ${cName}.`;
+                }
+            }
+            return null;
+        }
+
+        // Select All Countries helper (Global analysis)
+        function selectAllCountries() {
+            const countrySelect = document.getElementById('builder_country');
+            if (countrySelect) {
+                countrySelect.value = 'ALL';
+            }
+            // Ensure at least one event is checked
+            const checkedEvents = document.querySelectorAll('input[name="builder_events"]:checked');
+            if (checkedEvents.length === 0) {
+                const wlmCb = document.getElementById('evt-wlm');
+                if (wlmCb) wlmCb.checked = true;
+            }
+            syncRetentionBuilder();
+        }
+
+        // Clear country selection
+        function clearCountrySelection() {
+            const countrySelect = document.getElementById('builder_country');
+            if (countrySelect) {
+                countrySelect.value = '';
+            }
+            const targetInput = document.getElementById('target_campaigns');
+            if (targetInput) {
+                targetInput.value = '';
+            }
+        }
+
+        function clearTargetCampaigns() {
+            const countrySelect = document.getElementById('target_campaigns');
+            if (countrySelect) {
+                countrySelect.value = '';
+            }
+        }
+
+        // Extract generated codes from builder selections
+        function getCodesFromBuilder() {
+            const checkedEvents = Array.from(document.querySelectorAll('input[name="builder_events"]:checked')).map(cb => cb.value);
+            const countrySelect = document.getElementById('builder_country');
+            const selectedVal = countrySelect ? countrySelect.value : '';
+            const yrStartInput = document.getElementById('builder_yr_start');
+            const yrEndInput = document.getElementById('builder_yr_end');
+
+            if (!countrySelect) return '';
+
+            if (!selectedVal) return '';
+
+            const yrStart = parseInt(yrStartInput.value, 10) || ({{ CURRENT_YEAR }} - 2);
+            const yrEnd = parseInt(yrEndInput.value, 10) || {{ CURRENT_YEAR }};
+
+            if (checkedEvents.length > 0 && selectedVal) {
+                const generatedCodes = [];
+                if (selectedVal === 'ALL') {
+                    for (const evt of checkedEvents) {
+                        for (let yr = yrStart; yr <= yrEnd; yr++) {
+                            const yy = String(yr % 100).padStart(2, '0');
+                            generatedCodes.push(`${evt}*${yy}`);
+                        }
+                    }
+                    return generatedCodes.join(' ');
+                }
+
+                let targetCountries = [];
+                if (selectedVal.startsWith('REG:')) {
+                    targetCountries = selectedVal.substring(4).split(',');
+                } else {
+                    targetCountries = [selectedVal];
+                }
+
+                for (const evt of checkedEvents) {
+                    for (const cc of targetCountries) {
+                        for (let yr = yrStart; yr <= yrEnd; yr++) {
+                            const yy = String(yr % 100).padStart(2, '0');
+                            const code = evt + cc.trim().toLowerCase() + yy;
+                            if (!generatedCodes.includes(code)) {
+                                generatedCodes.push(code);
+                            }
+                        }
+                    }
+                }
+                return generatedCodes.join(' ');
+            }
+            return '';
+        }
+
+        function flashTargetInput(success = true) {
+            const targetInput = document.getElementById('target_campaigns');
+            if (!targetInput) return;
+            targetInput.style.transition = 'box-shadow 0.2s ease, border-color 0.2s ease';
+            if (success) {
+                targetInput.style.borderColor = 'var(--wiki-blue)';
+                targetInput.style.boxShadow = '0 0 0 3px rgba(54, 89, 227, 0.25)';
+            } else {
+                targetInput.style.borderColor = '#d73a49';
+                targetInput.style.boxShadow = '0 0 0 3px rgba(215, 58, 73, 0.25)';
+            }
+            setTimeout(() => {
+                targetInput.style.borderColor = '';
+                targetInput.style.boxShadow = '';
+            }, 1100);
+        }
+
+        function flashBuilderError() {
+            const checkedEvents = document.querySelectorAll('input[name="builder_events"]:checked');
+            const countrySelect = document.getElementById('builder_country');
+            if (checkedEvents.length === 0) {
+                const group = document.getElementById('event-pill-group');
+                if (group) {
+                    group.style.outline = '2px solid #d73a49';
+                    group.style.borderRadius = '6px';
+                    group.style.padding = '4px';
+                    setTimeout(() => {
+                        group.style.outline = '';
+                        group.style.padding = '';
+                    }, 1400);
+                }
+            }
+            if (countrySelect && !countrySelect.value) {
+                countrySelect.style.borderColor = '#d73a49';
+                countrySelect.style.boxShadow = '0 0 0 3px rgba(215, 58, 73, 0.25)';
+                countrySelect.focus();
+                setTimeout(() => {
+                    countrySelect.style.borderColor = '';
+                    countrySelect.style.boxShadow = '';
+                }, 1400);
+            }
+            flashTargetInput(false);
+        }
+
+        // Replace the target campaigns input with codes from builder
+        function replaceBuilderCodes() {
+            const codes = getCodesFromBuilder();
+            const targetInput = document.getElementById('target_campaigns');
+            if (codes) {
+                if (targetInput) {
+                    targetInput.value = codes;
+                    flashTargetInput(true);
+                }
+            } else {
+                flashBuilderError();
+            }
+        }
+
+        // Append codes from builder to the existing target campaigns input
+        function appendBuilderCodes() {
+            const codes = getCodesFromBuilder();
+            const targetInput = document.getElementById('target_campaigns');
+            if (codes) {
+                if (targetInput) {
+                    if (targetInput.value.trim() === '') {
+                        targetInput.value = codes;
+                    } else {
+                        targetInput.value = targetInput.value.trim() + ' ' + codes;
+                    }
+                    flashTargetInput(true);
+                }
+            } else {
+                flashBuilderError();
+            }
+        }
+
+        // Handle changes to retention event matrix checkboxes
+        function onRetentionEventChange(changedEl) {
+            if (!changedEl) return;
+            if (changedEl.id === 'evt-all' && changedEl.checked) {
+                // If "All Campaigns" is selected, deselect specific campaign checkboxes
+                document.querySelectorAll('input[name="builder_events"]').forEach(cb => {
+                    if (cb.id !== 'evt-all') cb.checked = false;
+                });
+            } else if (changedEl.checked && changedEl.id !== 'evt-all') {
+                // If a specific campaign is selected, deselect "All Campaigns"
+                const allCb = document.getElementById('evt-all');
+                if (allCb) allCb.checked = false;
+            }
+            syncRetentionBuilder();
+        }
+
+        // Synchronize Retention Builder controls to target_campaigns textarea
+        function syncRetentionBuilder() {
+            const checkedEvents = document.querySelectorAll('input[name="builder_events"]:checked');
+            const countrySelect = document.getElementById('builder_country');
+            if (checkedEvents.length === 0 && countrySelect && countrySelect.value) {
+                // Default to Monuments (wlm) if country chosen without campaign selection
+                const wlmCb = document.getElementById('evt-wlm');
+                if (wlmCb) wlmCb.checked = true;
+            }
+            const codes = getCodesFromBuilder();
+            const targetInput = document.getElementById('target_campaigns');
+            if (targetInput && codes) {
+                targetInput.value = codes;
+                renderCampaignTokens();
+            }
+        }
+
+        // Parse typed or pasted codes into Retention Builder controls
+        function parseCodeToRetentionBuilder() {
+            const targetInput = document.getElementById('target_campaigns');
+            if (!targetInput) return;
+            const val = targetInput.value.trim().toLowerCase();
+            if (!val) return;
+            const codes = val.split(/\s+/);
+            if (codes.length === 0) return;
+
+            const eventsFound = new Set();
+            const countriesFound = new Set();
+            const yearsFound = [];
+
+            for (const code of codes) {
+                const m = code.match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{2}|\*)?(\d{2})$/);
+                if (m) {
+                    eventsFound.add(m[1]);
+                    if (m[2]) countriesFound.add(m[2]);
+                    yearsFound.push(parseInt(m[3], 10));
+                }
+            }
+
+            if (eventsFound.size > 0) {
+                document.querySelectorAll('input[name="builder_events"]').forEach(cb => {
+                    cb.checked = eventsFound.has(cb.value);
+                });
+            }
+
+            const countrySelect = document.getElementById('builder_country');
+            if (countrySelect && countriesFound.size > 0) {
+                if (countriesFound.has('*')) {
+                    countrySelect.value = 'ALL';
+                } else if (countriesFound.size === 1) {
+                    const cc = Array.from(countriesFound)[0];
+                    countrySelect.value = cc;
+                }
+            }
+
+            if (yearsFound.length > 0) {
+                const minY = Math.min(...yearsFound);
+                const maxY = Math.max(...yearsFound);
+                const yrStartInput = document.getElementById('builder_yr_start');
+                const yrEndInput = document.getElementById('builder_yr_end');
+                if (yrStartInput && minY <= maxY) yrStartInput.value = 2000 + minY;
+                if (yrEndInput && minY <= maxY) yrEndInput.value = 2000 + maxY;
+            }
+        }
+
+        // Ensure retention target_campaigns is populated before form submission
+        function syncRetentionBeforeSubmit(e) {
+            const targetInput = document.getElementById('target_campaigns');
+            if (targetInput && !targetInput.value.trim()) {
+                const codes = getCodesFromBuilder();
+                if (codes) {
+                    targetInput.value = codes;
+                }
+            }
+        }
+
+        // Quick Preset Loader for Retention
+        function loadRetentionPreset(codes, flash = true) {
+            const targetInput = document.getElementById('target_campaigns');
+            if (targetInput) {
+                targetInput.value = codes;
+                if (flash) flashTargetInput(true);
+            }
+            parseCodeToRetentionBuilder();
+            renderCampaignTokens();
+            const form = document.getElementById('retention-form');
+            if (form) form.submit();
+        }
+
+        const REGION_MAPPING = {{ REGION_COUNTRY_MAPPING | tojson }};
+
+        // Helper: Find matching region for a given country code
+        function getRegionForCountry(countryCode) {
+            if (!countryCode) return null;
+            const cc = countryCode.toLowerCase();
+            for (const [regionName, countries] of Object.entries(REGION_MAPPING)) {
+                if (countries.includes(cc)) {
+                    return regionName;
+                }
+            }
+            return null;
+        }
+
+        // Synchronize Health Builder controls to target_event input
+        function syncHealthBuilderToCode() {
+            const eventRadios = document.getElementsByName('health_event_type');
+            const countrySelect = document.getElementById('health_country');
+            const yearInput = document.getElementById('health_year');
+            const targetInput = document.getElementById('target_event');
+            const baselineInput = document.getElementById('baseline_event');
+            const compModeRadios = document.getElementsByName('comp_mode');
+
+            if (!countrySelect || !targetInput) return;
+
+            let evt = 'wlm';
+            for (let r of eventRadios) { if (r.checked) { evt = r.value; break; } }
+            
+            const cc = countrySelect ? countrySelect.value.toLowerCase() : '';
+            const yr = yearInput ? parseInt(yearInput.value, 10) : {{ CURRENT_YEAR }};
+
+            if (evt && cc && yr) {
+                const yy = String(yr % 100).padStart(2, '0');
+                const targetInput = document.getElementById('target_event');
+                if (targetInput) {
+                    targetInput.value = evt + cc + yy;
+                }
+
+                // Automatically align regional standardization framework
+                const matchedRegion = getRegionForCountry(cc);
+                const regionSelect = document.getElementById('region');
+                if (matchedRegion && regionSelect) {
+                    for (let i = 0; i < regionSelect.options.length; i++) {
+                        if (regionSelect.options[i].value === matchedRegion || regionSelect.options[i].value.includes(matchedRegion.split(' (')[0])) {
+                            regionSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                const healthHint = document.getElementById('health-scope-hint');
+                if (healthHint) {
+                    const notice = getScopeNoticeJS(evt, cc);
+                    if (notice) {
+                        healthHint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                    } else {
+                        healthHint.innerText = 'Standard event code syntax: prefix (wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmbd24, wlede22, wlang23).';
+                    }
+                }
+            }
+        }
+
+        // Parse typed or pasted code into Health Builder controls
+        function parseCodeToHealthBuilder() {
+            const targetInput = document.getElementById('target_event');
+            if (!targetInput) return;
+            const val = targetInput.value.trim().toLowerCase();
+            const match = val.match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/);
+            if (match) {
+                const evt = match[1];
+                const cc = match[2];
+                const yy = parseInt(match[3], 10);
+                
+                const evtRadio = document.getElementById('health-evt-' + evt);
+                if (evtRadio) evtRadio.checked = true;
+
+                const countrySelect = document.getElementById('health_country');
+                if (countrySelect && cc) countrySelect.value = cc;
+
+                const yearInput = document.getElementById('health_year');
+                if (yearInput && !isNaN(yy)) yearInput.value = 2000 + yy;
+
+                const matchedRegion = getRegionForCountry(cc);
+                const regionSelect = document.getElementById('region');
+                if (matchedRegion && regionSelect) {
+                    for (let i = 0; i < regionSelect.options.length; i++) {
+                        if (regionSelect.options[i].value === matchedRegion || regionSelect.options[i].value.includes(matchedRegion.split(' (')[0])) {
+                            regionSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Quick Preset Loader for Health Evaluation
+        function loadHealthPreset(targetCode, regName, baselineCode) {
+            const targetInput = document.getElementById('target_event');
+            if (targetInput) targetInput.value = targetCode;
+
+            parseCodeToHealthBuilder();
+
+            const regionSelect = document.getElementById('region');
+            if (regionSelect && regName) {
+                for (let i = 0; i < regionSelect.options.length; i++) {
+                    if (regionSelect.options[i].value.includes(regName)) {
+                        regionSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (baselineCode) {
+                const compCustom = document.getElementById('comp-custom');
+                if (compCustom) compCustom.checked = true;
+                const baselineInput = document.getElementById('baseline_event');
+                if (baselineInput) baselineInput.value = baselineCode;
+            } else {
+                const compPrev = document.getElementById('comp-prev');
+                if (compPrev) compPrev.checked = true;
+            }
+            toggleCustomBaseline();
+        }
+
+        // Toggle custom baseline input visibility in Health View
+        function toggleCustomBaseline() {
+            const compCustom = document.getElementById('comp-custom');
+            const customGroup = document.getElementById('custom-baseline-group');
+            if (customGroup && compCustom) {
+                customGroup.style.display = compCustom.checked ? 'block' : 'none';
+            }
+        }
+
+        // Toggle metric choice visibility for Worldmap in Retention View
+        function toggleMetricSelector() {
+            const worldRadio = document.querySelector('input[name="view_mode"][value="Worldmap"]');
+            const metricGroup = document.getElementById('metric-vector-group');
+            if (metricGroup && worldRadio) {
+                metricGroup.style.display = worldRadio.checked ? 'block' : 'none';
+            }
+        }
+
+        // Influx Builder helper
+        function syncInfluxBuilder() {
+            const checkedEvt = document.querySelector('input[name="influx_event_type"]:checked');
+            const evt = checkedEvt ? checkedEvt.value : 'wlm';
+            const countrySelect = document.getElementById('influx_country');
+            const cc = countrySelect ? countrySelect.value.toLowerCase() : 'de';
+            const yrStartInput = document.getElementById('influx_yr_start');
+            const yrEndInput = document.getElementById('influx_yr_end');
+            
+            if (!yrStartInput || !yrEndInput) return;
+            const y1 = parseInt(yrStartInput.value, 10) || {{ DEFAULT_START_YEAR }};
+            const y2 = parseInt(yrEndInput.value, 10) || {{ CURRENT_YEAR }};
+            
+            const codes = [];
+            for (let y = y1; y <= y2; y++) {
+                const yy = String(y % 100).padStart(2, '0');
+                codes.push(evt + cc + yy);
+            }
+            const codesInput = document.getElementById('influx_codes');
+            if (codesInput) {
+                codesInput.value = codes.join(' ');
+            }
+
+            const influxHint = document.getElementById('influx-scope-hint');
+            if (influxHint) {
+                const notice = getScopeNoticeJS(evt, cc);
+                if (notice) {
+                    influxHint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                } else {
+                    influxHint.innerText = 'Chronological campaign sequence to evaluate.';
+                }
+            }
+        }
+
+        // Quick Influx Preset Loader
+        function loadInfluxPreset(evt, cc, y1, y2) {
+            const evtRadio = document.getElementById('influx-evt-' + evt);
+            if (evtRadio) evtRadio.checked = true;
+            const countrySelect = document.getElementById('influx_country');
+            if (countrySelect) countrySelect.value = cc;
+            const yrStartInput = document.getElementById('influx_yr_start');
+            if (yrStartInput) yrStartInput.value = y1;
+            const yrEndInput = document.getElementById('influx_yr_end');
+            if (yrEndInput) yrEndInput.value = y2;
+            syncInfluxBuilder();
+
+            const codesInput = document.getElementById('influx_codes');
+            if (codesInput) {
+                codesInput.style.transition = 'box-shadow 0.2s ease, border-color 0.2s ease';
+                codesInput.style.borderColor = 'var(--wiki-blue)';
+                codesInput.style.boxShadow = '0 0 0 3px rgba(54, 89, 227, 0.25)';
+                setTimeout(() => {
+                    codesInput.style.borderColor = '';
+                    codesInput.style.boxShadow = '';
+                }, 1100);
+            }
+        }
+
+        function clearInfluxCodes() {
+            const codesInput = document.getElementById('influx_codes');
+            if (codesInput) {
+                codesInput.value = '';
+                codesInput.focus();
+            }
+        }
+
+        // Parse typed or pasted codes into Influx Builder controls
+        function parseCodeToInfluxBuilder() {
+            const codesInput = document.getElementById('influx_codes');
+            if (!codesInput) return;
+            const val = codesInput.value.trim().toLowerCase();
+            if (!val) return;
+            const codes = val.split(/\s+/);
+            if (codes.length === 0) return;
+
+            const firstMatch = codes[0].match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/);
+            if (firstMatch) {
+                const evt = firstMatch[1];
+                const cc = firstMatch[2];
+                
+                const evtRadio = document.getElementById('influx-evt-' + evt);
+                if (evtRadio) evtRadio.checked = true;
+
+                const countrySelect = document.getElementById('influx_country');
+                if (countrySelect && cc) countrySelect.value = cc;
+
+                let minY = null;
+                let maxY = null;
+                for (const c of codes) {
+                    const m = c.match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/);
+                    if (m) {
+                        const y = 2000 + parseInt(m[3], 10);
+                        if (minY === null || y < minY) minY = y;
+                        if (maxY === null || y > maxY) maxY = y;
+                    }
+                }
+                const yrStartInput = document.getElementById('influx_yr_start');
+                const yrEndInput = document.getElementById('influx_yr_end');
+                if (minY !== null && yrStartInput) yrStartInput.value = minY;
+                if (maxY !== null && yrEndInput) yrEndInput.value = maxY;
+
+                const influxHint = document.getElementById('influx-scope-hint');
+                if (influxHint && cc) {
+                    const notice = getScopeNoticeJS(evt, cc);
+                    if (notice) {
+                        influxHint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                    } else {
+                        influxHint.innerText = 'Chronological campaign sequence to evaluate.';
+                    }
+                }
+            }
+        }
+
+        // ── Utility Builder Helper ───────────────────────────────────────────
+        function syncUtilityBuilder() {
+            const checkedEvt = document.querySelector('input[name="utility_event_type"]:checked');
+            const evt = checkedEvt ? checkedEvt.value : 'wlm';
+            const countrySelect = document.getElementById('utility_country');
+            const cc = countrySelect ? countrySelect.value.toLowerCase() : '';
+            const yrInput = document.getElementById('utility_year');
+            const yr = parseInt(yrInput ? yrInput.value : '', 10) || ({{ CURRENT_YEAR }} - 1);
+            const yy = String(yr % 100).padStart(2, '0');
+            const targetInput = document.getElementById('target_campaign_utility');
+            if (targetInput && cc) {
+                targetInput.value = evt + cc + yy;
+            }
+            const hint = document.getElementById('utility-scope-hint');
+            if (hint) {
+                if (cc) {
+                    const notice = getScopeNoticeJS(evt, cc);
+                    if (notice) {
+                        hint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                    } else {
+                        hint.innerText = 'Single campaign code for content utility & global usage analysis.';
+                    }
+                } else {
+                    hint.innerText = 'Select a country above or type a campaign code (e.g. wlmde24).';
+                }
+            }
+        }
+
+        function loadUtilityPreset(evt, cc, yr) {
+            const evtRadio = document.getElementById('util-evt-' + evt);
+            if (evtRadio) evtRadio.checked = true;
+            const countrySelect = document.getElementById('utility_country');
+            if (countrySelect) countrySelect.value = cc;
+            const yrInput = document.getElementById('utility_year');
+            if (yrInput) yrInput.value = yr;
+            syncUtilityBuilder();
+            const targetInput = document.getElementById('target_campaign_utility');
+            if (targetInput) {
+                targetInput.style.borderColor = 'var(--wiki-blue)';
+                targetInput.style.boxShadow = '0 0 0 3px rgba(54, 89, 227, 0.25)';
+                setTimeout(() => {
+                    targetInput.style.borderColor = '';
+                    targetInput.style.boxShadow = '';
+                }, 1000);
+            }
+        }
+
+        function parseCodeToUtilityBuilder() {
+            const targetInput = document.getElementById('target_campaign_utility');
+            if (!targetInput) return;
+            const val = targetInput.value.trim().toLowerCase();
+            const m = val.match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/);
+            if (m) {
+                const evt = m[1];
+                const cc = m[2];
+                const yr = 2000 + parseInt(m[3], 10);
+                const evtRadio = document.getElementById('util-evt-' + evt);
+                if (evtRadio) evtRadio.checked = true;
+                const countrySelect = document.getElementById('utility_country');
+                if (countrySelect && cc) countrySelect.value = cc;
+                const yrInput = document.getElementById('utility_year');
+                if (yrInput) yrInput.value = yr;
+            }
+        }
+
+        // ── Quality Builder Helper ───────────────────────────────────────────
+        function syncQualityBuilder() {
+            const checkedEvt = document.querySelector('input[name="quality_event_type"]:checked');
+            const evt = checkedEvt ? checkedEvt.value : 'wlm';
+            const countrySelect = document.getElementById('quality_country');
+            const cc = countrySelect ? countrySelect.value.toLowerCase() : '';
+            const yrInput = document.getElementById('quality_year');
+            const yr = parseInt(yrInput ? yrInput.value : '', 10) || ({{ CURRENT_YEAR }} - 1);
+            const yy = String(yr % 100).padStart(2, '0');
+            const targetInput = document.getElementById('target_campaign_quality');
+            if (targetInput && cc) {
+                targetInput.value = evt + cc + yy;
+            }
+            const hint = document.getElementById('quality-scope-hint');
+            if (hint) {
+                if (cc) {
+                    const notice = getScopeNoticeJS(evt, cc);
+                    if (notice) {
+                        hint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                    } else {
+                        hint.innerText = 'Single campaign code for quality recognition & honors analysis.';
+                    }
+                } else {
+                    hint.innerText = 'Select a country above or type a campaign code (e.g. wlmde24).';
+                }
+            }
+        }
+
+        function loadQualityPreset(evt, cc, yr) {
+            const evtRadio = document.getElementById('qual-evt-' + evt);
+            if (evtRadio) evtRadio.checked = true;
+            const countrySelect = document.getElementById('quality_country');
+            if (countrySelect) countrySelect.value = cc;
+            const yrInput = document.getElementById('quality_year');
+            if (yrInput) yrInput.value = yr;
+            syncQualityBuilder();
+            const targetInput = document.getElementById('target_campaign_quality');
+            if (targetInput) {
+                targetInput.style.borderColor = 'var(--wiki-blue)';
+                targetInput.style.boxShadow = '0 0 0 3px rgba(54, 89, 227, 0.25)';
+                setTimeout(() => {
+                    targetInput.style.borderColor = '';
+                    targetInput.style.boxShadow = '';
+                }, 1000);
+            }
+        }
+
+        function parseCodeToQualityBuilder() {
+            const targetInput = document.getElementById('target_campaign_quality');
+            if (!targetInput) return;
+            const val = targetInput.value.trim().toLowerCase();
+            const m = val.match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/);
+            if (m) {
+                const evt = m[1];
+                const cc = m[2];
+                const yr = 2000 + parseInt(m[3], 10);
+                const evtRadio = document.getElementById('qual-evt-' + evt);
+                if (evtRadio) evtRadio.checked = true;
+                const countrySelect = document.getElementById('quality_country');
+                if (countrySelect && cc) countrySelect.value = cc;
+                const yrInput = document.getElementById('quality_year');
+                if (yrInput) yrInput.value = yr;
+            }
+        }
+
+        // ── CAMP ANALYTICS INTERACTIVE TABLE & EXPORT SUITE ───────────────────
+        const CampTableSuite = {
+            state: {},
+
+            init() {
+                document.querySelectorAll('.table-interactive-wrapper').forEach((wrap, wrapIdx) => {
+                    const table = wrap.querySelector('table.data-table');
+                    if (!table) return;
+                    if (!table.id) table.id = 'camp-table-' + wrapIdx;
+                    const tid = table.id;
+
+                    this.state[tid] = {
+                        table: table,
+                        wrapper: wrap,
+                        pageSize: 25,
+                        currentPage: 1,
+                        searchQuery: '',
+                        sortCol: null,
+                        sortDir: 'asc',
+                        allRows: Array.from(table.querySelectorAll('tbody tr')),
+                        filteredRows: []
+                    };
+                    this.state[tid].filteredRows = [...this.state[tid].allRows];
+
+                    // Make headers sortable
+                    const headers = table.querySelectorAll('thead th');
+                    headers.forEach((th, colIdx) => {
+                        th.setAttribute('data-sortable-col', 'true');
+                        if (!th.querySelector('.sort-indicator')) {
+                            const ind = document.createElement('span');
+                            ind.className = 'sort-indicator';
+                            ind.textContent = ' ⇅';
+                            th.appendChild(ind);
+                        }
+                        th.addEventListener('click', () => this.handleSort(tid, colIdx, th));
+                    });
+
+                    // Search input
+                    const searchInput = wrap.querySelector('.table-search-input');
+                    if (searchInput) {
+                        searchInput.addEventListener('input', (e) => {
+                            this.handleSearch(tid, e.target.value);
+                        });
+                    }
+
+                    // Page size selector
+                    const sizeSelect = wrap.querySelector('.table-page-size');
+                    if (sizeSelect) {
+                        sizeSelect.addEventListener('change', (e) => {
+                            const val = e.target.value;
+                            this.state[tid].pageSize = (val === 'all') ? 999999 : parseInt(val, 10);
+                            this.state[tid].currentPage = 1;
+                            this.render(tid);
+                        });
+                    }
+
+                    this.render(tid);
+                });
+            },
+
+            handleSort(tid, colIdx, th) {
+                const s = this.state[tid];
+                if (!s) return;
+                if (s.sortCol === colIdx) {
+                    s.sortDir = (s.sortDir === 'asc') ? 'desc' : 'asc';
+                } else {
+                    s.sortCol = colIdx;
+                    s.sortDir = 'asc';
+                }
+
+                s.table.querySelectorAll('thead th').forEach(h => {
+                    h.classList.remove('sort-asc', 'sort-desc');
+                    const ind = h.querySelector('.sort-indicator');
+                    if (ind) ind.textContent = ' ⇅';
+                });
+                th.classList.add(s.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+                const activeInd = th.querySelector('.sort-indicator');
+                if (activeInd) activeInd.textContent = (s.sortDir === 'asc') ? ' ▲' : ' ▼';
+
+                const dir = s.sortDir === 'asc' ? 1 : -1;
+                s.filteredRows.sort((a, b) => {
+                    const cA = a.children[colIdx] ? a.children[colIdx].innerText.trim() : '';
+                    const cB = b.children[colIdx] ? b.children[colIdx].innerText.trim() : '';
+                    const numA = parseFloat(cA.replace(/[+%,]/g, ''));
+                    const numB = parseFloat(cB.replace(/[+%,]/g, ''));
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return (numA - numB) * dir;
+                    }
+                    return cA.localeCompare(cB) * dir;
+                });
+
+                s.currentPage = 1;
+                this.render(tid);
+            },
+
+            handleSearch(tid, query) {
+                const s = this.state[tid];
+                if (!s) return;
+                s.searchQuery = (query || '').toLowerCase().trim();
+                if (!s.searchQuery) {
+                    s.filteredRows = [...s.allRows];
+                } else {
+                    s.filteredRows = s.allRows.filter(row => {
+                        return row.innerText.toLowerCase().includes(s.searchQuery);
+                    });
+                }
+                s.currentPage = 1;
+                this.render(tid);
+            },
+
+            render(tid) {
+                const s = this.state[tid];
+                if (!s) return;
+                const total = s.filteredRows.length;
+                const startIdx = (s.currentPage - 1) * s.pageSize;
+                const endIdx = startIdx + s.pageSize;
+
+                s.allRows.forEach(r => r.style.display = 'none');
+                s.filteredRows.slice(startIdx, endIdx).forEach(r => r.style.display = '');
+
+                const tbody = s.table.querySelector('tbody');
+                if (tbody) {
+                    s.filteredRows.forEach(r => tbody.appendChild(r));
+                }
+
+                // Update pagination bar
+                const bar = s.wrapper.querySelector('.table-pagination-bar');
+                if (bar) {
+                    const infoEl = bar.querySelector('.table-pagination-info');
+                    const nav = bar.querySelector('.table-pagination-nav');
+                    if (total === 0) {
+                        if (infoEl) infoEl.textContent = 'No matching entries';
+                        if (nav) nav.innerHTML = '';
+                        return;
+                    }
+                    const dispStart = startIdx + 1;
+                    const dispEnd = Math.min(endIdx, total);
+                    if (infoEl) infoEl.textContent = `Showing ${dispStart}–${dispEnd} of ${total} entries`;
+
+                    if (nav) {
+                        const totalPages = Math.ceil(total / s.pageSize);
+                        if (totalPages <= 1) {
+                            nav.innerHTML = '';
+                        } else {
+                            let navHtml = `<button type="button" class="btn btn-sm" style="padding: 2px 8px; margin-right: 4px;" ${s.currentPage === 1 ? 'disabled' : ''} onclick="CampTableSuite.setPage('${tid}', ${s.currentPage - 1})">‹ Prev</button>`;
+                            navHtml += `<span style="font-size: 0.8rem; margin: 0 6px;">Page ${s.currentPage} of ${totalPages}</span>`;
+                            navHtml += `<button type="button" class="btn btn-sm" style="padding: 2px 8px; margin-left: 4px;" ${s.currentPage >= totalPages ? 'disabled' : ''} onclick="CampTableSuite.setPage('${tid}', ${s.currentPage + 1})">Next ›</button>`;
+                            nav.innerHTML = navHtml;
+                        }
+                    }
+                }
+            },
+
+            setPage(tid, page) {
+                const s = this.state[tid];
+                if (!s) return;
+                const totalPages = Math.ceil(s.filteredRows.length / s.pageSize);
+                s.currentPage = Math.max(1, Math.min(page, totalPages));
+                this.render(tid);
+            },
+
+            exportTable(tableId, format, baseFilename) {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                const timestamp = new Date().toISOString();
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => {
+                    const clone = th.cloneNode(true);
+                    const ind = clone.querySelector('.sort-indicator');
+                    if (ind) ind.remove();
+                    return clone.innerText.trim();
+                });
+
+                const rows = [];
+                table.querySelectorAll('tbody tr').forEach(tr => {
+                    const row = Array.from(tr.querySelectorAll('td')).map(td => {
+                        return td.innerText.replace(/\s+/g, ' ').trim();
+                    });
+                    if (row.length > 0) rows.push(row);
+                });
+
+                if (format === 'csv') {
+                    let csv = [
+                        '# Tool: CampTools (https://campanalytics.toolforge.org/)',
+                        `# Export Date: ${timestamp}`,
+                        '# License: GPL-2.0-or-later',
+                        '# Data Source: Wikimedia Commons Action API / Toolforge Replica',
+                        headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',')
+                    ];
+                    rows.forEach(r => {
+                        csv.push(r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','));
+                    });
+                    this.downloadBlob(csv.join('\n'), 'text/csv;charset=utf-8;', `${baseFilename}_${Date.now()}.csv`);
+                } else if (format === 'json') {
+                    const jsonData = rows.map(r => {
+                        const obj = {};
+                        headers.forEach((h, i) => {
+                            obj[h] = r[i] || '';
+                        });
+                        return obj;
+                    });
+                    const output = {
+                        meta: {
+                            tool: 'CampTools',
+                            url: 'https://campanalytics.toolforge.org/',
+                            timestamp: timestamp,
+                            license: 'GPL-2.0-or-later'
+                        },
+                        data: jsonData
+                    };
+                    this.downloadBlob(JSON.stringify(output, null, 2), 'application/json;charset=utf-8;', `${baseFilename}_${Date.now()}.json`);
+                } else if (format === 'wikitext') {
+                    let wt = `{| class="wikitable sortable"\n|+ CampTools Export — ${timestamp.substring(0, 10)}\n! ` + headers.join(' !! ') + '\n';
+                    rows.forEach(r => {
+                        wt += '|-\n| ' + r.join(' || ') + '\n';
+                    });
+                    wt += '|}';
+                    this.showWikitextModal(wt);
+                }
+            },
+
+            downloadBlob(content, type, filename) {
+                const blob = new Blob([content], { type: type });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            },
+
+            showWikitextModal(wikitext) {
+                const overlay = document.getElementById('wikitext-modal-overlay');
+                const ta = document.getElementById('wikitext-modal-textarea');
+                if (overlay && ta) {
+                    ta.value = wikitext;
+                    overlay.style.display = 'flex';
+                    ta.select();
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(wikitext);
+                }
+            },
+
+            closeWikitextModal() {
+                const overlay = document.getElementById('wikitext-modal-overlay');
+                if (overlay) overlay.style.display = 'none';
+            },
+
+            copyModalWikitext(btn) {
+                const ta = document.getElementById('wikitext-modal-textarea');
+                if (ta) {
+                    ta.select();
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(ta.value).then(() => {
+                            btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -1px; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Copied!';
+                            btn.classList.add('btn-export--copied');
+                            setTimeout(() => {
+                                btn.textContent = 'Copy to Clipboard';
+                                btn.classList.remove('btn-export--copied');
+                            }, 2000);
+                        });
+                    }
+                }
+            },
+
+            // ── EVALUATION REPORT EXPORT MODAL HANDLERS ───────────────────────
+            currentReportFormat: 'wikitext',
+
+            openExportReportModal() {
+                const overlay = document.getElementById('export-report-modal-overlay');
+                if (overlay) {
+                    this.renderExportReport();
+                    overlay.style.display = 'flex';
+                    const ta = document.getElementById('export-report-textarea');
+                    if (ta) ta.select();
+                }
+            },
+
+            closeExportReportModal() {
+                const overlay = document.getElementById('export-report-modal-overlay');
+                if (overlay) overlay.style.display = 'none';
+            },
+
+            setReportFormat(fmt) {
+                this.currentReportFormat = fmt;
+                const btnWiki = document.getElementById('format-btn-wikitext');
+                const btnMd = document.getElementById('format-btn-markdown');
+                if (btnWiki && btnMd) {
+                    if (fmt === 'wikitext') {
+                        btnWiki.classList.add('active');
+                        btnMd.classList.remove('active');
+                    } else {
+                        btnMd.classList.add('active');
+                        btnWiki.classList.remove('active');
+                    }
+                }
+                this.renderExportReport();
+            },
+
+            renderExportReport() {
+                const ta = document.getElementById('export-report-textarea');
+                if (!ta || !window.EVALUATION_REPORT_DATA) return;
+                const d = window.EVALUATION_REPORT_DATA;
+                const today = new Date().toISOString().split('T')[0];
+
+                const score = d.overallScore;
+                let ratingLabel = 'Moderate';
+                if (score >= 85) ratingLabel = 'Outstanding';
+                else if (score >= 70) ratingLabel = 'Strong';
+                else if (score >= 50) ratingLabel = 'Moderate';
+                else if (score >= 30) ratingLabel = 'Emerging';
+                else ratingLabel = 'Critical / Low';
+
+                const targetUpper = d.targetEvent.toUpperCase();
+                const baseStr = d.baselineEvent ? d.baselineEvent.toUpperCase() : 'Prior Year Baseline';
+
+                if (this.currentReportFormat === 'wikitext') {
+                    let w = `== CampTools Campaign Evaluation Report: ${targetUpper} ==\n\n`;
+                    w += `'''Executive Summary:'''\n`;
+                    w += `* '''Target Campaign:''' ${targetUpper}\n`;
+                    w += `* '''Baseline Reference:''' ${baseStr}\n`;
+                    w += `* '''Regional Calibration Framework:''' ${d.region}\n`;
+                    w += `* '''Overall Evaluation Score:''' '''${score} / 100''' (${ratingLabel})\n`;
+                    w += `* '''Generated On:''' ${today}\n\n`;
+
+                    w += `=== Performance Dimensions ===\n`;
+                    w += `{| class="wikitable sortable"\n`;
+                    w += `! Dimension !! Focus Area !! Weight !! Observed !! Regional Norm !! Score !! Rating\n`;
+                    w += `|-\n| Retention Index || Volunteer Continuity || ${d.metrics.retention.weight} || ${d.metrics.retention.raw} || ${d.metrics.retention.benchmark}% || ${d.metrics.retention.score} / 100 || ${d.metrics.retention.stars}\n`;
+                    w += `|-\n| Growth Capacity || Newcomer Recruitment || ${d.metrics.growth.weight} || ${d.metrics.growth.raw} || ${d.metrics.growth.benchmark}% || ${d.metrics.growth.score} / 100 || ${d.metrics.growth.stars}\n`;
+                    w += `|-\n| Content Utility || Article Image Use || ${d.metrics.usage.weight} || ${d.metrics.usage.raw} || ${d.metrics.usage.benchmark} || ${d.metrics.usage.score} / 100 || ${d.metrics.usage.stars}\n`;
+                    w += `|-\n| Quality Recognition || Featured / QI Recognition || ${d.metrics.quality.weight} || ${d.metrics.quality.raw} || ${d.metrics.quality.benchmark} || ${d.metrics.quality.score} / 100 || ${d.metrics.quality.stars}\n`;
+                    w += `|-\n| Contributor Diversity || Participation Equity || ${d.metrics.diversity.weight} || ${d.metrics.diversity.raw} || ${d.metrics.diversity.benchmark} || ${d.metrics.diversity.score} / 100 || ${d.metrics.diversity.stars}\n`;
+                    w += `|-\n! Composite Overall !! Full Evaluation !! 100% !! — !! — !! ${score} / 100 !! ${ratingLabel}\n`;
+                    w += `|}\n\n`;
+
+                    w += `=== Contributor Participation Footprint ===\n`;
+                    w += `* '''Total Evaluated Uploaders:''' ${d.counts.target.toLocaleString()}\n`;
+                    w += `* '''Baseline Reference Uploaders:''' ${d.counts.base.toLocaleString()}\n`;
+                    w += `* '''Retained Prior Contributors:''' ${d.counts.overlap.toLocaleString()}\n`;
+                    w += `* '''First-Time Newcomer Uploaders:''' ${Math.max(0, d.counts.target - d.counts.overlap).toLocaleString()}\n\n`;
+
+                    if (d.insights && d.insights.length > 0) {
+                        w += `=== Organizer Diagnostic Insights ===\n`;
+                        d.insights.forEach(ins => {
+                            w += `* ${ins}\n`;
+                        });
+                        w += `\n`;
+                    }
+
+                    w += `----\n`;
+                    w += `''Compiled with [https://meta.wikimedia.org/wiki/Project_Korikath CampTools] · Tool Usage & Process Guide available on Wikimedia Toolforge.''`;
+                    ta.value = w;
+                } else {
+                    let m = `# CampTools Campaign Evaluation Report: ${targetUpper}\n\n`;
+                    m += `### Executive Summary\n\n`;
+                    m += `- **Target Campaign:** ${targetUpper}\n`;
+                    m += `- **Baseline Reference:** ${baseStr}\n`;
+                    m += `- **Regional Framework:** ${d.region}\n`;
+                    m += `- **Overall Evaluation Score:** **${score} / 100** (${ratingLabel})\n`;
+                    m += `- **Generated On:** ${today}\n\n`;
+
+                    m += `### Performance Dimensions\n\n`;
+                    m += `| Dimension | Focus Area | Weight | Observed | Regional Norm | Score | Rating |\n`;
+                    m += `| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+                    m += `| Retention Index | Volunteer Continuity | ${d.metrics.retention.weight} | ${d.metrics.retention.raw} | ${d.metrics.retention.benchmark}% | ${d.metrics.retention.score} / 100 | ${d.metrics.retention.stars} |\n`;
+                    m += `| Growth Capacity | Newcomer Recruitment | ${d.metrics.growth.weight} | ${d.metrics.growth.raw} | ${d.metrics.growth.benchmark}% | ${d.metrics.growth.score} / 100 | ${d.metrics.growth.stars} |\n`;
+                    m += `| Content Utility | Article Image Use | ${d.metrics.usage.weight} | ${d.metrics.usage.raw} | ${d.metrics.usage.benchmark} | ${d.metrics.usage.score} / 100 | ${d.metrics.usage.stars} |\n`;
+                    m += `| Quality Recognition | Featured / QI Recognition | ${d.metrics.quality.weight} | ${d.metrics.quality.raw} | ${d.metrics.quality.benchmark} | ${d.metrics.quality.score} / 100 | ${d.metrics.quality.stars} |\n`;
+                    m += `| Contributor Diversity | Participation Equity | ${d.metrics.diversity.weight} | ${d.metrics.diversity.raw} | ${d.metrics.diversity.benchmark} | ${d.metrics.diversity.score} / 100 | ${d.metrics.diversity.stars} |\n`;
+                    m += `| **Composite Overall** | **Full Evaluation** | **100%** | — | — | **${score} / 100** | **${ratingLabel}** |\n\n`;
+
+                    m += `### Contributor Participation Footprint\n\n`;
+                    m += `- **Total Evaluated Uploaders:** ${d.counts.target.toLocaleString()}\n`;
+                    m += `- **Baseline Reference Uploaders:** ${d.counts.base.toLocaleString()}\n`;
+                    m += `- **Retained Prior Contributors:** ${d.counts.overlap.toLocaleString()}\n`;
+                    m += `- **First-Time Newcomer Uploaders:** ${Math.max(0, d.counts.target - d.counts.overlap).toLocaleString()}\n\n`;
+
+                    if (d.insights && d.insights.length > 0) {
+                        m += `### Organizer Diagnostic Insights\n\n`;
+                        d.insights.forEach(ins => {
+                            m += `- ${ins}\n`;
+                        });
+                        m += `\n`;
+                    }
+
+                    m += `---\n`;
+                    m += `*Compiled with [CampTools](https://meta.wikimedia.org/wiki/Project_Korikath) · Tool Usage & Process Guide available on Wikimedia Toolforge.*`;
+                    ta.value = m;
+                }
+            },
+
+            copyReportText(btn) {
+                const ta = document.getElementById('export-report-textarea');
+                if (ta) {
+                    ta.select();
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(ta.value).then(() => {
+                            btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -1px; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Copied!';
+                            btn.classList.add('btn-export--copied');
+                            setTimeout(() => {
+                                btn.textContent = 'Copy to Clipboard';
+                                btn.classList.remove('btn-export--copied');
+                            }, 2000);
+                        });
+                    }
+                }
+            }
+        };
+
+        // ── SHARE DEEP-LINK & DYNAMIC URL STATE SYNC ──────────────────────────
+        function syncFormStateToURL() {
+            const activeForm = document.getElementById('retention-form') || 
+                               document.getElementById('health-form') || 
+                               document.getElementById('influx-form');
+            if (activeForm && window.history && window.history.replaceState) {
+                const formData = new FormData(activeForm);
+                const params = new URLSearchParams();
+                for (const [key, val] of formData.entries()) {
+                    if (val && typeof val === 'string' && val.trim()) {
+                        params.append(key, val.trim());
+                    }
+                }
+                const qs = params.toString();
+                if (qs && qs.length < 3500) {
+                    const newUrl = window.location.pathname + '?' + qs;
+                    window.history.replaceState(null, '', newUrl);
+                }
+            }
+        }
+
+        function copyCurrentURL(btn) {
+            let url = window.location.href;
+            if (!window.location.search || window.location.search === '') {
+                const activeForm = document.getElementById('retention-form') || 
+                                   document.getElementById('health-form') || 
+                                   document.getElementById('influx-form');
+                if (activeForm) {
+                    const formData = new FormData(activeForm);
+                    const params = new URLSearchParams();
+                    for (const [key, val] of formData.entries()) {
+                        if (val && typeof val === 'string' && val.trim()) {
+                            params.append(key, val.trim());
+                        }
+                    }
+                    const qs = params.toString();
+                    if (qs) {
+                        url = window.location.origin + activeForm.getAttribute('action') + '?' + qs;
+                    }
+                }
+            }
+
+            const svgCheck = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -1px; margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            const svgWarn = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -1px; margin-right: 4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+
+            if (url.length > 4000) {
+                flashShareBtn(btn, svgWarn + 'Query too large to share via URL');
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => flashShareBtn(btn, svgCheck + 'Link copied!'));
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = url;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+                flashShareBtn(btn, svgCheck + 'Link copied!');
+            }
+        }
+
+        function flashShareBtn(btn, msg) {
+            const orig = btn.innerHTML;
+            btn.innerHTML = msg;
+            btn.classList.add('share-btn--copied');
+            setTimeout(() => {
+                btn.innerHTML = orig;
+                btn.classList.remove('share-btn--copied');
+            }, 2500);
+        }
+
+        // ── LOADING STATE ──────────────────────────────────────────────────────
+        function setLoadingState(btn, label) {
+            const form = btn.closest('form');
+            if (form && !form.checkValidity()) {
+                return;
+            }
+            setTimeout(() => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-spinner"></span>' + label;
+                btn.style.opacity = '0.75';
+                btn.style.cursor = 'not-allowed';
+            }, 10);
+        }
+
+        // Re-enable buttons if restored from browser back-forward cache
+        window.addEventListener('pageshow', () => {
+            document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+            });
+        });
+
+        let currentHeatmapOffset = {{ heatmaps|length }};
+        const targetCampaignsValue = {{ target_campaigns|default('')|tojson }};
+        const totalHeatmapsCount = {{ total_heatmaps_count|default(0) }};
+
+        async function loadMoreHeatmaps() {
+            const btn = document.getElementById('btn-load-more-heatmaps');
+            const grid = document.getElementById('retention-heatmap-grid');
+            const counter = document.getElementById('heatmap-shown-count');
+            if (!btn || !grid) return;
+
+            btn.disabled = true;
+            btn.style.opacity = '0.75';
+            btn.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;"></span> Loading matrices…';
+
+            try {
+                const url = `/api/retention/heatmaps?target_campaigns=${encodeURIComponent(targetCampaignsValue)}&offset=${currentHeatmapOffset}&limit=6`;
+                const resp = await fetch(url);
+                if (!resp.ok) {
+                    throw new Error(`Server responded with ${resp.status}`);
+                }
+                const data = await resp.json();
+                if (data.heatmaps && data.heatmaps.length > 0) {
+                    data.heatmaps.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'chart-container';
+                        card.className = "chart-container heatmap-card";
+                        
+                        const title = document.createElement('div');
+                        title.style.cssText = 'font-weight: 600; font-size: 0.95rem; color: var(--text-ink); margin-bottom: 8px; text-align: center;';
+                        title.textContent = item.country_title;
+                        
+                        const img = document.createElement('img');
+                        img.src = item.heatmap_b64.startsWith('data:') ? item.heatmap_b64 : `data:image/svg+xml;base64,${item.heatmap_b64}`;
+                        img.alt = `${item.country_title} Retention Heatmap`;
+                        img.style.cssText = 'width: 100%; height: auto; border-radius: 4px; cursor: zoom-in;';
+                        img.onclick = function() { this.classList.toggle('zoomed-img'); };
+                        
+                        card.appendChild(title);
+                        card.appendChild(img);
+                        grid.appendChild(card);
+                    });
+
+                    currentHeatmapOffset = data.offset;
+                    if (counter) {
+                        counter.textContent = currentHeatmapOffset;
+                    }
+
+                    if (data.has_more && data.remaining_count > 0) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg> <span>Load More Matrices (${data.remaining_count} remaining)</span>`;
+                    } else {
+                        const wrap = document.getElementById('heatmap-load-more-wrap');
+                        if (wrap) {
+                            wrap.innerHTML = '<span style="font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">All matrices loaded.</span>';
+                        }
+                    }
+                } else {
+                    const wrap = document.getElementById('heatmap-load-more-wrap');
+                    if (wrap) {
+                        wrap.innerHTML = '<span style="font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">All matrices loaded.</span>';
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load more heatmaps:', err);
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerHTML = 'Error loading matrices. Click to retry.';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Render active campaign tokens in cockpit
+            renderCampaignTokens();
+
+            // Initialize Interactive Table Suite across all rendered tables
+            CampTableSuite.init();
+
+            // Automatically scroll to results on page reload if results exist across any view
+            const resultsEl = document.getElementById('influx-results') || 
+                              document.getElementById('health-results') || 
+                              document.getElementById('retention-results');
+            if (resultsEl) {
+                setTimeout(() => {
+                    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 120);
+            }
+
+            // Cross-browser event delegation on pill groups to ensure selection updates in Safari/WebKit
+            ['event-pill-group', 'health-event-group', 'influx-event-group'].forEach(groupId => {
+                const groupEl = document.getElementById(groupId);
+                if (groupEl) {
+                    groupEl.addEventListener('click', (e) => {
+                        if (e.target.closest('.pill-label') || e.target.closest('.pill-checkbox')) {
+                            if (groupId === 'health-event-group') {
+                                setTimeout(syncHealthBuilderToCode, 30);
+                            } else if (groupId === 'influx-event-group') {
+                                setTimeout(syncInfluxBuilder, 30);
+                            } else if (groupId === 'event-pill-group') {
+                                setTimeout(syncRetentionBuilder, 30);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Synchronize builder controls with initial input values
+            const retentionTarget = document.getElementById('target_campaigns');
+            if (retentionTarget && retentionTarget.value) {
+                parseCodeToRetentionBuilder();
+            }
+
+            const healthTarget = document.getElementById('target_event');
+            if (healthTarget && healthTarget.value) {
+                parseCodeToHealthBuilder();
+            }
+
+            const influxCodesInput = document.getElementById('influx_codes');
+            if (influxCodesInput && influxCodesInput.value) {
+                parseCodeToInfluxBuilder();
+            }
+
+            toggleCustomBaseline();
+            toggleMetricSelector();
+
+            // Auto-bind region select when typing target campaign code
+            const targetEventInput = document.getElementById('target_event');
+            const regionSelect = document.getElementById('region');
+            const countryToRegionMap = {{ COUNTRY_TO_REGION | tojson }};
+            if (targetEventInput && regionSelect) {
+                targetEventInput.addEventListener('input', function() {
+                    const val = this.value.trim().toLowerCase();
+                    const match = val.match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/);
+                    if (match && match[2] && countryToRegionMap[match[2]]) {
+                        regionSelect.value = countryToRegionMap[match[2]];
+                    }
+                });
+            }
+
+            {% if metrics %}
+            window.EVALUATION_REPORT_DATA = {
+                targetEvent: {{ target_event|tojson }},
+                compMode: {{ comp_mode|tojson }},
+                region: {{ region|tojson }},
+                overallScore: {{ metrics['Overall']|tojson }},
+                metrics: {
+                    retention: {
+                        raw: {{ metrics['Retention']['raw']|tojson }},
+                        benchmark: {{ ("%.1f"|format(metrics['Retention']['benchmark']))|tojson }},
+                        score: {{ ("%.1f"|format(metrics['Retention']['score']))|tojson }},
+                        stars: {{ metrics['Retention']['stars']|tojson }},
+                        weight: '25%'
+                    },
+                    growth: {
+                        raw: {{ metrics['Growth']['raw']|tojson }},
+                        benchmark: {{ ("%.1f"|format(metrics['Growth']['benchmark']))|tojson }},
+                        score: {{ ("%.1f"|format(metrics['Growth']['score']))|tojson }},
+                        stars: {{ metrics['Growth']['stars']|tojson }},
+                        weight: '25%'
+                    },
+                    usage: {
+                        raw: {{ ("%.1f"|format(metrics['Usage']['raw']))|tojson }} + '%',
+                        benchmark: {{ ("%.1f"|format(metrics['Usage']['benchmark']))|tojson }} + '%',
+                        score: {{ ("%.1f"|format(metrics['Usage']['score']))|tojson }},
+                        stars: {{ metrics['Usage']['stars']|tojson }},
+                        weight: '20%'
+                    },
+                    quality: {
+                        raw: {{ ("%.1f"|format(metrics['Quality']['raw']))|tojson }} + '%',
+                        benchmark: {{ ("%.1f"|format(metrics['Quality']['benchmark']))|tojson }} + '%',
+                        score: {{ ("%.1f"|format(metrics['Quality']['score']))|tojson }},
+                        stars: {{ metrics['Quality']['stars']|tojson }},
+                        weight: '15%'
+                    },
+                    diversity: {
+                        raw: {{ ("%.1f"|format(metrics['Diversity']['raw']))|tojson }} + '%',
+                        benchmark: {{ ("%.1f"|format(metrics['Diversity']['benchmark']))|tojson }} + '%',
+                        score: {{ ("%.1f"|format(metrics['Diversity']['score']))|tojson }},
+                        stars: {{ metrics['Diversity']['stars']|tojson }},
+                        weight: '15%'
+                    }
+                },
+                counts: {
+                    target: {{ target_users_count|tojson }},
+                    base: {{ base_users_count|tojson }},
+                    overlap: {{ intersect_users_count|tojson }}
+                },
+                insights: {{ insights|tojson if insights else []|tojson }}
+            };
+            {% endif %}
+
+            // Attach dynamic URL sync to form input changes
+            document.querySelectorAll('form input, form select').forEach(input => {
+                input.addEventListener('change', syncFormStateToURL);
+            });
+        });
+    </script>
+
+    <!-- MediaWiki Wikitext Table Export Modal -->
+    <div id="wikitext-modal-overlay" class="wikitext-modal-overlay" style="display: none;" onclick="if(event.target === this) CampTableSuite.closeWikitextModal()">
+        <div class="wikitext-modal" role="dialog" aria-modal="true" aria-labelledby="wikitext-modal-title">
+            <div class="wikitext-modal-header">
+                <div class="wikitext-modal-title" id="wikitext-modal-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
+                    <span>MediaWiki Wikitext Table Export</span>
+                </div>
+                <button type="button" class="wikitext-modal-close" onclick="CampTableSuite.closeWikitextModal()" aria-label="Close dialog">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="wikitext-modal-body">
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0 0 10px 0;">
+                    Formatted MediaWiki sortable table markup. Copy and paste directly into Wikimedia grant reports, talk pages, or project dashboards:
+                </p>
+                <textarea id="wikitext-modal-textarea" class="wikitext-textarea" readonly spellcheck="false"></textarea>
+            </div>
+            <div class="wikitext-modal-footer">
+                <button type="button" class="btn btn-sm" onclick="CampTableSuite.closeWikitextModal()" style="background: #ffffff; border: 1px solid var(--border-color); color: var(--text-ink); cursor: pointer;">
+                    Close
+                </button>
+                <button type="button" id="wikitext-copy-btn" class="btn btn-sm btn-primary" onclick="CampTableSuite.copyModalWikitext(this)">
+                    Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Export Report Modal -->
+    <div id="export-report-modal-overlay" class="wikitext-modal-overlay" style="display: none;" onclick="if(event.target === this) CampTableSuite.closeExportReportModal()">
+        <div class="wikitext-modal" role="dialog" aria-modal="true" aria-labelledby="export-report-modal-title" style="max-width: 760px;">
+            <div class="wikitext-modal-header">
+                <div class="wikitext-modal-title" id="export-report-modal-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span>Export Evaluation Report</span>
+                </div>
+                <button type="button" class="wikitext-modal-close" onclick="CampTableSuite.closeExportReportModal()" aria-label="Close dialog">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="wikitext-modal-body">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                        Structured campaign evaluation report ready for Wikimedia project talk pages, community dashboards, or documentation.
+                    </p>
+                    <div class="export-format-toggle">
+                        <button type="button" id="format-btn-wikitext" class="export-format-btn active" onclick="CampTableSuite.setReportFormat('wikitext')">Wikitext</button>
+                        <button type="button" id="format-btn-markdown" class="export-format-btn" onclick="CampTableSuite.setReportFormat('markdown')">Markdown</button>
+                    </div>
+                </div>
+                <textarea id="export-report-textarea" class="wikitext-textarea" readonly spellcheck="false" style="min-height: 340px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem;"></textarea>
+            </div>
+            <div class="wikitext-modal-footer">
+                <button type="button" class="btn btn-sm" onclick="CampTableSuite.closeExportReportModal()" style="background: #ffffff; border: 1px solid var(--border-color); color: var(--text-ink); cursor: pointer;">
+                    Close
+                </button>
+                <button type="button" id="export-report-copy-btn" class="btn btn-sm btn-primary" onclick="CampTableSuite.copyReportText(this)">
+                    Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
