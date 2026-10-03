@@ -3414,7 +3414,7 @@
 
                 if (format === 'csv') {
                     let csv = [
-                        '# Tool: CampAnalytics (https://campanalytics.toolforge.org/)',
+                        '# Tool: CampTools (https://campanalytics.toolforge.org/)',
                         `# Export Date: ${timestamp}`,
                         '# License: GPL-2.0-or-later',
                         '# Data Source: Wikimedia Commons Action API / Toolforge Replica',
@@ -3434,7 +3434,7 @@
                     });
                     const output = {
                         meta: {
-                            tool: 'CampAnalytics',
+                            tool: 'CampTools',
                             url: 'https://campanalytics.toolforge.org/',
                             timestamp: timestamp,
                             license: 'GPL-2.0-or-later'
@@ -3443,7 +3443,7 @@
                     };
                     this.downloadBlob(JSON.stringify(output, null, 2), 'application/json;charset=utf-8;', `${baseFilename}_${Date.now()}.json`);
                 } else if (format === 'wikitext') {
-                    let wt = `{| class="wikitable sortable"\n|+ CampAnalytics Export — ${timestamp.substring(0, 10)}\n! ` + headers.join(' !! ') + '\n';
+                    let wt = `{| class="wikitable sortable"\n|+ CampTools Export — ${timestamp.substring(0, 10)}\n! ` + headers.join(' !! ') + '\n';
                     rows.forEach(r => {
                         wt += '|-\n| ' + r.join(' || ') + '\n';
                     });
@@ -3550,7 +3550,7 @@
                 const baseStr = d.baselineEvent ? d.baselineEvent.toUpperCase() : 'Prior Year Baseline';
 
                 if (this.currentReportFormat === 'wikitext') {
-                    let w = `== CampAnalytics Campaign Evaluation Report: ${targetUpper} ==\n\n`;
+                    let w = `== CampTools Campaign Evaluation Report: ${targetUpper} ==\n\n`;
                     w += `'''Executive Summary:'''\n`;
                     w += `* '''Target Campaign:''' ${targetUpper}\n`;
                     w += `* '''Baseline Reference:''' ${baseStr}\n`;
@@ -3584,10 +3584,10 @@
                     }
 
                     w += `----\n`;
-                    w += `''Compiled with [https://meta.wikimedia.org/wiki/Project_Korikath CampAnalytics] · Tool Usage & Process Guide available on Wikimedia Toolforge.''`;
+                    w += `''Compiled with [https://meta.wikimedia.org/wiki/Project_Korikath CampTools] · Tool Usage & Process Guide available on Wikimedia Toolforge.''`;
                     ta.value = w;
                 } else {
-                    let m = `# CampAnalytics Campaign Evaluation Report: ${targetUpper}\n\n`;
+                    let m = `# CampTools Campaign Evaluation Report: ${targetUpper}\n\n`;
                     m += `### Executive Summary\n\n`;
                     m += `- **Target Campaign:** ${targetUpper}\n`;
                     m += `- **Baseline Reference:** ${baseStr}\n`;
@@ -3620,7 +3620,7 @@
                     }
 
                     m += `---\n`;
-                    m += `*Compiled with [CampAnalytics](https://meta.wikimedia.org/wiki/Project_Korikath) · Tool Usage & Process Guide available on Wikimedia Toolforge.*`;
+                    m += `*Compiled with [CampTools](https://meta.wikimedia.org/wiki/Project_Korikath) · Tool Usage & Process Guide available on Wikimedia Toolforge.*`;
                     ta.value = m;
                 }
             },

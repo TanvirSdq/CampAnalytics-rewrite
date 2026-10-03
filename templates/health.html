@@ -28,21 +28,12 @@
                         <div>
                             <!-- Campaign Type Selector -->
                             
-                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; background: #fafbfc; border: 1px solid #eaecf0; border-radius: 6px;">
+                            <div class="preset-rail">
                                 <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;">Quick Presets:</span>
                                 <button type="button" class="preset-chip" onclick="loadHealthPreset('allde22', 'Northern & Western Europe', '')">Germany (WLM '22)</button>
                                 <button type="button" class="preset-chip" onclick="loadHealthPreset('wlmit23', 'Southern Europe', '')">Italy (WLM '23)</button>
                                 <button type="button" class="preset-chip" onclick="loadHealthPreset('allbd{{ CURRENT_YEAR % 100 }}', 'South Asia', '')">All Bangladesh</button>
                                 <button type="button" class="preset-chip" onclick="loadHealthPreset('wlein22', 'South Asia', '')">India (WLE '22)</button>
-                            </div>
-
-                            
-                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; background: #fafbfc; border: 1px solid #eaecf0; border-radius: 6px;">
-                                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;">Quick Presets:</span>
-                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('wlm', 'de', 2024)">Germany (WLM '24)</button>
-                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('wlf', 'it', 2024)">Italy (WLF '24)</button>
-                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('wle', 'in', 2024)">India (WLE '24)</button>
-                                <button type="button" class="preset-chip" onclick="loadUtilityPreset('all', 'bd', 2024)">All Bangladesh '24</button>
                             </div>
 
                             <div class="form-group">
@@ -116,8 +107,6 @@
                                 </select>
                                 <div class="form-hint">Regional benchmark norms are calibrated against top peer campaigns in this geographic cluster (auto-detected from country).</div>
                             </div>
-                        </div>
-
                         </div>
                     </div>
 
