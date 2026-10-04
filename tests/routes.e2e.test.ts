@@ -73,7 +73,9 @@ before(async () => {
 
   console.log(`[E2E] Spawning test server at ${BASE_URL}...`);
   const serverEntry = fs.existsSync(path.join(projectRoot, 'src/server.ts')) ? 'src/server.ts' : 'server.ts';
-  serverProcess = spawn('npx', ['tsx', serverEntry], {
+  const tsxCli = path.join(projectRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+  
+  serverProcess = spawn(process.execPath, [tsxCli, serverEntry], {
     cwd: projectRoot,
     env: { ...process.env, PORT: '3000', HOST: '127.0.0.1' },
     stdio: 'pipe'
