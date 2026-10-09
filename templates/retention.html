@@ -1,19 +1,13 @@
 {% extends "base.html" %}
+{% block extra_head %}
+<!-- Plotly.js for interactive choropleth geovisualizations (scoped exclusively to retention) -->
+<script defer src="/plotly.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js';"></script>
+{% endblock %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
-            <div>
-                <h1 class="page-title" style="margin-bottom: 4px;">Retention Analytics</h1>
-                <p class="page-subtitle" style="margin-bottom: 0;">Longitudinal contributor retention and cohort overlap across Wiki Loves campaigns.</p>
-            </div>
-            <a href="/documentation#retention-guide" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; background: #ffffff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 4px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-                <span>Tool Usage &amp; Process Guide</span>
-                <span aria-hidden="true">&rarr;</span>
-            </a>
-        </div>
+<div>
+    <h1 class="page-title" style="margin-bottom: 4px;">Retention Analytics</h1>
+    <p class="page-subtitle" style="margin-bottom: 0;">Analyze contributor return rates and cohort overlap across consecutive campaign years.</p>
+</div>
 
         <form action="/retention" method="GET" id="retention-form" onsubmit="syncRetentionBeforeSubmit(event)">
             <!-- Main Campaign Selection Tool (High Priority) -->
@@ -26,19 +20,20 @@
                 </div>
 
                 <div class="display-panel-body" style="padding-bottom: 0;">
-                    <!-- Quick Presets Bar at Top of Tool -->
-                    <div class="preset-rail preset-strip">
-                        <span class="preset-strip-title">Quick Presets:</span>
-                        <button type="button" class="preset-chip global-chip" onclick="selectAllCountries(); document.getElementById('retention-form').submit();" title="Analyze all 50+ countries globally">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                            <span>Global (50+ Countries)</span>
-                        </button>
-                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmde21 wlmde22')">Germany (WLM)</button>
-                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmit21 wlmit22 wlmit23')">Italy (WLM)</button>
-                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlein21 wlein22')">India (WLE)</button>
-                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmbd22 wlmbd23')">Bangladesh (WLM)</button>
-                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('allde21 allde22')">All Germany</button>
-                        <button type="button" class="preset-chip" onclick="loadRetentionPreset('allbd22 allbd23')">All Bangladesh</button>
+                    <div class="preset-rail">
+                        <span class="preset-rail-title">Quick Presets:</span>
+                        <div class="preset-rail-chips">
+                            <button type="button" class="preset-chip global-chip" onclick="selectAllCountries(); document.getElementById('retention-form').submit();" title="Analyze all 50+ countries globally">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                <span>Global (50+ Countries)</span>
+                            </button>
+                            <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmde21 wlmde22')">Germany (WLM)</button>
+                            <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmit21 wlmit22 wlmit23')">Italy (WLM)</button>
+                            <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlein21 wlein22')">India (WLE)</button>
+                            <button type="button" class="preset-chip" onclick="loadRetentionPreset('wlmbd22 wlmbd23')">Bangladesh (WLM)</button>
+                            <button type="button" class="preset-chip" onclick="loadRetentionPreset('allde21 allde22')">All Germany</button>
+                            <button type="button" class="preset-chip" onclick="loadRetentionPreset('allbd22 allbd23')">All Bangladesh</button>
+                        </div>
                     </div>
 
                     <div class="builder-layout">
@@ -99,19 +94,27 @@
                                 </div>
                             </div>
 
-                            <!-- Synchronized Target Campaign Codes Textarea -->
-                            <div class="form-group" style="margin-bottom: 14px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                    <label for="target_campaigns" class="form-label" style="margin-bottom: 0;">
-                                        Campaign Code String (Live-Synchronized)
-                                    </label>
-                                    <button type="button" class="btn btn-sm" onclick="clearTargetCampaigns()" title="Clear target campaigns" style="padding: 2px 8px; font-size: 0.78rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer;">
-                                        Clear Codes
-                                    </button>
+                            <!-- Synchronized Target Campaign Codes (Advanced Collapsible Disclosure) -->
+                            <details class="manual-code-toggle" id="retention-code-toggle" {% if target_campaigns and not builder_country %}open{% endif %}>
+                                <summary class="manual-code-summary">
+                                    <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    <span>Advanced: Enter campaign codes manually</span>
+                                </summary>
+                                <div class="manual-code-body">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                            <label for="target_campaigns" class="form-label" style="margin-bottom: 0;">
+                                                Campaign Code String
+                                            </label>
+                                            <button type="button" class="btn btn-sm" onclick="clearTargetCampaigns()" title="Clear target campaigns" style="padding: 2px 8px; font-size: 0.78rem; background: #fff; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer;">
+                                                Clear Codes
+                                            </button>
+                                        </div>
+                                        <textarea id="target_campaigns" name="target_campaigns" rows="2" placeholder="e.g. wlmde21 wlmde22 wlmde23" class="form-control form-control-code" oninput="parseCodeToRetentionBuilder(); renderCampaignTokens();">{{ target_campaigns if target_campaigns else '' }}</textarea>
+                                        <div class="form-hint">Selections automatically populate this code array. You can also paste codes directly here.</div>
+                                    </div>
                                 </div>
-                                <textarea id="target_campaigns" name="target_campaigns" rows="2" placeholder="e.g. wlmde21 wlmde22 wlmde23" class="form-control form-control-code" oninput="parseCodeToRetentionBuilder(); renderCampaignTokens();">{{ target_campaigns if target_campaigns else '' }}</textarea>
-                                <div class="form-hint">Selections automatically populate this code array. You can also paste codes directly here.</div>
-                            </div>
+                            </details>
                         </div>
 
                         <!-- Right: Projection Model & Metric Settings -->
@@ -170,6 +173,10 @@
                 <div class="display-panel-header">
                     <span>Unified Analysis Dashboard</span>
                     <div style="display: flex; gap: 8px; align-items: center;">
+                        <span class="xtools-execution-badge" style="font-size: 0.76rem; color: var(--text-muted); background: #f8fafc; border: 1px solid #e2e8f0; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>Executed in <strong>{{ execution_time_sec or '0.003' }}</strong> s</span>
+                        </span>
                         <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Longitudinal Contributor Overlap</span>
                         <button type="button" class="share-btn" onclick="copyCurrentURL(this)" title="Copy shareable link to these results">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -181,17 +188,47 @@
                     </div>
                 </div>
                 <div class="display-panel-body">
+                    <!-- Documentation (Placed immediately before statistics) -->
+                    <details class="methodology-details" style="margin-bottom: 20px;">
+                        <summary class="methodology-summary">
+                            <span style="display: inline-flex; align-items: center; gap: 8px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <span>Documentation</span>
+                            </span>
+                            <span style="font-size: 0.78rem; color: var(--wiki-blue); font-weight: 500;">Documentation ▾</span>
+                        </summary>
+                        <div class="methodology-content">
+                            <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
+                                \[ \text{Retention}(C_A \to C_B) = \frac{|U_A \cap U_B|}{|U_A|} \times 100\% \]
+                            </div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                                Measures discrete account survival: percentage of participants from prior cohort \(U_A\) who returned to submit at least one photograph in subsequent cohort \(U_B\).
+                                <a href="/documentation#retention-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Documentation →</a>
+                            </div>
+                        </div>
+                    </details>
+
                     {% if worldmap_html %}
                         <div class="chart-container" style="margin-bottom: 24px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                                 <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-ink); font-weight: 600;">Global Choropleth Projection</h3>
-                                <div class="map-scope-group">
-                                    <span style="font-size: 0.72rem; color: var(--text-muted); padding: 0 4px; font-weight: 600; text-transform: uppercase;">Scope:</span>
-                                    <button type="button" class="map-scope-btn active" onclick="setChoroplethScope('world', this)">World</button>
-                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('europe', this)">Europe</button>
-                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('africa', this)">Africa</button>
-                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('asia', this)">Asia</button>
-                                    <button type="button" class="map-scope-btn" onclick="setChoroplethScope('north america', this)">Americas</button>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <div class="map-scope-group">
+                                        <span style="font-size: 0.72rem; color: var(--text-muted); padding: 0 4px; font-weight: 600; text-transform: uppercase;">Scope:</span>
+                                        <button type="button" class="map-scope-btn active" onclick="setChoroplethScope('world', this)">World</button>
+                                        <button type="button" class="map-scope-btn" onclick="setChoroplethScope('europe', this)">Europe</button>
+                                        <button type="button" class="map-scope-btn" onclick="setChoroplethScope('africa', this)">Africa</button>
+                                        <button type="button" class="map-scope-btn" onclick="setChoroplethScope('asia', this)">Asia</button>
+                                        <button type="button" class="map-scope-btn" onclick="setChoroplethScope('north america', this)">Americas</button>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampChartSuite.downloadPlotly('retention-worldmap', 'camptools_retention_map')" title="Download map as PNG image" style="display: inline-flex; align-items: center; gap: 5px;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        <span>Download PNG</span>
+                                    </button>
                                 </div>
                             </div>
                             {{ worldmap_html | safe }}
@@ -199,25 +236,6 @@
                     {% endif %}
 
                     {% if tables %}
-                        <!-- Collapsible Methodology Accordion (Clean Progressive Disclosure) -->
-                        <details class="methodology-details">
-                            <summary class="methodology-summary">
-                                <span style="display: inline-flex; align-items: center; gap: 8px;">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--wiki-blue);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                    <span>Longitudinal Cohort Retention Formulation</span>
-                                </span>
-                                <span style="font-size: 0.76rem; color: var(--wiki-blue); font-weight: 500;">Methodology &amp; Derivation ▾</span>
-                            </summary>
-                            <div class="methodology-content">
-                                <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
-                                    \[ \text{Retention}(C_A \to C_B) = \frac{|U_A \cap U_B|}{|U_A|} \times 100\% \]
-                                </div>
-                                <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
-                                    Measures discrete account survival: percentage of participants from prior cohort \(U_A\) who returned to submit at least one photograph in subsequent cohort \(U_B\).
-                                    <a href="/documentation#retention-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Full Documentation →</a>
-                                </div>
-                            </div>
-                        </details>
 
                         {% for table_html in tables %}
                             <div class="table-interactive-wrapper" id="retention-table-wrap-{{ loop.index }}">
@@ -244,7 +262,7 @@
                                     </div>
                                     <div class="table-toolbar-right">
                                         <div class="btn-export-group">
-                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'csv', 'campanalytics_retention')">
+                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'csv', 'camptools_retention')">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                                     <polyline points="7 10 12 15 17 10"></polyline>
@@ -252,14 +270,14 @@
                                                 </svg>
                                                 <span>CSV</span>
                                             </button>
-                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'wikitext', 'campanalytics_retention')">
+                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'wikitext', 'camptools_retention')">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                                                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                                                 </svg>
                                                 <span>Wikitext</span>
                                             </button>
-                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'json', 'campanalytics_retention')">
+                                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('retention-data-table-{{ loop.index }}', 'json', 'camptools_retention')">
                                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <polyline points="16 18 22 12 16 6"></polyline>
                                                     <polyline points="8 6 2 12 8 18"></polyline>
@@ -294,11 +312,17 @@
                                 {% endif %}
                             </div>
                             
-                            <div id="retention-heatmap-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(30%, 1fr)); gap: 16px;">
+                            <div id="retention-heatmap-grid" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
                                 {% for country_title, heatmap_b64 in heatmaps %}
-                                    <div class="chart-container heatmap-card">
-                                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-ink); margin-bottom: 8px; text-align: center;">{{ country_title }}</div>
-                                        <img src="{% if heatmap_b64 and heatmap_b64.startsWith('data:') %}{{ heatmap_b64 }}{% else %}data:image/svg+xml;base64,{{ heatmap_b64 }}{% endif %}" alt="{{ country_title }} Retention Heatmap" style="width: 100%; height: auto; border-radius: 4px; cursor: zoom-in;" onclick="this.classList.toggle('zoomed-img')">
+                                    <div class="chart-container heatmap-card" style="flex: 0 1 540px; max-width: 580px; width: 100%;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 4px;">
+                                            <span style="font-weight: 600; font-size: 0.92rem; color: var(--text-ink);">{{ country_title }}</span>
+                                            <div style="display: flex; gap: 4px;">
+                                                <button type="button" class="btn btn-sm btn-export" style="padding: 2px 8px; font-size: 0.72rem;" onclick="CampChartSuite.downloadCardImage(this, 'camptools_retention_{{ country_title|lower|replace(' ', '_') }}', 'svg')" title="Download matrix as vector SVG">SVG</button>
+                                                <button type="button" class="btn btn-sm btn-export" style="padding: 2px 8px; font-size: 0.72rem;" onclick="CampChartSuite.downloadCardImage(this, 'camptools_retention_{{ country_title|lower|replace(' ', '_') }}', 'png')" title="Download matrix as high-resolution PNG">PNG</button>
+                                            </div>
+                                        </div>
+                                        <img src="{% if heatmap_b64 and heatmap_b64.startsWith('data:') %}{{ heatmap_b64 }}{% else %}data:image/svg+xml;base64,{{ heatmap_b64 }}{% endif %}" alt="{{ country_title }} Retention Heatmap" style="max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 0; cursor: zoom-in;" onclick="this.classList.toggle('zoomed-img')">
                                     </div>
                                 {% endfor %}
                             </div>

@@ -1,19 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
-            <div>
-                <h1 class="page-title" style="margin-bottom: 4px;">Quality Recognition Analytics</h1>
-                <p class="page-subtitle" style="margin-bottom: 0;">Distinction metrics, Quality Images (QI), Featured Pictures (FP), and Valued Images (VI) across competition cohorts.</p>
-            </div>
-            <a href="/documentation#quality-guide" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; background: #ffffff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 4px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-                <span>Tool Usage &amp; Process Guide</span>
-                <span aria-hidden="true">&rarr;</span>
-            </a>
-        </div>
+<div>
+    <h1 class="page-title" style="margin-bottom: 4px;">Quality Recognition Analytics</h1>
+    <p class="page-subtitle" style="margin-bottom: 0;">Identify photos awarded Quality Image, Featured Picture, and Valued Image status, and recognize top contributing photographers.</p>
+</div>
 
         <form action="/quality" method="GET" id="quality-form" onsubmit="syncQualityBuilder()">
             <!-- Structured Panel: Selection Builder -->
@@ -23,8 +13,17 @@
                     <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Configure Campaign Target</span>
                 </div>
                 <div class="display-panel-body">
-                    <div class="builder-layout">
-                        <!-- Left: Form Controls -->
+                    <div class="preset-rail">
+                        <span class="preset-rail-title">Quick Presets:</span>
+                        <div class="preset-rail-chips">
+                            <button type="button" class="preset-chip" onclick="loadQualityPreset('wlm', 'de', 2024)">Germany (WLM '24)</button>
+                            <button type="button" class="preset-chip" onclick="loadQualityPreset('wle', 'ua', 2021)">Ukraine (WLE '21)</button>
+                            <button type="button" class="preset-chip" onclick="loadQualityPreset('wle', 'se', 2022)">Sweden (WLE '22)</button>
+                            <button type="button" class="preset-chip" onclick="loadQualityPreset('wlm', 'bd', 2024)">Bangladesh (WLM '24)</button>
+                        </div>
+                    </div>
+
+                    <div class="builder-layout single-column-builder">
                         <div>
                             <!-- Event Matrix Radios -->
                             <div class="form-group">
@@ -56,35 +55,20 @@
                                 </div>
                             </div>
 
-                            <!-- Campaign Code Input -->
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="target_campaign_quality" class="form-label">Target Campaign Code</label>
-                                <input type="text" id="target_campaign_quality" name="target_campaign" value="{{ target_campaign if target_campaign else '' }}" placeholder="e.g. wlmde24" class="form-control form-control-code" style="max-width: 280px;" oninput="parseCodeToQualityBuilder()">
-                                <div class="form-hint" id="quality-scope-hint">Single campaign code for quality recognition &amp; honors analysis.</div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Quick Presets -->
-                        <div class="example-box preset-rail">
-                            <div class="example-box-title">Quick Presets</div>
-                            <div class="preset-tags">
-                                <button type="button" class="preset-tag-btn" onclick="loadQualityPreset('wlm', 'de', 2024)">
-                                    <strong>wlmde24</strong>
-                                    <span class="preset-tag-label">Monuments Germany 2024</span>
-                                </button>
-                                <button type="button" class="preset-tag-btn" onclick="loadQualityPreset('wle', 'ua', 2021)">
-                                    <strong>wleua21</strong>
-                                    <span class="preset-tag-label">Earth Ukraine 2021</span>
-                                </button>
-                                <button type="button" class="preset-tag-btn" onclick="loadQualityPreset('wle', 'se', 2022)">
-                                    <strong>wlese22</strong>
-                                    <span class="preset-tag-label">Earth Sweden 2022</span>
-                                </button>
-                                <button type="button" class="preset-tag-btn" onclick="loadQualityPreset('wlm', 'bd', 2024)">
-                                    <strong>wlmbd24</strong>
-                                    <span class="preset-tag-label">Monuments Bangladesh 2024</span>
-                                </button>
-                            </div>
+                            <!-- Campaign Code Input (Advanced Collapsible Disclosure) -->
+                            <details class="manual-code-toggle" id="quality-code-toggle" {% if target_campaign and not quality_country %}open{% endif %}>
+                                <summary class="manual-code-summary">
+                                    <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    <span>Advanced: Enter campaign code manually</span>
+                                </summary>
+                                <div class="manual-code-body">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="target_campaign_quality" class="form-label">Target Campaign Code</label>
+                                        <input type="text" id="target_campaign_quality" name="target_campaign" value="{{ target_campaign if target_campaign else '' }}" placeholder="e.g. wlmde24" class="form-control form-control-code" style="max-width: 280px;" oninput="parseCodeToQualityBuilder()">
+                                        <div class="form-hint" id="quality-scope-hint">Single campaign code for quality recognition &amp; honors analysis.</div>
+                                    </div>
+                                </div>
+                            </details>
                         </div>
                     </div>
 
@@ -108,19 +92,45 @@
                 <div style="width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: #f0f6ff; display: flex; align-items: center; justify-content: center; color: var(--wiki-blue);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                 </div>
-                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Quality Distinctions</h3>
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Quality Recognition</h3>
                 <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.5;">
-                    Configure campaign edition parameters above, or choose a preset in the builder, then click <strong>Evaluate Quality Recognition</strong> to audit Quality Images (QI), Featured Pictures (FP), Valued Images (VI), and photographer rankings.
+                    Configure a campaign edition above, or select a preset in the builder, then click <strong>Evaluate Quality Recognition</strong> to view honored photos, award rates, and the photographer Hall of Fame.
                 </p>
             </div>
         {% endif %}
 
         {% if quality_result %}
+            <!-- Documentation (Placed immediately before statistics) -->
+            <details class="methodology-details" style="margin-top: 20px; margin-bottom: 20px;">
+                <summary class="methodology-summary">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>Documentation</span>
+                    </span>
+                    <span style="font-size: 0.78rem; color: var(--wiki-blue); font-weight: 500;">Documentation ▾</span>
+                </summary>
+                <div class="methodology-content">
+                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
+                        \[ Q_r = \left(\frac{|F_{\text{honored}}|}{|F|}\right) \times 100\%, \quad H = |\{ \text{uploader}(f) \mid f \in F_{\text{honored}} \}| \]
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                        Tracks peer-reviewed community designations (Quality Images, Featured Pictures, Valued Images) harvested through Commons category trees and honors accredited photographers.
+                        <a href="/documentation#quality-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Documentation →</a>
+                    </div>
+                </div>
+            </details>
+
             <!-- Summary Metric Cards -->
-            <div class="display-panel" style="margin-top: 24px;">
+            <div class="display-panel" style="margin-top: 0;">
                 <div class="display-panel-header">
                     <span>Campaign Quality Distinction · {{ quality_result.code|upper }}</span>
-                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">{{ quality_result.year }} Edition</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span class="xtools-execution-badge" style="font-size: 0.76rem; color: var(--text-muted); background: #f8fafc; border: 1px solid #e2e8f0; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>Executed in <strong>{{ execution_time_sec or '0.002' }}</strong> s</span>
+                        </span>
+                        <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">{{ quality_result.year }} Edition</span>
+                    </div>
                 </div>
                 <div class="display-panel-body">
                     <div class="scorecard-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
@@ -160,28 +170,45 @@
                             <div class="dim-metric-subtext">Distinct recognized contributors</div>
                         </div>
                     </div>
+
+                    <!-- Visual Curatorial Honors Distribution Bar -->
+                    {% set total_h = (quality_result.fp_count + quality_result.qi_count + quality_result.vi_count) %}
+                    {% if total_h > 0 %}
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-ink); text-transform: uppercase; letter-spacing: 0.5px;">Curatorial Distinction Distribution</span>
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">{{ total_h }} Total Distinction Badges Awarded</span>
+                        </div>
+                        <div style="display: flex; height: 12px; border-radius: 0; overflow: hidden; background: #e2e8f0; gap: 2px;">
+                            {% if quality_result.fp_count > 0 %}
+                                <div style="width: {{ (quality_result.fp_count / total_h * 100)|round(1) }}%; background: #eab308;" title="Featured Pictures: {{ quality_result.fp_count }} ({{ (quality_result.fp_count / total_h * 100)|round(1) }}%)"></div>
+                            {% endif %}
+                            {% if quality_result.qi_count > 0 %}
+                                <div style="width: {{ (quality_result.qi_count / total_h * 100)|round(1) }}%; background: #0284c7;" title="Quality Images: {{ quality_result.qi_count }} ({{ (quality_result.qi_count / total_h * 100)|round(1) }}%)"></div>
+                            {% endif %}
+                            {% if quality_result.vi_count > 0 %}
+                                <div style="width: {{ (quality_result.vi_count / total_h * 100)|round(1) }}%; background: #8b5cf6;" title="Valued Images: {{ quality_result.vi_count }} ({{ (quality_result.vi_count / total_h * 100)|round(1) }}%)"></div>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                <span style="width: 8px; height: 8px; border-radius: 0; background: #eab308; display: inline-block;"></span>
+                                <span>Featured Pictures (FP): <strong>{{ quality_result.fp_count }}</strong></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                <span style="width: 8px; height: 8px; border-radius: 0; background: #0284c7; display: inline-block;"></span>
+                                <span>Quality Images (QI): <strong>{{ quality_result.qi_count }}</strong></span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                <span style="width: 8px; height: 8px; border-radius: 0; background: #8b5cf6; display: inline-block;"></span>
+                                <span>Valued Images (VI): <strong>{{ quality_result.vi_count }}</strong></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 8px; font-size: 0.72rem; color: var(--text-muted);">camptools.toolforge.org · CampTools</div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-
-            <!-- Quality Formula Card (Collapsible Methodology Accordion) -->
-            <details class="methodology-details" style="margin-top: 20px; margin-bottom: 20px;">
-                <summary class="methodology-summary">
-                    <span style="display: inline-flex; align-items: center; gap: 8px;">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--wiki-blue);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                        <span>Quality Distinctions &amp; Curatorial Recognition Formulations</span>
-                    </span>
-                    <span style="font-size: 0.76rem; color: var(--wiki-blue); font-weight: 500;">Methodology &amp; Formulations ▾</span>
-                </summary>
-                <div class="methodology-content">
-                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
-                        \[ Q_r = \left(\frac{|F_{\text{honored}}|}{|F|}\right) \times 100\%, \quad H = |\{ \text{uploader}(f) \mid f \in F_{\text{honored}} \}| \]
-                    </div>
-                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
-                        Tracks peer-reviewed community designations (Quality Images, Featured Pictures, Valued Images) harvested through Commons category trees and honors accredited photographers.
-                        <a href="/documentation#quality-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Full Documentation →</a>
-                    </div>
-                </div>
-            </details>
 
             <!-- Recognized Files Table -->
             <div class="display-panel" style="margin-top: 24px;">
@@ -203,9 +230,9 @@
                             </div>
                             <div class="table-toolbar-right">
                                 <div class="btn-export-group">
-                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportCSV('quality-files-table', '{{ quality_result.code }}_quality_files.csv')">Export CSV</button>
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportCSV('quality-files-table', 'camptools_quality_{{ quality_result.code }}.csv')">Export CSV</button>
                                     <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportWikitext('quality-files-table')">Export Wikitext</button>
-                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportJSON('quality-files-table', '{{ quality_result.code }}_quality_files.json')">Export JSON</button>
+                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportJSON('quality-files-table', 'camptools_quality_{{ quality_result.code }}.json')">Export JSON</button>
                                 </div>
                             </div>
                         </div>

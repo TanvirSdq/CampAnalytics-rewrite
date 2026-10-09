@@ -73,7 +73,7 @@ export function getGlobalContext(req: Request): GlobalContext {
   return {
     PAGE_TITLE: 'CampTools - Event Evaluation',
     PAGE_ICON: '📊',
-    KORIKATH_LOGO_URL: 'https://upload.wikimedia.org/wikipedia/commons/9/99/Project_Korikath_Logo-dark.svg',
+    KORIKATH_LOGO_URL: 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Project_Korikath_Logo.svg',
     EVENT_MAP: makeDict(analytics.EVENT_MAP),
     EVENT_DISPLAY_MAP: analytics.EVENT_DISPLAY_MAP,
     EVENT_COUNTRY_SCOPE: analytics.EVENT_COUNTRY_SCOPE,

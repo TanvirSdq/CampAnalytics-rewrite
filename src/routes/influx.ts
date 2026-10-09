@@ -72,9 +72,12 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
         const scopeNotice = analytics.getCampaignScopeNotice(eventType, country);
         error = scopeNotice || 'No participant records found for the selected campaign series on Wikimedia Commons.';
       } else {
-        const countryName = analytics.countryDisplayName(country);
-        const eventName = analytics.EVENT_MAP[eventType] || eventType.toUpperCase();
-        const chartTitle = eventType === 'all' ? `All Campaigns · ${countryName}` : `Wiki Loves ${eventName} · ${countryName}`;
+        const countryName = country ? analytics.countryDisplayName(country) : '';
+        const eventName = analytics.EVENT_MAP[eventType] || (eventType ? eventType.toUpperCase() : 'Campaigns');
+        let chartTitle = eventType === 'all' ? 'All Campaigns' : `Wiki Loves ${eventName}`;
+        if (countryName) {
+          chartTitle += ` · ${countryName}`;
+        }
         chartB64 = analytics.createInfluxBarchartSvg(influxResult.records, chartTitle);
       }
     } catch (err: any) {

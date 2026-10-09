@@ -2,82 +2,170 @@
 {% block content %}
 <section class="home-hero">
     <div class="home-hero-copy">
-        <span class="eyebrow"><span class="eyebrow-dot"></span> Wikimedia campaign intelligence</span>
+        <div class="home-hero-badge-row">
+            <span class="eyebrow"><span class="eyebrow-dot"></span> Wikimedia Campaign Intelligence</span>
+            <span class="hero-status-pill">Toolforge Suite · 2026.1</span>
+        </div>
         <h1>Turn campaign activity into <em>clear decisions.</em></h1>
-        <p class="hero-lede">CampTools gives organizers a sharper view of participation, retention, reach, and recognition across Wikimedia photo campaigns.</p>
+        <p class="hero-lede">CampTools gives Wikimedia organizers and affiliates reliable data on campaign performance—tracking participant retention, new contributor growth, and how uploaded images are used across Wikipedia.</p>
         <div class="hero-actions">
-            <a href="/health" class="hero-primary">Start with an evaluation <span aria-hidden="true">↗</span></a>
-            <a href="/documentation" class="hero-secondary">Explore the methodology</a>
+            <a href="/health" class="hero-primary">Start Evaluation <span aria-hidden="true">↗</span></a>
+            <a href="#analytical-tools" class="hero-secondary">Explore Modules <span aria-hidden="true">↓</span></a>
         </div>
     </div>
-    <div class="hero-orbit" aria-hidden="true">
-        <div class="orbit-ring orbit-ring-one"></div>
-        <div class="orbit-ring orbit-ring-two"></div>
-        <div class="orbit-core"><span>CT</span><small>insight<br>layer</small></div>
-        <div class="orbit-node orbit-node-one">RET</div>
-        <div class="orbit-node orbit-node-two">QI</div>
-        <div class="orbit-node orbit-node-three">∞</div>
+    <div class="home-hero-telemetry">
+        <div class="telemetry-card">
+            <div class="telemetry-header">
+                <span class="telemetry-label">ANALYSIS MODULES</span>
+                <span class="telemetry-badge">Live</span>
+            </div>
+            <div class="telemetry-metric">05</div>
+            <p class="telemetry-desc">Core tools for retention, growth, and media impact</p>
+        </div>
+        <div class="telemetry-card">
+            <div class="telemetry-header">
+                <span class="telemetry-label">GLOBAL SCOPE</span>
+                <span class="telemetry-badge">Active</span>
+            </div>
+            <div class="telemetry-metric">50+</div>
+            <p class="telemetry-desc">Countries with regional benchmark comparisons</p>
+        </div>
+        <div class="telemetry-card">
+            <div class="telemetry-header">
+                <span class="telemetry-label">DATA INTEGRITY</span>
+                <span class="telemetry-badge">GPL-2.0+</span>
+            </div>
+            <div class="telemetry-metric">100%</div>
+            <p class="telemetry-desc">Open Wikimedia data with one-click report exports</p>
+        </div>
     </div>
 </section>
 
-<section class="home-stats" aria-label="CampTools capabilities">
-    <div><strong>05</strong><span>analytical lenses</span></div>
-    <div><strong>50+</strong><span>country contexts</span></div>
-    <div><strong>1</strong><span>shared evidence layer</span></div>
-</section>
-
-<div class="section-heading">
+<div class="section-heading" id="analytical-tools">
     <div>
-        <span class="section-kicker">Your workspace</span>
-        <h2>Choose an analytical lens</h2>
+        <span class="section-kicker">Analysis Tools</span>
+        <h2>Choose a workspace module</h2>
     </div>
-    <span class="section-note">Built for fast, defensible reporting</span>
+    <span class="section-note">Standardized metrics for organizers and grant reports</span>
 </div>
 
 <section class="home-tool-grid">
     <a href="/health" class="home-tool-card home-tool-featured">
-        <div class="home-tool-top"><span class="home-tool-index">01</span><span class="home-tool-arrow">↗</span></div>
-        <div class="home-tool-icon icon-indigo">↗</div>
-        <h3>Health evaluation</h3>
-        <p>See the structural health of a campaign through five weighted indicators and regional peer benchmarks.</p>
-        <span class="home-tool-link">Open evaluation <span>→</span></span>
+        <div class="home-tool-top">
+            <div class="home-tool-meta">
+                <span class="home-tool-index">MODULE 01</span>
+                <span class="home-tool-category cat-indigo">CORE EVALUATION</span>
+            </div>
+            <span class="home-tool-arrow" aria-hidden="true">↗</span>
+        </div>
+        <div class="home-tool-icon icon-indigo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+        </div>
+        <h3>Health Evaluation</h3>
+        <p>Grade overall campaign health across five key metrics—retention, growth, usage, quality, and diversity—calibrated against regional peers.</p>
+        <div class="home-tool-tags">
+            <span class="tool-tag">5 Core Metrics</span>
+            <span class="tool-tag">Regional Benchmarks</span>
+            <span class="tool-tag">Scorecard &amp; Stars</span>
+        </div>
+        <span class="home-tool-link">Launch Evaluation <span>→</span></span>
     </a>
-    <a href="/retention" class="home-tool-card home-tool-featured home-tool-teal">
-        <div class="home-tool-top"><span class="home-tool-index">02</span><span class="home-tool-arrow">↗</span></div>
-        <div class="home-tool-icon icon-teal">◌</div>
-        <h3>Retention analytics</h3>
-        <p>Trace contributor continuity and movement across cohorts, editions, and geographic contexts.</p>
-        <span class="home-tool-link">Open retention <span>→</span></span>
+
+    <a href="/retention" class="home-tool-card home-tool-featured">
+        <div class="home-tool-top">
+            <div class="home-tool-meta">
+                <span class="home-tool-index">MODULE 02</span>
+                <span class="home-tool-category cat-teal">YEAR-OVER-YEAR</span>
+            </div>
+            <span class="home-tool-arrow" aria-hidden="true">↗</span>
+        </div>
+        <div class="home-tool-icon icon-teal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="12" r="6"></circle><circle cx="15" cy="12" r="6"></circle></svg>
+        </div>
+        <h3>Retention Analytics</h3>
+        <p>Measure how many photographers return across multiple campaign years, with interactive heatmaps and global geographic maps.</p>
+        <div class="home-tool-tags">
+            <span class="tool-tag">Contributor Overlap</span>
+            <span class="tool-tag">Retention Heatmaps</span>
+            <span class="tool-tag">Global Map</span>
+        </div>
+        <span class="home-tool-link">Launch Retention <span>→</span></span>
     </a>
+
     <a href="/influx" class="home-tool-card">
-        <div class="home-tool-top"><span class="home-tool-index">03</span><span class="home-tool-arrow">↗</span></div>
-        <div class="home-tool-icon icon-coral">↗</div>
-        <h3>Participant influx</h3>
-        <p>Separate newcomers from returning contributors and understand community expansion over time.</p>
-        <span class="home-tool-link">Open influx <span>→</span></span>
+        <div class="home-tool-top">
+            <div class="home-tool-meta">
+                <span class="home-tool-index">MODULE 03</span>
+                <span class="home-tool-category cat-coral">PARTICIPATION</span>
+            </div>
+            <span class="home-tool-arrow" aria-hidden="true">↗</span>
+        </div>
+        <div class="home-tool-icon icon-coral">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+        <h3>Participant Influx</h3>
+        <p>Track first-time uploaders versus returning participants each year to see how your community pool is growing over time.</p>
+        <div class="home-tool-tags">
+            <span class="tool-tag">New vs Returning Editors</span>
+            <span class="tool-tag">Cumulative Community Growth</span>
+        </div>
+        <span class="home-tool-link">Launch Influx <span>→</span></span>
     </a>
+
     <a href="/utility" class="home-tool-card">
-        <div class="home-tool-top"><span class="home-tool-index">04</span><span class="home-tool-arrow">↗</span></div>
-        <div class="home-tool-icon icon-amber">◈</div>
-        <h3>Content utility</h3>
-        <p>Follow how campaign media travels into Wikimedia projects and reaches readers beyond Commons.</p>
-        <span class="home-tool-link">Open utility <span>→</span></span>
+        <div class="home-tool-top">
+            <div class="home-tool-meta">
+                <span class="home-tool-index">MODULE 04</span>
+                <span class="home-tool-category cat-amber">IMAGE USAGE</span>
+            </div>
+            <span class="home-tool-arrow" aria-hidden="true">↗</span>
+        </div>
+        <div class="home-tool-icon icon-amber">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+        </div>
+        <h3>Content Utility</h3>
+        <p>Discover where campaign photos are actually used across Wikipedia articles and sister projects in different languages.</p>
+        <div class="home-tool-tags">
+            <span class="tool-tag">Wikipedia Article Usage</span>
+            <span class="tool-tag">Top Used Photographers</span>
+        </div>
+        <span class="home-tool-link">Launch Utility <span>→</span></span>
     </a>
+
     <a href="/quality" class="home-tool-card">
-        <div class="home-tool-top"><span class="home-tool-index">05</span><span class="home-tool-arrow">↗</span></div>
-        <div class="home-tool-icon icon-violet">✦</div>
-        <h3>Quality recognition</h3>
-        <p>Surface QI, FP, and VI outcomes alongside the photographers behind recognized work.</p>
-        <span class="home-tool-link">Open quality <span>→</span></span>
+        <div class="home-tool-top">
+            <div class="home-tool-meta">
+                <span class="home-tool-index">MODULE 05</span>
+                <span class="home-tool-category cat-violet">IMAGE QUALITY</span>
+            </div>
+            <span class="home-tool-arrow" aria-hidden="true">↗</span>
+        </div>
+        <div class="home-tool-icon icon-violet">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+        <h3>Quality Recognition</h3>
+        <p>Track community awards received by campaign photos—including Quality Images and Featured Pictures—and top honored contributors.</p>
+        <div class="home-tool-tags">
+            <span class="tool-tag">Quality &amp; Featured Pictures</span>
+            <span class="tool-tag">Contributor Honor Roll</span>
+        </div>
+        <span class="home-tool-link">Launch Quality <span>→</span></span>
     </a>
 </section>
 
 <section class="home-method">
-    <div>
-        <span class="section-kicker">A transparent foundation</span>
-        <h2>Evidence you can explain.</h2>
-        <p>Every view is backed by documented definitions, explicit formulas, and export-ready tables for community reporting.</p>
+    <div class="home-method-content">
+        <span class="section-kicker">Documentation</span>
+        <h2>Every metric is fully documented.</h2>
+        <p>Review the underlying formulas, weighting rationale, and benchmark methodology used across all five CampTools modules.</p>
+        <div class="home-method-tags">
+            <span class="tool-tag">Mathematical Formulas</span>
+            <span class="tool-tag">CSV, Wikitext &amp; JSON Exports</span>
+            <span class="tool-tag">Regional Peer Baselines</span>
+        </div>
     </div>
-    <a href="/documentation" class="method-link">Read the methodology <span>↗</span></a>
+    <div class="home-method-action">
+        <a href="/documentation" class="method-link">Documentation <span aria-hidden="true">↗</span></a>
+    </div>
 </section>
 {% endblock %}

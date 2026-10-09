@@ -75,6 +75,106 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     error = err.message;
   }
 
+  let benchmarkComparisons = null;
+  if (result && result.dimensions && result.benchmarks) {
+    const d = result.dimensions;
+    const b = result.benchmarks;
+
+    const parseNum = (val: any): number => {
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') {
+        const cleaned = val.replace('%', '').trim();
+        const n = parseFloat(cleaned);
+        return isNaN(n) ? NaN : n;
+      }
+      return NaN;
+    };
+
+    const retRaw = parseNum(d.Retention?.raw);
+    const retIsNaN = isNaN(retRaw);
+    const retDelta = retIsNaN ? null : parseFloat((retRaw - b.retention).toFixed(1));
+
+    const groRaw = parseNum(d.Growth?.raw);
+    const groDelta = isNaN(groRaw) ? null : parseFloat((groRaw - b.growth).toFixed(1));
+
+    const useRaw = parseNum(d.Usage?.raw);
+    const useDelta = isNaN(useRaw) ? null : parseFloat((useRaw - b.usage).toFixed(1));
+
+    const qualRaw = parseNum(d.Quality?.raw);
+    const qualDelta = isNaN(qualRaw) ? null : parseFloat((qualRaw - b.quality).toFixed(1));
+
+    const divRaw = parseNum(d.Diversity?.raw);
+    const divDelta = isNaN(divRaw) ? null : parseFloat((divRaw - b.diversity).toFixed(1));
+
+    benchmarkComparisons = [
+      {
+        id: 'retention',
+        name: 'Retention Index',
+        weight: d.Retention?.weight || 25,
+        observedStr: retIsNaN ? 'Inaugural' : `${retRaw.toFixed(1)}%`,
+        observedVal: retIsNaN ? 0 : Math.min(100, Math.max(0, retRaw)),
+        benchmarkStr: `${b.retention.toFixed(1)}%`,
+        benchmarkVal: Math.min(100, Math.max(0, b.retention)),
+        deltaFormatted: retDelta !== null ? (retDelta >= 0 ? `▲ +${retDelta.toFixed(1)}%` : `▼ ${retDelta.toFixed(1)}%`) : 'N/A',
+        isPositive: retDelta !== null ? retDelta >= 0 : true,
+        isInaugural: retIsNaN,
+        score: d.Retention?.score
+      },
+      {
+        id: 'growth',
+        name: 'Growth Capacity',
+        weight: d.Growth?.weight || 25,
+        observedStr: isNaN(groRaw) ? '—' : `${groRaw.toFixed(1)}%`,
+        observedVal: isNaN(groRaw) ? 0 : Math.min(100, Math.max(0, groRaw)),
+        benchmarkStr: `${b.growth.toFixed(1)}%`,
+        benchmarkVal: Math.min(100, Math.max(0, b.growth)),
+        deltaFormatted: groDelta !== null ? (groDelta >= 0 ? `▲ +${groDelta.toFixed(1)}%` : `▼ ${groDelta.toFixed(1)}%`) : '—',
+        isPositive: groDelta !== null ? groDelta >= 0 : true,
+        isInaugural: false,
+        score: d.Growth?.score
+      },
+      {
+        id: 'usage',
+        name: 'Content Utility',
+        weight: d.Usage?.weight || 20,
+        observedStr: isNaN(useRaw) ? '—' : `${useRaw.toFixed(1)}%`,
+        observedVal: isNaN(useRaw) ? 0 : Math.min(100, Math.max(0, useRaw)),
+        benchmarkStr: `${b.usage.toFixed(1)}%`,
+        benchmarkVal: Math.min(100, Math.max(0, b.usage)),
+        deltaFormatted: useDelta !== null ? (useDelta >= 0 ? `▲ +${useDelta.toFixed(1)}%` : `▼ ${useDelta.toFixed(1)}%`) : '—',
+        isPositive: useDelta !== null ? useDelta >= 0 : true,
+        isInaugural: false,
+        score: d.Usage?.score
+      },
+      {
+        id: 'quality',
+        name: 'Quality Recognition',
+        weight: d.Quality?.weight || 15,
+        observedStr: isNaN(qualRaw) ? '—' : `${qualRaw.toFixed(1)}%`,
+        observedVal: isNaN(qualRaw) ? 0 : Math.min(100, Math.max(0, qualRaw)),
+        benchmarkStr: `${b.quality.toFixed(1)}%`,
+        benchmarkVal: Math.min(100, Math.max(0, b.quality)),
+        deltaFormatted: qualDelta !== null ? (qualDelta >= 0 ? `▲ +${qualDelta.toFixed(1)}%` : `▼ ${qualDelta.toFixed(1)}%`) : '—',
+        isPositive: qualDelta !== null ? qualDelta >= 0 : true,
+        isInaugural: false,
+        score: d.Quality?.score
+      },
+      {
+        id: 'diversity',
+        name: 'Contributor Diversity',
+        weight: d.Diversity?.weight || 15,
+        observedStr: isNaN(divRaw) ? '—' : `${divRaw.toFixed(1)}%`,
+        observedVal: isNaN(divRaw) ? 0 : Math.min(100, Math.max(0, divRaw)),
+        benchmarkStr: `${b.diversity.toFixed(1)}%`,
+        benchmarkVal: Math.min(100, Math.max(0, b.diversity)),
+        deltaFormatted: divDelta !== null ? (divDelta <= 0 ? `▲ ${Math.abs(divDelta).toFixed(1)}% broader` : `▼ +${divDelta.toFixed(1)}% concentrated`) : '—',
+        isPositive: divDelta !== null ? divDelta <= 0 : true,
+        isInaugural: false,
+        score: d.Diversity?.score
+      }
+    ];
+  }
+
   res.render('health.html', {
     ...getGlobalContext(req),
     PAGE_TITLE: `CampTools - Evaluation: ${targetEvent.toUpperCase()}`,
@@ -85,6 +185,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     region: result ? result.region : region,
     error,
     metrics: result ? result.dimensions : null,
+    benchmark_comparisons: benchmarkComparisons,
     insights: result ? result.insights : null,
     target_users_count: result ? result.target_users_count : 0,
     base_users_count: result ? result.baseline_users_count : 0,

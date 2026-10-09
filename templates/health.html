@@ -3,16 +3,8 @@
 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
             <div>
                 <h1 class="page-title" style="margin-bottom: 4px;">Evaluation</h1>
-                <p class="page-subtitle" style="margin-bottom: 0;">Multi-dimensional campaign health evaluation calibrated against regional peer performance benchmarks.</p>
+                <p class="page-subtitle" style="margin-bottom: 0;">Evaluate overall campaign performance across five core metrics, compared against regional peer benchmarks.</p>
             </div>
-            <a href="/documentation#health-guide" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; background: #ffffff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 4px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-                <span>Tool Usage &amp; Process Guide</span>
-                <span aria-hidden="true">&rarr;</span>
-            </a>
         </div>
 
         <form action="/health" method="GET" id="health-form" onsubmit="syncHealthBuilderToCode()">
@@ -29,11 +21,13 @@
                             <!-- Campaign Type Selector -->
                             
                             <div class="preset-rail">
-                                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;">Quick Presets:</span>
-                                <button type="button" class="preset-chip" onclick="loadHealthPreset('allde22', 'Northern & Western Europe', '')">Germany (WLM '22)</button>
-                                <button type="button" class="preset-chip" onclick="loadHealthPreset('wlmit23', 'Southern Europe', '')">Italy (WLM '23)</button>
-                                <button type="button" class="preset-chip" onclick="loadHealthPreset('allbd{{ CURRENT_YEAR % 100 }}', 'South Asia', '')">All Bangladesh</button>
-                                <button type="button" class="preset-chip" onclick="loadHealthPreset('wlein22', 'South Asia', '')">India (WLE '22)</button>
+                                <span class="preset-rail-title">Quick Presets:</span>
+                                <div class="preset-rail-chips">
+                                    <button type="button" class="preset-chip" onclick="loadHealthPreset('allde22', 'Northern & Western Europe', '')">Germany (WLM '22)</button>
+                                    <button type="button" class="preset-chip" onclick="loadHealthPreset('wlmit23', 'Southern Europe', '')">Italy (WLM '23)</button>
+                                    <button type="button" class="preset-chip" onclick="loadHealthPreset('allbd{{ CURRENT_YEAR % 100 }}', 'South Asia', '')">All Bangladesh</button>
+                                    <button type="button" class="preset-chip" onclick="loadHealthPreset('wlein22', 'South Asia', '')">India (WLE '22)</button>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -67,15 +61,23 @@
                                 </div>
                             </div>
 
-                            <!-- Target Campaign Registry Code (Auto-synced from builder) -->
-                            <div class="form-group">
-                                <label for="target_event" class="form-label">
-                                    Target Campaign Registry Code
-                                    <span style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">(Auto-assembled from selection or editable)</span>
-                                </label>
-                                <input type="text" id="target_event" name="target_event" value="{{ target_event if target_event else '' }}" placeholder="e.g., wlmde24" class="form-control form-control-code" required oninput="parseCodeToHealthBuilder()">
-                                <div class="form-hint" id="health-scope-hint">Standard event code syntax: prefix (all / wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmde24, allde24, wlang23).</div>
-                            </div>
+                            <!-- Target Campaign Registry Code (Advanced Collapsible Disclosure) -->
+                            <details class="manual-code-toggle" id="health-code-toggle" {% if target_event and not health_country %}open{% endif %}>
+                                <summary class="manual-code-summary">
+                                    <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    <span>Advanced: Enter campaign code manually</span>
+                                </summary>
+                                <div class="manual-code-body">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="target_event" class="form-label">
+                                            Target Campaign Registry Code
+                                            <span style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">(Direct code override)</span>
+                                        </label>
+                                        <input type="text" id="target_event" name="target_event" value="{{ target_event if target_event else '' }}" placeholder="e.g., wlmde24" class="form-control form-control-code" oninput="parseCodeToHealthBuilder()">
+                                        <div class="form-hint" id="health-scope-hint">Standard event code syntax: prefix (all / wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmde24, allde24, wlang23).</div>
+                                    </div>
+                                </div>
+                            </details>
 
                             <div class="form-group">
                                 <label class="form-label">Benchmark Baseline</label>
@@ -131,22 +133,44 @@
                 <div style="width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: #f0f6ff; display: flex; align-items: center; justify-content: center; color: var(--wiki-blue);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
                 </div>
-                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Campaign Vitality</h3>
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Campaign Health</h3>
                 <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.5;">
-                    Configure your target campaign edition and baseline reference above, or choose a benchmark preset in the builder, then click <strong>Evaluate Campaign Health</strong> to generate the multi-dimensional scorecard, qualitative star ratings, and peer benchmarks.
+                    Configure your target campaign and baseline above, or select a quick preset, then click <strong>Evaluate Campaign Health</strong> to generate the performance scorecard, star ratings, and regional peer comparisons.
                 </p>
             </div>
         {% endif %}
 
         {# Scorecard & Diagnostic Output #}
         {% if metrics %}
+            <!-- Documentation (Placed immediately before statistics) -->
+            <details class="methodology-details" style="margin-top: 20px; margin-bottom: 20px;">
+                <summary class="methodology-summary">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>Documentation</span>
+                    </span>
+                    <span style="font-size: 0.78rem; color: var(--wiki-blue); font-weight: 500;">Documentation ▾</span>
+                </summary>
+                <div class="methodology-content">
+                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
+                        \[ \text{Evaluation Index} = 0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}} \]
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                        Evaluated via continuous concave utility scaling with zero-floor preservation. Regional benchmarks are stabilized using Empirical Bayesian shrinkage against global movement baselines.
+                        <a href="/documentation#health-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Documentation →</a>
+                    </div>
+                </div>
+            </details>
+
             <!-- Scorecard Summary Header Card -->
             <div class="scorecard-header-card" id="health-results">
                 <div>
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                         <span style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--nav-teal);">Evaluation Scorecard</span>
-                        <span style="color: #cbd5e1;">·</span>
-                        <a href="/documentation#health-guide" style="font-size: 0.78rem; color: var(--wiki-blue); text-decoration: none; font-weight: 500;">Info &amp; Documentation →</a>
+                        <span class="xtools-execution-badge" style="font-size: 0.74rem; color: var(--text-muted); background: #f8fafc; border: 1px solid #e2e8f0; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>Executed in <strong>{{ execution_time_sec or '0.003' }}</strong> s</span>
+                        </span>
                     </div>
                     <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-ink);">Campaign: {{ target_event|upper }}</div>
                     <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 2px;">Regional Calibration Framework: {{ region }}</div>
@@ -245,26 +269,70 @@
                 </div>
             </div>
 
-            <!-- Health Formula Card & Methodology Anchor Link -->
-            <!-- Health Formula Card (Collapsible Methodology Accordion) -->
-            <details class="methodology-details">
-                <summary class="methodology-summary">
-                    <span style="display: inline-flex; align-items: center; gap: 8px;">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--wiki-blue);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                        <span>Composite Community Health Weighting Formula</span>
-                    </span>
-                    <span style="font-size: 0.76rem; color: var(--wiki-blue); font-weight: 500;">Methodology &amp; Weights ▾</span>
-                </summary>
-                <div class="methodology-content">
-                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
-                        \[ \text{Evaluation Index} = 0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}} \]
+            {% if benchmark_comparisons %}
+                <!-- Benchmark Comparison Visualizer (Crypto & Official Statistics Standard) -->
+                <div class="display-panel" style="margin-top: 18px; margin-bottom: 18px;">
+                    <div class="display-panel-header">
+                        <span>Regional Benchmark Comparison Visualizer</span>
+                        <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Observed Campaign Metrics vs Regional 75th-Percentile Benchmark Norms</span>
                     </div>
-                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
-                        Evaluated via continuous concave utility scaling with zero-floor preservation. Regional benchmarks are stabilized using Empirical Bayesian shrinkage against global movement baselines.
-                        <a href="/documentation#health-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Full Documentation →</a>
+                    <div class="display-panel-body">
+                        <div class="benchmark-visualizer-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+                            {% for item in benchmark_comparisons %}
+                                <div class="benchmark-comp-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                                        <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-ink);">
+                                            {{ item.name }}
+                                            <span style="font-size: 0.72rem; font-weight: 500; color: var(--text-muted); margin-left: 4px;">({{ item.weight }}% weight)</span>
+                                        </div>
+                                        <div>
+                                            {% if item.isInaugural %}
+                                                <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
+                                            {% elif item.isPositive %}
+                                                <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">{{ item.deltaFormatted }}</span>
+                                            {% else %}
+                                                <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ item.deltaFormatted }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Values comparison row -->
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.82rem; margin-bottom: 8px;">
+                                        <div>
+                                            <span style="color: var(--text-muted);">Observed:</span>
+                                            <strong style="color: var(--text-ink); font-size: 1rem; margin-left: 4px;">{{ item.observedStr }}</strong>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <span style="color: var(--text-muted);">Peer Norm:</span>
+                                            <span style="color: #475569; font-weight: 600; margin-left: 4px;">{{ item.benchmarkStr }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dual Progress Comparison Bar (Solid colors, zero gradients, crisp square bars) -->
+                                    <div style="background: #f1f5f9; border-radius: 0; height: 10px; width: 100%; position: relative; overflow: hidden; margin-top: 6px; border: 1px solid #e2e8f0;">
+                                        <!-- Benchmark Target Area -->
+                                        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ item.benchmarkVal }}%; background: #94a3b8; opacity: 0.35;" title="Peer Benchmark (75th percentile)"></div>
+                                        <!-- Observed Value Bar -->
+                                        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ item.observedVal }}%; background: #2563eb; border-radius: 0;" title="Observed Value"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">
+                                        <span>0%</span>
+                                        <span style="display: flex; align-items: center; gap: 4px;">
+                                            <span style="display: inline-block; width: 6px; height: 6px; background: #2563eb; border-radius: 0;"></span> Observed
+                                            <span style="display: inline-block; width: 6px; height: 6px; background: #94a3b8; border-radius: 0; margin-left: 4px;"></span> Peer Norm
+                                        </span>
+                                        <span>100%</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: 0.72rem; color: var(--text-muted);">
+                            <span>Regional 75th-Percentile Benchmark Norms</span>
+                            <span>camptools.toolforge.org · CampTools</span>
+                        </div>
                     </div>
                 </div>
-            </details>
+            {% endif %}
 
             <!-- Health Scorecard Data Table & Universal Exports -->
             <div class="table-interactive-wrapper" style="margin-top: 14px;">
@@ -275,7 +343,7 @@
                     </div>
                     <div class="table-toolbar-right">
                         <div class="btn-export-group">
-                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'campanalytics_health_scorecard')">
+                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'camptools_health_scorecard')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                     <polyline points="7 10 12 15 17 10"></polyline>
@@ -283,14 +351,14 @@
                                 </svg>
                                 <span>CSV</span>
                             </button>
-                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'campanalytics_health_scorecard')">
+                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_health_scorecard')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                                 </svg>
                                 <span>Wikitext</span>
                             </button>
-                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'json', 'campanalytics_health_scorecard')">
+                            <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'json', 'camptools_health_scorecard')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <polyline points="16 18 22 12 16 6"></polyline>
                                     <polyline points="8 6 2 12 8 18"></polyline>
@@ -373,9 +441,7 @@
                 <div class="display-panel">
                     <div class="display-panel-header">
                         <span>Campaign Organizer Diagnostic Insights</span>
-                        <a href="/methodology#health-guide" style="font-weight: 500; font-size: 0.8rem; color: var(--wiki-blue); text-decoration: none;">
-                            How are benchmarks &amp; insights computed? →
-                        </a>
+                        <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Calibrated Evaluation</span>
                     </div>
                     <div class="display-panel-body">
                         {% for insight in insights %}

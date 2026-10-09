@@ -176,7 +176,7 @@ export async function fetchParticipantsForCategory(category: string): Promise<Se
     // Try Toolforge uploadersincat scraper first
     const ptoolsUrl = `https://ptools.toolforge.org/uploadersincat.php?category=${encodeURIComponent(category)}`;
     const res = await fetch(ptoolsUrl, {
-      headers: { 'User-Agent': 'CampAnalytics/1.0 (https://github.com/TanvirSdq/CampAnalytics)' },
+      headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org)' },
       signal: controller.signal
     });
     clearTimeout(timeout);
@@ -202,7 +202,7 @@ export async function fetchParticipantsForCategory(category: string): Promise<Se
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(commonsUrl, {
-      headers: { 'User-Agent': 'CampAnalytics/1.0 (https://github.com/TanvirSdq/CampAnalytics)' },
+      headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org)' },
       signal: controller.signal
     });
     clearTimeout(timeout);
@@ -647,27 +647,28 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
   }
 
   const cellSize = Math.max(54, Math.min(84, Math.floor(400 / n)));
-  const margin = { top: 60, right: 30, bottom: 90, left: 140 };
+  const margin = { top: 60, right: 30, bottom: 135, left: 140 };
   const width = margin.left + n * cellSize + margin.right;
   const height = margin.top + n * cellSize + margin.bottom;
 
   function getColor(pct: number): string {
-    // Gradient from #f0fdf4 to #72ded6 to #256d85 to #183f54
     const clamped = Math.max(0, Math.min(100, pct));
-    if (clamped === 100) return '#183f54';
-    if (clamped >= 50) {
-      const f = (clamped - 50) / 50;
-      return `rgb(${Math.round(114 * (1 - f) + 24 * f)}, ${Math.round(222 * (1 - f) + 63 * f)}, ${Math.round(214 * (1 - f) + 84 * f)})`;
-    }
-    const f = clamped / 50;
-    return `rgb(${Math.round(240 * (1 - f) + 114 * f)}, ${Math.round(253 * (1 - f) + 222 * f)}, ${Math.round(244 * (1 - f) + 214 * f)})`;
+    if (clamped === 100) return '#0f172a'; // Full retention / self-cohort (Solid Dark Slate)
+    if (clamped >= 50) return '#1e40af';   // Solid Deep Blue
+    if (clamped >= 30) return '#2563eb';   // Solid Royal Blue
+    if (clamped >= 20) return '#38bdf8';   // Solid Vibrant Sky Blue
+    if (clamped >= 10) return '#bae6fd';   // Solid Soft Sky Blue
+    if (clamped > 0) return '#f0f9ff';     // Solid Pale Ice Blue
+    return '#f8fafc';                      // Solid Neutral Off-White (0% overlap)
   }
 
   function getTextColor(pct: number): string {
-    return pct >= 40 ? '#ffffff' : '#202122';
+    if (pct >= 30) return '#ffffff';
+    if (pct >= 20) return '#0f172a';
+    return '#475569';
   }
 
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:'Inter', sans-serif;">`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;">`;
   
   // Title
   svg += `<text x="${width / 2}" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#202122">${countryName.replace(/_/g, ' ')} Retention Matrix</text>`;
@@ -676,7 +677,7 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
   svg += `<text x="20" y="${margin.top + (n * cellSize) / 2}" text-anchor="middle" transform="rotate(-90, 20, ${margin.top + (n * cellSize) / 2})" font-size="11" font-weight="600" fill="#54595d">Source Cohort</text>`;
 
   // X axis label
-  svg += `<text x="${margin.left + (n * cellSize) / 2}" y="${height - 15}" text-anchor="middle" font-size="11" font-weight="600" fill="#54595d">Target Cohort</text>`;
+  svg += `<text x="${margin.left + (n * cellSize) / 2}" y="${height - 26}" text-anchor="middle" font-size="11" font-weight="600" fill="#54595d">Target Cohort</text>`;
 
   // Row labels
   for (let i = 0; i < n; i++) {
@@ -687,8 +688,8 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
   // Column labels
   for (let j = 0; j < n; j++) {
     const x = margin.left + j * cellSize + cellSize / 2;
-    const y = margin.top + n * cellSize + 18;
-    svg += `<text x="${x}" y="${y}" text-anchor="end" transform="rotate(-40, ${x}, ${y})" font-size="11" font-weight="500" fill="#202122">${labels[j]}</text>`;
+    const y = margin.top + n * cellSize + 16;
+    svg += `<text x="${x}" y="${y}" text-anchor="end" transform="rotate(-35, ${x}, ${y})" font-size="11" font-weight="500" fill="#202122">${labels[j]}</text>`;
   }
 
   // Heatmap cells
@@ -700,10 +701,13 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
       const fill = getColor(val);
       const textFill = getTextColor(val);
 
-      svg += `<rect x="${x + 1}" y="${y + 1}" width="${cellSize - 2}" height="${cellSize - 2}" rx="3" fill="${fill}" stroke="#ffffff" stroke-width="1.5" />`;
+      svg += `<rect x="${x + 1}" y="${y + 1}" width="${cellSize - 2}" height="${cellSize - 2}" fill="${fill}" stroke="#ffffff" stroke-width="1.5" />`;
       svg += `<text x="${x + cellSize / 2}" y="${y + cellSize / 2 + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="${textFill}">${val.toFixed(1)}%</text>`;
     }
   }
+
+  // Subtle watermark at bottom right
+  svg += `<text x="${width - 16}" y="${height - 8}" text-anchor="end" font-size="8.5" font-weight="500" fill="#94a3b8">camptools.toolforge.org · CampTools</text>`;
 
   svg += `</svg>`;
   return Buffer.from(svg).toString('base64');
@@ -895,18 +899,18 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
 export function createInfluxBarchartSvg(records: any[], title: string): string {
   if (!records.length) return '';
 
-  const width = 760;
-  const height = 415;
-  const margin = { top: 65, right: 65, bottom: 65, left: 65 };
+  const width = 780;
+  const height = 445;
+  const margin = { top: 76, right: 65, bottom: 58, left: 65 };
 
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
   const maxTotal = Math.max(...records.map((r) => r.total_active), 10);
-  const yMax = Math.ceil(maxTotal * 1.25);
+  const yMax = Math.ceil(maxTotal * 1.38);
 
   const maxCumulative = Math.max(...records.map((r) => r.cumulative_pool || r.total_active), 10);
-  const yMaxCum = Math.ceil(maxCumulative * 1.2);
+  const yMaxCum = Math.ceil(maxCumulative * 1.15);
 
   const numBars = records.length;
   const barBand = plotW / numBars;
@@ -914,18 +918,24 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:'Inter', sans-serif;">`;
 
-  // Defs for gradients & filters
-  svg += `
-    <defs>
-      <linearGradient id="cumLineGrad" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#d97706" />
-        <stop offset="100%" stop-color="#f59e0b" />
-      </linearGradient>
-    </defs>
-  `;
-
   // Chart Title
-  svg += `<text x="${width / 2}" y="32" text-anchor="middle" font-size="15" font-weight="700" fill="#202122">${title}</text>`;
+  svg += `<text x="${width / 2}" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#202122">${title}</text>`;
+
+  // Clean Top Legend (Placed right beneath title for instant context)
+  svg += `
+    <g transform="translate(${width / 2 - 165}, 46)">
+      <!-- Returning -->
+      <rect x="0" y="-8" width="11" height="11" fill="#1e3a8a" />
+      <text x="17" y="1" font-size="11" font-weight="500" fill="#334155">Returning</text>
+      <!-- Newcomers -->
+      <rect x="95" y="-8" width="11" height="11" fill="#0284c7" />
+      <text x="112" y="1" font-size="11" font-weight="500" fill="#334155">Newcomers</text>
+      <!-- Cumulative Line -->
+      <line x1="205" y1="-3" x2="228" y2="-3" stroke="#d97706" stroke-width="2.5" />
+      <circle cx="216.5" cy="-3" r="3.5" fill="#ffffff" stroke="#d97706" stroke-width="2" />
+      <text x="236" y="1" font-size="11" font-weight="500" fill="#334155">Cumulative Pool</text>
+    </g>
+  `;
 
   // Y-axis gridlines & left ticks (Active Volume)
   const ticks = 5;
@@ -944,9 +954,9 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
   svg += `<line x1="${margin.left}" y1="${margin.top + plotH}" x2="${width - margin.right}" y2="${margin.top + plotH}" stroke="#cbd5e1" stroke-width="1.5" />`;
 
   // Coordinates for cumulative line
-  const linePoints: { x: number; y: number; pool: number }[] = [];
+  const linePoints: { x: number; y: number; pool: number; barTopY: number }[] = [];
 
-  // Draw Stacked Bars
+  // Draw Stacked Bars (Sharp cornered, zero rounding)
   records.forEach((rec, idx) => {
     const cx = margin.left + idx * barBand + barBand / 2;
     const x = cx - barWidth / 2;
@@ -957,41 +967,43 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
     const retY = margin.top + plotH - retH;
     const newY = retY - newH;
 
-    // Returning Users (Dark Teal/Navy)
+    // Pre-calculate cumulative line point for this column to test visual clearance
+    const cumY = margin.top + plotH - ((rec.cumulative_pool || rec.total_active) / yMaxCum) * plotH;
+    linePoints.push({ x: cx, y: cumY, pool: rec.cumulative_pool || rec.total_active, barTopY: newY });
+
+    // Returning Users (Solid Deep Navy - sharp rectangle)
     if (retH > 0) {
-      svg += `<rect x="${x}" y="${retY}" width="${barWidth}" height="${retH}" fill="#183f54" rx="2" />`;
-      if (retH >= 16) {
+      svg += `<rect x="${x}" y="${retY}" width="${barWidth}" height="${retH}" fill="#1e3a8a" />`;
+      if (retH >= 20) {
         svg += `<text x="${cx}" y="${retY + retH / 2 + 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">${rec.returning_contributors.toLocaleString()}</text>`;
       }
     }
 
-    // New Users (Vibrant Teal)
+    // New Users (Solid Sky Blue - sharp rectangle)
     if (newH > 0) {
-      svg += `<rect x="${x}" y="${newY}" width="${barWidth}" height="${newH}" fill="#72ded6" rx="2" />`;
-      if (newH >= 16) {
-        svg += `<text x="${cx}" y="${newY + newH / 2 + 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#183f54">${rec.new_contributors.toLocaleString()}</text>`;
+      svg += `<rect x="${x}" y="${newY}" width="${barWidth}" height="${newH}" fill="#0284c7" />`;
+      // Display segment text if tall enough AND clear of the crossing cumulative trendline
+      const newMidY = newY + newH / 2 + 4;
+      if (newH >= 24 && rec.returning_contributors > 0 && Math.abs(cumY - newMidY) > 28) {
+        svg += `<text x="${cx}" y="${newMidY}" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">${rec.new_contributors.toLocaleString()}</text>`;
       }
     }
 
-    // Total on top of bar
+    // Total on top of bar with crisp white halo to protect against any intersecting elements
     const totalY = newY - 6;
-    svg += `<text x="${cx}" y="${totalY}" text-anchor="middle" font-size="11" font-weight="700" fill="#202122">${rec.total_active.toLocaleString()}</text>`;
+    svg += `<text x="${cx}" y="${totalY}" text-anchor="middle" font-size="11" font-weight="700" fill="#202122" stroke="#ffffff" stroke-width="3" paint-order="stroke fill">${rec.total_active.toLocaleString()}</text>`;
 
     // X-axis label (Year)
-    svg += `<text x="${cx}" y="${margin.top + plotH + 22}" text-anchor="middle" font-size="12" font-weight="600" fill="#202122">${rec.year}</text>`;
+    svg += `<text x="${cx}" y="${margin.top + plotH + 18}" text-anchor="middle" font-size="12" font-weight="600" fill="#202122">${rec.year}</text>`;
 
     // YoY Badge under year
     if (!rec.is_baseline) {
       const sign = rec.yoy_growth_pct >= 0 ? '+' : '';
       const color = rec.yoy_growth_pct >= 0 ? '#15803d' : '#b91c1c';
-      svg += `<text x="${cx}" y="${margin.top + plotH + 38}" text-anchor="middle" font-size="10" font-weight="600" fill="${color}">${sign}${rec.yoy_growth_pct}%</text>`;
+      svg += `<text x="${cx}" y="${margin.top + plotH + 34}" text-anchor="middle" font-size="10" font-weight="600" fill="${color}">${sign}${rec.yoy_growth_pct}%</text>`;
     } else {
-      svg += `<text x="${cx}" y="${margin.top + plotH + 38}" text-anchor="middle" font-size="10" fill="#54595d">Baseline</text>`;
+      svg += `<text x="${cx}" y="${margin.top + plotH + 34}" text-anchor="middle" font-size="10" fill="#54595d">Baseline</text>`;
     }
-
-    // Calculate point for cumulative line
-    const cumY = margin.top + plotH - ((rec.cumulative_pool || rec.total_active) / yMaxCum) * plotH;
-    linePoints.push({ x: cx, y: cumY, pool: rec.cumulative_pool || rec.total_active });
   });
 
   // Draw Cumulative Pool Line (Secondary Axis)
@@ -999,33 +1011,34 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
     const pathD = linePoints.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ');
 
     // Connective cumulative trendline
-    svg += `<path d="${pathD}" fill="none" stroke="#d97706" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />`;
+    svg += `<path d="${pathD}" fill="none" stroke="#d97706" stroke-width="2.6" stroke-linecap="square" stroke-linejoin="miter" />`;
 
-    // Data points and point labels
+    // Data points and point pill labels (sharp corners)
     linePoints.forEach((pt) => {
       // White halo circle + Amber dot
       svg += `<circle cx="${pt.x}" cy="${pt.y}" r="4.5" fill="#ffffff" stroke="#d97706" stroke-width="2.5" />`;
-      // Pool value label with crisp white text-shadow halo
-      svg += `<text x="${pt.x}" y="${pt.y - 8}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#b45309" stroke="#ffffff" stroke-width="3" paint-order="stroke fill">${pt.pool.toLocaleString()}</text>`;
+      // Pool value label with crisp pill background to eliminate collisions
+      const strVal = pt.pool.toLocaleString();
+      const pillW = Math.max(34, strVal.length * 6.5 + 10);
+      const pillH = 16;
+      const pillX = pt.x - pillW / 2;
+
+      // Dynamic vertical offset: If cumulative point is near bar top (within 35px), elevate pill to guarantee at least 14px clearance
+      let pillY = pt.y - 20;
+      if (Math.abs(pt.y - pt.barTopY) < 36) {
+        pillY = Math.min(pt.y - 28, pt.barTopY - 36);
+      }
+      // Ensure pill never overflows the top chart margin
+      pillY = Math.max(margin.top - 12, pillY);
+
+      svg += `<rect x="${pillX}" y="${pillY}" width="${pillW}" height="${pillH}" fill="#fffbeb" stroke="#f59e0b" stroke-width="1" />`;
+      svg += `<text x="${pt.x}" y="${pillY + 11.5}" text-anchor="middle" font-size="9" font-weight="700" fill="#b45309">${strVal}</text>`;
     });
   }
 
-  // Legend at bottom
-  const legY = height - 12;
-  svg += `
-    <g transform="translate(${width / 2 - 160}, ${legY})">
-      <!-- Returning -->
-      <rect x="0" y="-8" width="12" height="12" fill="#183f54" rx="2" />
-      <text x="18" y="2" font-size="11" fill="#202122">Returning</text>
-      <!-- Newcomers -->
-      <rect x="95" y="-8" width="12" height="12" fill="#72ded6" rx="2" />
-      <text x="113" y="2" font-size="11" fill="#202122">Newcomers</text>
-      <!-- Cumulative Line -->
-      <line x1="205" y1="-2" x2="230" y2="-2" stroke="#d97706" stroke-width="2.8" />
-      <circle cx="217" cy="-2" r="3.5" fill="#ffffff" stroke="#d97706" stroke-width="2" />
-      <text x="238" y="2" font-size="11" fill="#202122">Cumulative Pool</text>
-    </g>
-  `;
+  // Subtle attribution and tool URL watermark at bottom corners
+  svg += `<text x="${margin.left}" y="${height - 10}" text-anchor="start" font-size="9" fill="#94a3b8">Wikimedia Contributor Volume</text>`;
+  svg += `<text x="${width - margin.right}" y="${height - 10}" text-anchor="end" font-size="9" font-weight="500" fill="#94a3b8">camptools.toolforge.org · CampTools</text>`;
 
   svg += `</svg>`;
   return Buffer.from(svg).toString('base64');

@@ -25,6 +25,33 @@ app.use(compression() as any);
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
 
+// XTools-style Execution Timing & Memory Profiling Middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const start = process.hrtime.bigint();
+  const origRender = res.render.bind(res);
+
+  res.render = function (view: string, options?: any, callback?: any) {
+    const elapsedNs = process.hrtime.bigint() - start;
+    const elapsedSec = Number(elapsedNs) / 1e9;
+    const executionTimeSec = elapsedSec < 0.001 ? '0.001' : elapsedSec.toFixed(3);
+    const executionTimeMs = (Number(elapsedNs) / 1e6).toFixed(1);
+    const heapUsedMb = (process.memoryUsage().heapUsed / (1024 * 1024)).toFixed(1);
+
+    res.setHeader('X-Response-Time', `${executionTimeMs}ms`);
+
+    const mergedOptions = {
+      execution_time_sec: executionTimeSec,
+      execution_time_ms: executionTimeMs,
+      memory_usage_mb: heapUsedMb,
+      ...(typeof options === 'object' && options !== null ? options : {})
+    };
+
+    return origRender(view, mergedOptions, callback);
+  };
+
+  next();
+});
+
 // Nunjucks Environment
 const templatesPath = path.join(PROJECT_ROOT, 'templates');
 const nunjucksEnv = nunjucks.configure(templatesPath, {

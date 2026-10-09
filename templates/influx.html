@@ -3,16 +3,8 @@
 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 6px;">
             <div>
                 <h1 class="page-title" style="margin-bottom: 4px;">Year-over-Year New User Influx</h1>
-                <p class="page-subtitle" style="margin-bottom: 0;">Track newcomer acquisition, returning veteran retention, and community expansion across consecutive campaign editions.</p>
+                <p class="page-subtitle" style="margin-bottom: 0;">Track first-time contributors, returning participants, and total community growth across consecutive campaign editions.</p>
             </div>
-            <a href="/documentation#influx-guide" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; background: #ffffff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 4px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-top: 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-                <span>Tool Usage &amp; Process Guide</span>
-                <span aria-hidden="true">&rarr;</span>
-            </a>
         </div>
 
         <form action="/influx" method="GET" id="influx-form" onsubmit="syncInfluxBuilder()">
@@ -23,8 +15,18 @@
                     <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Step 1: Configure Multi-Year Campaign Series</span>
                 </div>
                 <div class="display-panel-body">
-                    <div class="builder-layout">
-                        <!-- Left: Builder Form Controls -->
+                    <div class="preset-rail">
+                        <span class="preset-rail-title">Quick Presets:</span>
+                        <div class="preset-rail-chips">
+                            <button type="button" class="preset-chip" onclick="loadInfluxPreset('all', 'de', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">All Germany</button>
+                            <button type="button" class="preset-chip" onclick="loadInfluxPreset('wlm', 'de', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">Germany (WLM)</button>
+                            <button type="button" class="preset-chip" onclick="loadInfluxPreset('wlf', 'it', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">Italy (WLF)</button>
+                            <button type="button" class="preset-chip" onclick="loadInfluxPreset('wle', 'in', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">India (WLE)</button>
+                            <button type="button" class="preset-chip" onclick="loadInfluxPreset('all', 'bd', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">All Bangladesh</button>
+                        </div>
+                    </div>
+
+                    <div class="builder-layout single-column-builder">
                         <div>
                             <!-- Event Type Selector -->
                             <div class="form-group">
@@ -63,52 +65,25 @@
                                 </div>
                             </div>
 
-                            <!-- Synchronized Target Codes Input -->
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                    <label for="influx_codes" class="form-label" style="margin-bottom: 0;">Generated Campaign Sequence</label>
-                                    <button type="button" class="btn btn-sm" onclick="clearInfluxCodes()" title="Clear campaign codes" style="padding: 2px 8px; font-size: 0.78rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer;">
-                                        Clear Codes
-                                    </button>
+                            <!-- Synchronized Target Codes Input (Advanced Collapsible Disclosure) -->
+                            <details class="manual-code-toggle" id="influx-code-toggle" {% if influx_codes and not influx_country %}open{% endif %}>
+                                <summary class="manual-code-summary">
+                                    <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    <span>Advanced: Enter campaign sequence manually</span>
+                                </summary>
+                                <div class="manual-code-body">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                            <label for="influx_codes" class="form-label" style="margin-bottom: 0;">Generated Campaign Sequence</label>
+                                            <button type="button" class="btn btn-sm" onclick="clearInfluxCodes()" title="Clear campaign codes" style="padding: 2px 8px; font-size: 0.78rem; background: #fff; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; cursor: pointer;">
+                                                Clear Codes
+                                            </button>
+                                        </div>
+                                        <input type="text" id="influx_codes" name="influx_codes" class="form-control form-control-code" value="{{ influx_codes|default('') }}" placeholder="e.g. wlmde22 wlmde23 wlmde24 wlmde25 wlmde26" oninput="parseCodeToInfluxBuilder()">
+                                        <div class="form-hint" id="influx-scope-hint">Chronological campaign sequence to evaluate.</div>
+                                    </div>
                                 </div>
-                                <input type="text" id="influx_codes" name="influx_codes" class="form-control form-control-code" value="{{ influx_codes|default('') }}" placeholder="e.g. wlmde22 wlmde23 wlmde24 wlmde25 wlmde26" oninput="parseCodeToInfluxBuilder()">
-                                <div class="form-hint" id="influx-scope-hint">Chronological campaign sequence to evaluate.</div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Quick Example Presets (5 Curated Multi-Year Series) -->
-                        <div class="preset-column">
-                            <div class="example-box preset-rail" style="padding: 14px 16px;">
-                                <div class="example-box-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span>Quick Presets</span>
-                                    <span style="font-size: 0.72rem; font-weight: 600; color: var(--wiki-blue); background: #eef6ff; padding: 2px 7px; border-radius: 4px; border: 1px solid #c8dafc;">5 Presets</span>
-                                </div>
-                                <div class="influx-preset-tags">
-                                    <button type="button" class="influx-preset-btn" onclick="loadInfluxPreset('all', 'de', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})" title="All Campaigns · Germany ({{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }})">
-                                        <span class="influx-preset-code">allde{{ DEFAULT_START_YEAR % 100 }}–{{ CURRENT_YEAR % 100 }}</span>
-                                        <span class="influx-preset-label">All Germany</span>
-                                    </button>
-                                    <button type="button" class="influx-preset-btn" onclick="loadInfluxPreset('wlm', 'de', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})" title="Monuments · Germany ({{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }})">
-                                        <span class="influx-preset-code">wlmde{{ DEFAULT_START_YEAR % 100 }}–{{ CURRENT_YEAR % 100 }}</span>
-                                        <span class="influx-preset-label">Monuments Germany</span>
-                                    </button>
-                                    <button type="button" class="influx-preset-btn" onclick="loadInfluxPreset('wlf', 'it', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})" title="Folklore · Italy ({{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }})">
-                                        <span class="influx-preset-code">wlfit{{ DEFAULT_START_YEAR % 100 }}–{{ CURRENT_YEAR % 100 }}</span>
-                                        <span class="influx-preset-label">Folklore Italy</span>
-                                    </button>
-                                    <button type="button" class="influx-preset-btn" onclick="loadInfluxPreset('wle', 'in', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})" title="Earth · India ({{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }})">
-                                        <span class="influx-preset-code">wlein{{ DEFAULT_START_YEAR % 100 }}–{{ CURRENT_YEAR % 100 }}</span>
-                                        <span class="influx-preset-label">Earth India</span>
-                                    </button>
-                                    <button type="button" class="influx-preset-btn" onclick="loadInfluxPreset('all', 'bd', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})" title="All Campaigns · Bangladesh ({{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }})">
-                                        <span class="influx-preset-code">allbd{{ DEFAULT_START_YEAR % 100 }}–{{ CURRENT_YEAR % 100 }}</span>
-                                        <span class="influx-preset-label">All Bangladesh</span>
-                                    </button>
-                                </div>
-                                <div style="margin-top: 10px; font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
-                                    Click any preset to auto-populate multi-year chronological span.
-                                </div>
-                            </div>
+                            </details>
                         </div>
                     </div>
 
@@ -134,7 +109,7 @@
                 </div>
                 <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Analyze Contributor Influx &amp; Retention</h3>
                 <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.5;">
-                    Configure campaign series and chronological span above, or pick a featured preset in the builder, then click <strong>Compute Influx Trends</strong> to generate newcomer/veteran volume bars, cohort longevity profiles, and cumulative community pool milestones.
+                    Configure a campaign series above, or pick a featured preset, then click <strong>Compute Influx Trends</strong> to view annual participant growth, newcomer share, and total community reach.
                 </p>
             </div>
         {% endif %}
@@ -145,6 +120,10 @@
                 <div class="display-panel-header">
                     <span>Summary Indicators · Contributor Influx &amp; Expansion</span>
                     <div style="display: flex; gap: 8px; align-items: center;">
+                        <span class="xtools-execution-badge" style="font-size: 0.76rem; color: var(--text-muted); background: #f8fafc; border: 1px solid #e2e8f0; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>Executed in <strong>{{ execution_time_sec or '0.002' }}</strong> s</span>
+                        </span>
                         <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">{{ influx_result.records|length }} Consecutive Editions Analyzed</span>
                         <button type="button" class="share-btn" onclick="copyCurrentURL(this)" title="Copy shareable link to these results">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -156,6 +135,26 @@
                     </div>
                 </div>
                 <div class="display-panel-body">
+                    <!-- Documentation (Placed immediately before statistics) -->
+                    <details class="methodology-details" style="margin-bottom: 20px;">
+                        <summary class="methodology-summary">
+                            <span style="display: inline-flex; align-items: center; gap: 8px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <span>Documentation</span>
+                            </span>
+                            <span style="font-size: 0.78rem; color: var(--wiki-blue); font-weight: 500;">Documentation ▾</span>
+                        </summary>
+                        <div class="methodology-content">
+                            <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
+                                \[ \text{Influx}(C_t) = |U_t \setminus \bigcup_{j < t} U_j|, \quad \text{Newcomer Share} = \frac{\text{Influx}(C_t)}{|U_t|} \times 100\%, \quad \text{Cumulative Pool}_t = \left|\bigcup_{j \le t} U_j\right| \]
+                            </div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
+                                Distinguishes first-time participants from returning veterans across multi-year chronological sequences. Cumulative pool de-duplicates contributors across editions.
+                                <a href="/documentation#influx-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Documentation →</a>
+                            </div>
+                        </div>
+                    </details>
+
                     <div class="scorecard-header-card" style="margin-bottom: 16px;">
                         <div>
                             <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Cumulative Community Footprint</div>
@@ -220,37 +219,37 @@
             <!-- Structured Panel: Visual Stacked Bar Chart -->
             {% if chart_b64 %}
                 <div class="display-panel">
-                    <div class="display-panel-header">
-                        <span>Visual Influx &amp; Retention Dynamics</span>
-                        <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Stacked Cohort Volumes + Cumulative Footprint</span>
+                    <div class="display-panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <span>Visual Influx &amp; Retention Dynamics</span>
+                            <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted); margin-left: 8px;">Stacked Cohort Volumes + Cumulative Footprint</span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-sm btn-export" onclick="CampChartSuite.downloadChart('influx-chart-img', 'camptools_influx_{{ influx_country or 'overview' }}{% if influx_yr_start %}_{{ influx_yr_start }}{% if influx_yr_end %}-{{ influx_yr_end }}{% endif %}{% endif %}', 'svg')" title="Download chart in vector SVG format">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>SVG</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-export" onclick="CampChartSuite.downloadChart('influx-chart-img', 'camptools_influx_{{ influx_country or 'overview' }}{% if influx_yr_start %}_{{ influx_yr_start }}{% if influx_yr_end %}-{{ influx_yr_end }}{% endif %}{% endif %}', 'png')" title="Download chart as high-resolution PNG">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>PNG</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="display-panel-body" style="text-align: center;">
                         <div class="chart-container" style="border: none; padding: 0; margin-bottom: 0;">
-                            <img src="{% if chart_b64 and chart_b64.startsWith('data:') %}{{ chart_b64 }}{% else %}data:image/svg+xml;base64,{{ chart_b64 }}{% endif %}" alt="Year-over-Year Contributor Influx Chart" class="chart-img" style="max-height: 480px;">
+                            <img id="influx-chart-img" src="{% if chart_b64 and chart_b64.startsWith('data:') %}{{ chart_b64 }}{% else %}data:image/svg+xml;base64,{{ chart_b64 }}{% endif %}" alt="Year-over-Year Contributor Influx Chart" class="chart-img" style="max-height: 480px;">
                         </div>
                     </div>
                 </div>
             {% endif %}
-
-            <!-- Influx Formula Card (Collapsible Methodology Accordion) -->
-            <details class="methodology-details" style="margin-bottom: 20px;">
-                <summary class="methodology-summary">
-                    <span style="display: inline-flex; align-items: center; gap: 8px;">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--wiki-blue);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                        <span>Year-over-Year Influx &amp; Contributor Lifecycle Formulations</span>
-                    </span>
-                    <span style="font-size: 0.76rem; color: var(--wiki-blue); font-weight: 500;">Methodology &amp; Formulations ▾</span>
-                </summary>
-                <div class="methodology-content">
-                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
-                        \[ \text{Influx}(C_t) = |U_t \setminus \bigcup_{j < t} U_j|, \quad \text{Newcomer Share} = \frac{\text{Influx}(C_t)}{|U_t|} \times 100\%, \quad \text{Cumulative Pool}_t = \left|\bigcup_{j \le t} U_j\right| \]
-                    </div>
-                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
-                        Distinguishes first-time participants from returning veterans across multi-year chronological sequences. Cumulative pool de-duplicates contributors across editions.
-                        <a href="/documentation#influx-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Full Documentation →</a>
-                    </div>
-                </div>
-            </details>
 
             <!-- Structured Panel: Detailed Data Table with Universal Exporters -->
             <div class="display-panel">
@@ -283,7 +282,7 @@
                             </div>
                             <div class="table-toolbar-right">
                                 <div class="btn-export-group">
-                                    <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('influx-data-table', 'csv', 'campanalytics_influx_trends')">
+                                    <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('influx-data-table', 'csv', 'camptools_influx_trends')">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                             <polyline points="7 10 12 15 17 10"></polyline>
@@ -291,14 +290,14 @@
                                         </svg>
                                         <span>CSV</span>
                                     </button>
-                                    <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('influx-data-table', 'wikitext', 'campanalytics_influx_trends')">
+                                    <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('influx-data-table', 'wikitext', 'camptools_influx_trends')">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                                             <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                                         </svg>
                                         <span>Wikitext</span>
                                     </button>
-                                    <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('influx-data-table', 'json', 'campanalytics_influx_trends')">
+                                    <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('influx-data-table', 'json', 'camptools_influx_trends')">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <polyline points="16 18 22 12 16 6"></polyline>
                                             <polyline points="8 6 2 12 8 18"></polyline>
