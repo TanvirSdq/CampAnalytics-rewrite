@@ -1,6 +1,6 @@
-# CampAnalytics
+# CampTools
 
-An analytics platform for Wikimedia Commons photography campaigns, providing longitudinal contributor retention metrics, cross-campaign ecosystem influx, encyclopedic content utility, and regional health benchmarking.
+An analytics platform for Wikimedia Commons photography campaigns, providing multi-country longitudinal comparative analytics, contributor retention matrices, participant influx dynamics, encyclopedic content utility, and regional health benchmarking.
 
 [![Hosted on Wikimedia Toolforge](https://img.shields.io/badge/Hosted%20on-Wikimedia%20Toolforge-006699?style=flat-square&logo=wikipedia)](https://camptools.toolforge.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -12,7 +12,9 @@ An analytics platform for Wikimedia Commons photography campaigns, providing lon
 
 ## Overview
 
-**CampAnalytics** is an open-source analytics platform developed for campaign organizers, Wikimedia affiliates, community researchers, and program evaluators. It analyzes international Wiki Loves photography campaigns by querying live metadata directly from Wikimedia Commons and Toolforge replica databases.
+**CampTools** is an open-source analytics platform developed for campaign organizers, Wikimedia affiliates, community researchers, and program evaluators. It analyzes international Wiki Loves photography campaigns by querying live metadata directly from Wikimedia Commons and Toolforge replica databases.
+
+> **Production Deployment**: CampTools is deployed live on Wikimedia Toolforge at [`https://camptools.toolforge.org/`](https://camptools.toolforge.org/). The legacy Python suite continues to run concurrently at [`https://campanalytics.toolforge.org/`](https://campanalytics.toolforge.org/) for comparative reference.
 
 ### Supported Campaigns
 
@@ -29,11 +31,11 @@ An analytics platform for Wikimedia Commons photography campaigns, providing lon
 
 ## Core Analytical Modules
 
-CampAnalytics is organized into five specialized analytical tools accessible via top navigation or programmatic JSON APIs:
+CampTools is organized into five specialized analytical tools accessible via top navigation, sidebar drawer, or programmatic JSON APIs:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   CAMPANALYTICS ANALYTICAL SUITE                       │
+│                      CAMPTOOLS ANALYTICAL SUITE                        │
 ├─────────────┬─────────────┬─────────────┬──────────────┬───────────────┤
 │   Tool 01   │   Tool 02   │   Tool 03   │   Tool 04    │    Tool 05    │
 │  Evaluation │  Retention  │   Influx    │   Utility    │    Quality    │
@@ -57,82 +59,79 @@ Scores campaign editions on a 0–100 scale across five core dimensions grouped 
   * ★★★☆☆ **Moderate** (50.0–69.9)
   * ★★☆☆☆ **Emerging / Critical** (<50.0)
 
-### 2. Contributor Retention (`/retention`, `/api/retention`)
+### 2. Contributor Retention (`/retention`, `/api/retention`, `/api/comparative`)
 * **Directional Persistence**: Evaluates exact retention between baseline and target editions ($A \to B$), preserving directional asymmetry:
   $$\text{Retention}(A \to B) = \left( \frac{|U_A \cap U_B|}{|U_A|} \right) \times 100\%$$
+* **Multi-Country Longitudinal Comparison**: Compare retention trajectories across multiple countries side-by-side.
 * **Multi-Cohort Matrices**: Compares multi-year editions across campaigns and countries with color-coded retention cells.
-* **Global Choropleth Geovisualization**: Interactive Plotly map with regional filtering and participant density shading.
-* **Pairwise Heatmap Charts**: Embedded SVG heatmaps illustrating cross-edition retention transitions.
+* **Interactive Views**: Switch seamlessly between **Line** (multi-country time series), **Table** (sortable cohort tables with CSV/Wikitext export), and **Map** (global choropleth projection).
+* **Pairwise Heatmaps**: Embedded SVG heatmaps illustrating cross-edition retention transitions.
 
-### 3. Contributor Influx & Growth (`/influx`, `/api/influx`)
+### 3. Participant Influx (`/influx`, `/api/influx`, `/api/comparative`)
 * **Dual-Axis Stacked Bar Chart**: Simultaneously visualizes annual active volumes (stacked newcomers $I_t$ + returning veterans $R_t$ on the left axis) and the de-duplicated **Cumulative Pool** trajectory ($P_t$ on the right axis).
+* **Multi-Country Comparative Influx**: Track first-time uploader trends and community pool expansion across multiple nations.
 * **True Newcomer Acquisition**: De-duplicates participants across chronological sequences to isolate genuine movement acquisition from inter-campaign migration.
 * **Lifecycle Profiles**: Segments contributors into 1-time entrants, repeaters (2–3 editions), and core veterans (4+ editions).
-* **Multi-Preset Quick Selectors**: 1-click loading for single-campaign sequences (e.g., `wlmde20` $\to$ `wlmde24`) or cross-campaign ecosystems (`allde20` $\to$ `allde24`).
+* **Multi-Preset Quick Selectors**: 1-click loading for single-campaign sequences or cross-campaign national ecosystems.
 
-### 4. Content Utility (`/utility`, `/api/utility`)
+### 4. Content Utility (`/utility`, `/api/utility`, `/api/comparative`)
 * **Live Encyclopedic Reuse**: Measures media integration across all Wikipedia language editions, Wikidata, Wikivoyage, and Commons galleries via `prop=globalusage`.
+* **Multi-Country Comparative Reuse**: Compare global utility rates and embed counts across campaign countries over time.
 * **Summary Scorecards**: Displays Global Utility Rate, Total Global Embeds, Unique Articles Reached, and Top Consuming Project.
-* **Live Media Articles Table**: Interactive table with search, column sorting, pagination, and multi-format exporters (CSV, JSON, Wikitext).
+* **Live Media Articles Table**: Interactive table with search, column sorting, pagination, and multi-format exporters (CSV, Wikitext, JSON).
 * **Photographer Utilization Leaderboard**: Ranks contributors whose uploads achieve the highest encyclopedic integration.
 
-### 5. Quality Recognition (`/quality`, `/api/quality`)
+### 5. Quality Recognition (`/quality`, `/api/quality`, `/api/comparative`)
 * **Curatorial Peer-Reviewed Status**: Audits uploads for community distinction badges:
   * **Quality Images (QI)**: Technical excellence verified by Commons reviewers.
   * **Featured Pictures (FP)**: Finest photographic achievements chosen by community consensus.
   * **Valued Images (VI)**: Most valuable illustrations for encyclopedic subjects.
-* **Documented Works Gallery**: Documented media gallery with quality badges, contributor attribution, and direct Commons links.
+* **Multi-Country Comparative Honors**: Longitudinal line charts tracking quality image counts and rates across nations.
+* **Documented Works Gallery**: Gallery with quality badges, contributor attribution, and direct Commons links.
 * **Top Contributing Photographers**: Contributor leaderboard tracking individual award counts (QI, FP, VI).
+
+---
+
+## Multi-Country Comparative Analytics Features
+
+The analytical modules feature an integrated comparative visualization engine:
+
+1. **Pure SVG Time Series (`Line` view)**:
+   - High-contrast Wikimedia Codex solid palette with square data points (`rx="0" ry="0"`).
+   - Direct line-end country labels and interactive hover tooltips with edition headers and exact values.
+   - Zero heavyweight client-side charting libraries for instantaneous page rendering.
+2. **Interactive Entity Selection Drawer**:
+   - Sliding panel triggered by "Edit countries and regions" with real-time text search.
+   - Dynamic sorting (alphabetical or metric-ranked).
+   - Instant "Select all" and "Clear" actions with dynamic selection counter badges.
+3. **Interactive Timeline Scrubber**:
+   - Positioned beneath comparative charts with play/pause playback controls and a draggable range slider.
+4. **Cross-Sectional Cohort Tables (`Table` view)**:
+   - Sortable multi-country matrix with one-click **CSV** and **Wikitext** copy/download export options.
+5. **Indicator Metadata Cards**:
+   - Structured methodology panels displaying indicator definition, data source, metric unit, temporal coverage, CC BY-SA 4.0 license, and collapsible calculation notes.
 
 ---
 
 ## Programmatic REST API
 
-All analytical modules provide direct RESTful JSON endpoints for programmatic integration, Wikimedia bots, and dashboard consumption:
+All analytical modules provide direct RESTful JSON endpoints for programmatic integration, Wikimedia bots, and research workflows:
 
 ### Endpoints
 
 | Endpoint | Method | Key Parameters | Description |
 |:---|:---:|:---|:---|
+| `/api/comparative` | `GET` | `module`, `event`, `countries`, `start_year`, `end_year`, `metric_key` | Computes multi-country longitudinal time series, summary statistics, cohort cross-sectional tables, and timeline points. |
 | `/api/health` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns 5-dimension health scores, benchmark comparisons, and composite rating. |
 | `/api/retention` | `GET` | `target_campaigns` (e.g. `wlmde22 wlmde23 wlmde24`) | Computes full pairwise directional retention matrix and participant sets. |
-| `/api/influx` | `GET` | `influx_codes` (e.g. `wlmde20 wlmde21 wlmde22 wlmde23 wlmde24`) | Returns year-over-year newcomer influx, veteran counts, cumulative pool, and lifecycle profile. |
+| `/api/influx` | `GET` | `influx_codes` (e.g. `wlmde20 wlmde21 wlmde22 wlmde23 wlmde24`) | Returns newcomer influx, veteran counts, cumulative pool, and lifecycle profiles. |
 | `/api/utility` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns global usage rates, article embed counts, wiki breakdown, and top utilized photographers. |
 | `/api/quality` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns QI/FP/VI counts, quality rates, documented files, and top photographers leaderboard. |
 
-### Example API Request & Response
+### Example Comparative API Request
 
 ```bash
-curl -s "http://localhost:3000/api/health?target_campaign=wlmde24" | jq .
-```
-
-```json
-{
-  "target_campaign": "wlmde24",
-  "health_results": [
-    {
-      "campaign": "wlmde24",
-      "composite_score": 78.4,
-      "tier": "Strong",
-      "stars": "★★★★☆",
-      "scores": {
-        "retention": 72.5,
-        "growth": 81.0,
-        "utility": 76.2,
-        "quality": 84.1,
-        "diversity": 78.0
-      },
-      "benchmarks": {
-        "region_name": "Northern & Western Europe",
-        "retention_bm": 28.5,
-        "growth_bm": 64.0,
-        "utility_bm": 14.2,
-        "quality_bm": 3.8,
-        "diversity_bm": 68.0
-      }
-    }
-  ]
-}
+curl -s "http://localhost:3000/api/comparative?module=influx&event=wlm&countries=de,it,in&start_year=2021&end_year=2025" | jq .
 ```
 
 ---
@@ -141,7 +140,7 @@ curl -s "http://localhost:3000/api/health?target_campaign=wlmde24" | jq .
 
 ```
 ========================================================================================
-                          CAMPANALYTICS — SYSTEM ARCHITECTURE
+                            CAMPTOOLS — SYSTEM ARCHITECTURE
 ========================================================================================
 
        [ Wikimedia Community Analyst / Organiser Browser / API Client ]
@@ -151,23 +150,24 @@ curl -s "http://localhost:3000/api/health?target_campaign=wlmde24" | jq .
        │                EXPRESS APPLICATION SERVER                  │
        │                        (server.ts)                         │
        ├────────────────────────────────────────────────────────────┤
-       │  • Tool Routing & Middleware (Compression, JSON Parser)    │
-       │  • RESTful API Endpoints (/api/health, /api/influx, ...)   │
-       │  • Nunjucks SSR Engine with KaTeX Math Typesetting         │
-       │  • Scope Enforcer & Cross-Country Validation Gate         │
+       │  • Modular Routing Architecture (src/routes/)              │
+       │    - /health, /retention, /influx, /utility, /quality      │
+       │    - /api/comparative, /api/health, /api/retention, ...    │
+       │  • Nunjucks SSR Engine with KaTeX Mathematical Typesetting │
+       │  • Compression, Security Headers & Sub-Millisecond Profiler│
        └──────────────────────────────┬─────────────────────────────┘
                                       │
                                       ▼
        ┌────────────────────────────────────────────────────────────┐
-       │                  SHARED ANALYTICS ENGINE                   │
-       │                     (src/analytics.ts)                     │
+       │                 SHARED ANALYTICS CORE                      │
+       │                 (src/core/analytics.ts)                    │
        ├────────────────────────────────────────────────────────────┤
-       │  • Dual-Axis Influx & Cumulative Pool SVG Chart Generator │
-       │  • 5-Dimension Spider Radar Chart SVG Generator            │
+       │  • Multi-Country Longitudinal Comparative Engine           │
+       │  • Dual-Axis Influx & Cumulative Pool Generator            │
        │  • Directional Retention Matrix & Cohort Intersections     │
-       │  • Content Utility & Quality Distinction Deep Evaluators   │
-       │  • Empirical Bayesian Regularization & Regional Benchmarks │
-       │  • In-Memory TTL Cache Layer & Wikimedia Bot Filter        │
+       │  • Content Utility & Quality Recognition Evaluators        │
+       │  • Empirical Bayesian Regional Benchmark Models            │
+       │  • In-Memory TTL Cache Layer & Bot Filter                  │
        └──────────────────────────────┬─────────────────────────────┘
                                       │
                       ┌───────────────┴───────────────┐
@@ -179,6 +179,16 @@ curl -s "http://localhost:3000/api/health?target_campaign=wlmde24" | jq .
        └────────────────────────────┘  └────────────────────────────┘
 ========================================================================================
 ```
+
+---
+
+## Design System & UI Invariants
+
+CampTools enforces publication-grade data interface standards:
+* **Zero Color Gradients**: Solid, high-contrast surfaces adhering strictly to the Wikimedia Codex design system.
+* **Square-Cornered Geometry**: 100% sharp 90-degree rectangle geometry (`border-radius: 0;`, `rx="0" ry="0"`) across cards, badges, inputs, pills, tabs, and SVG charts.
+* **Symmetrical 50/50 Desktop Form Grid**: Country selectors and Year Range inputs maintain normalized heights (`40px`) and identical horizontal baselines with elevated SPAN controls.
+* **Full-Width Empty States**: Clean, legible guidance prompts centered across panels without column wrapping.
 
 ---
 
@@ -203,13 +213,13 @@ Campaigns are referenced using standard three-segment codes: `[event][country][Y
 ## Installation & Local Development
 
 ### Prerequisites
-* **Node.js** v18+ (v20 or v22 recommended)
-* **npm** or **bun**
+* **Node.js** v20+ (Node.js 20 or 22 recommended)
+* **npm**
 
 ### Setup
 ```bash
-git clone https://github.com/TanvirSdq/CampAnalytics.git
-cd CampAnalytics
+git clone https://github.com/TanvirSdq/CampAnalytics-rewrite.git
+cd CampAnalytics-rewrite
 npm install
 ```
 
@@ -219,27 +229,18 @@ npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Run Tests
+```bash
+npm test                 # E2E route test suite
+npm run test:curl        # Shell / curl integration checks
+npx tsx --test tests/comparative.unit.test.ts tests/quality_gates.test.ts
+```
+
 ### Build and Start for Production
 ```bash
 npm run build
 npm start
 ```
-
----
-
-## Git & Deployment Workflow
-
-### Safe Branching Workflow
-If you are developing new features while your repository serves a live deployment:
-1. **Always develop on a dedicated branch**:
-   ```bash
-   git checkout -b feature/analytics-enhancement
-   git add .
-   git commit -m "Enhance influx dual-axis chart and restore utility pipeline"
-   git push -u origin feature/analytics-enhancement
-   ```
-2. **Review via Pull Request**: Open a PR into `main` to inspect diffs and test compatibility before merging to production.
-3. **Production Branch**: Keep `main` (or a dedicated `production` branch) stable for live webhooks on Wikimedia Toolforge or container runtimes.
 
 ---
 
