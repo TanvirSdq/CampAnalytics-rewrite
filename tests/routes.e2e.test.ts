@@ -153,8 +153,8 @@ describe('Tier 1: Feature Coverage & Route Routing Integrity', () => {
       'Expected /influx to contain #influx-form'
     );
     assert.ok(
-      res.text.includes('Year-over-Year New User Influx'),
-      'Expected /influx to contain "Year-over-Year New User Influx"'
+      res.text.includes('New User Influx'),
+      'Expected /influx to contain "New User Influx"'
     );
 
     // Negative assertion: Must NOT serve home.html content
@@ -214,6 +214,37 @@ describe('Tier 1: Feature Coverage & Route Routing Integrity', () => {
     assert.ok(
       !res.text.includes('Welcome to CampTools'),
       'Expected /retention not to serve home.html ("Welcome to CampTools")'
+    );
+  });
+
+  test('GET /retention with multi-country parameters renders comparative analytics line container', async () => {
+    const res = await makeRequest('/retention?countries=de,it&yr_start=2022&yr_end=2024');
+    assert.equal(res.status, 200, 'Expected status 200 for /retention multi-country query');
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    assert.ok(
+      res.text.includes('id="comparative-line-container"') || res.text.includes('comparative-line-container'),
+      'Expected /retention to contain #comparative-line-container'
+    );
+    assert.ok(
+      res.text.includes('id="comparative-analytics-shell"') || res.text.includes('camp-analytics-shell'),
+      'Expected /retention to contain comparative analytics shell'
+    );
+    assert.ok(
+      res.text.includes('CampComparativeSuite.init'),
+      'Expected /retention to initialize CampComparativeSuite'
+    );
+    assert.ok(
+      !res.text.includes('Welcome to CampTools'),
+      'Expected /retention not to serve home.html'
+    );
+  });
+
+  test('GET /retention with retention_countries parameter renders comparative analytics', async () => {
+    const res = await makeRequest('/retention?retention_countries=de,it');
+    assert.equal(res.status, 200, 'Expected status 200 for /retention with retention_countries');
+    assert.ok(
+      res.text.includes('comparative-line-container'),
+      'Expected /retention to contain comparative-line-container'
     );
   });
 
@@ -340,7 +371,7 @@ describe('Tier 2: Boundary & Corner Cases', () => {
     const res = await makeRequest('/?mode=Influx');
     assert.equal(res.status, 200, 'Expected status 200 for /?mode=Influx');
     assert.ok(
-      res.text.includes('Year-over-Year New User Influx'),
+      res.text.includes('New User Influx'),
       'Expected mode=Influx to render Influx content'
     );
   });
@@ -602,11 +633,11 @@ describe('Tier 4: Real-World Scenarios (Multi-Tool Workflow)', () => {
       'Step 2: Health route must not serve home.html'
     );
 
-    // Step 3: User transitions to YoY Influx Analysis
+    // Step 3: User transitions to Influx Analysis
     const step3 = await makeRequest('/influx');
     assert.equal(step3.status, 200, 'Step 3: Influx must respond 200');
     assert.ok(
-      step3.text.includes('Year-over-Year New User Influx'),
+      step3.text.includes('New User Influx'),
       'Step 3: Expected Influx title'
     );
     assert.ok(

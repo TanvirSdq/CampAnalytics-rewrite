@@ -19,7 +19,7 @@
     <meta name="twitter:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Project_Korikath_Logo.svg/1280px-Project_Korikath_Logo.svg.png">
     <link rel="preconnect" href="https://upload.wikimedia.org">
     <link rel="dns-prefetch" href="https://upload.wikimedia.org">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Arial,sans-serif' font-size='13' font-weight='700' fill='%23fff'%3ECT%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='0' fill='%233366cc'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-family='Arial,sans-serif' font-size='13' font-weight='700' fill='%23fff'%3ECT%3C/text%3E%3C/svg%3E">
     <!-- Typography: Native System Font Stack (privacy-compliant, zero network overhead) -->
     <!-- KaTeX Mathematical Typesetting -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
@@ -43,7 +43,8 @@
         document.addEventListener("DOMContentLoaded", renderMath);
         window.addEventListener("load", renderMath);
     </script>
-    <link rel="stylesheet" href="/css/styles.css?v=20261026_v8">
+    <link rel="stylesheet" href="/css/styles.css?v=20261026_v10">
+    <script src="/js/comparative.js?v=20261026_v10"></script>
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -67,6 +68,16 @@
                     </a>
                 </div>
             </div>
+            <nav class="site-desktop-nav" aria-label="Main Navigation">
+                <ul class="site-nav-list">
+                    <li><a href="/health" class="site-nav-link {% if mode == 'Health Evaluation' or mode == 'Evaluation' or request.path == '/health' %}active{% endif %}">Evaluation</a></li>
+                    <li><a href="/retention" class="site-nav-link {% if mode == 'Retention Analytics' or mode == 'Retention' or request.path == '/retention' %}active{% endif %}">Retention</a></li>
+                    <li><a href="/influx" class="site-nav-link {% if mode == 'Participant Influx' or mode == 'Influx' or request.path == '/influx' %}active{% endif %}">Influx</a></li>
+                    <li><a href="/utility" class="site-nav-link {% if mode == 'Content Utility' or mode == 'Utility' or request.path == '/utility' %}active{% endif %}">Utility</a></li>
+                    <li><a href="/quality" class="site-nav-link {% if mode == 'Quality Recognition' or mode == 'Quality' or request.path == '/quality' %}active{% endif %}">Quality</a></li>
+                    <li><a href="/documentation" class="site-nav-link {% if mode == 'Documentation' or request.path == '/documentation' %}active{% endif %}">Documentation</a></li>
+                </ul>
+            </nav>
             <div class="navbar-right">
                 <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite" class="nav-util-link" target="_blank" rel="noopener noreferrer" title="View Source on GitHub">
                     <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" fill="currentColor">
@@ -82,7 +93,7 @@
     <!-- Mobile Off-Canvas Navigation Drawer Backdrop -->
     <div id="mobile-nav-backdrop" class="mobile-nav-backdrop" onclick="toggleMobileNav(false)" aria-hidden="true"></div>
 
-    <!-- Mobile Off-Canvas Navigation Drawer (XTools Style) -->
+    <!-- Mobile Navigation Drawer -->
     <aside id="mobile-nav-drawer" class="mobile-nav-drawer" aria-label="Mobile Navigation" role="dialog" aria-modal="true">
         <div class="mobile-nav-header">
             <div class="mobile-nav-brand">
@@ -108,7 +119,7 @@
                 </div>
                 <div class="mobile-nav-item-content">
                     <div class="mobile-nav-item-title">Evaluation</div>
-                    <div class="mobile-nav-item-desc">Vitality score &amp; peer benchmarking</div>
+                    <div class="mobile-nav-item-desc">Evaluation score &amp; peer benchmarks</div>
                 </div>
                 <span class="mobile-nav-tag tag-01">01</span>
             </a>
@@ -134,7 +145,7 @@
             </a>
             <a href="/utility" class="mobile-nav-item {% if mode == 'Content Utility' or mode == 'Utility' or request.path == '/utility' %}active{% endif %}">
                 <div class="mobile-nav-item-icon icon-utility">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="0" ry="0"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                 </div>
                 <div class="mobile-nav-item-content">
                     <div class="mobile-nav-item-title">Utility</div>
@@ -148,7 +159,7 @@
                 </div>
                 <div class="mobile-nav-item-content">
                     <div class="mobile-nav-item-title">Quality</div>
-                    <div class="mobile-nav-item-desc">QI, FP &amp; photographer hall of fame</div>
+                    <div class="mobile-nav-item-desc">QI, FP &amp; top photographers</div>
                 </div>
                 <span class="mobile-nav-tag tag-05">05</span>
             </a>
@@ -167,23 +178,18 @@
             </a>
         </nav>
         <div class="mobile-nav-footer">
-            <!-- Space reserved for future Mobile App download link -->
             <a href="https://toolhub.wikimedia.org/tools/toolforge-camptools" target="_blank" rel="noopener noreferrer" class="mobile-nav-footer-link">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                 <span>Toolhub Record</span>
             </a>
+            <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite" target="_blank" rel="noopener noreferrer" class="mobile-nav-footer-link">
+                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                </svg>
+                <span>Source Code</span>
+            </a>
         </div>
-    
-            <div class="mobile-nav-source">
-                <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite" target="_blank" rel="noopener noreferrer" class="mobile-nav-footer-link">
-                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor">
-                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-                    </svg>
-                    Source Code
-                </a>
-            </div>
-
-        </aside>
+    </aside>
 
     <script>
         function toggleMobileNav(open) {
@@ -234,7 +240,7 @@
                 Released under the <a href="https://www.gnu.org/licenses/gpl-2.0.html" target="_blank" rel="noopener noreferrer">GPL-2.0+</a> ·
                 Made by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">TanvirSdq</a> &amp; <a href="https://commons.wikimedia.org/wiki/User:Kaim_Amin" target="_blank" rel="noopener noreferrer">Kaim Amin</a> <br>
                 Rewrite by <a href="https://www.linkedin.com/in/tanvirsdq" target="_blank" rel="noopener noreferrer">TanvirSdq</a> ·
-                <span class="xtools-execution-timer" style="display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
+                <span class="camp-execution-timer" style="display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -1px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     Executed in <strong>{{ execution_time_sec or '0.001' }}</strong> sec
                 </span>
@@ -439,7 +445,7 @@
                 const group = document.getElementById('event-pill-group');
                 if (group) {
                     group.style.outline = '2px solid #d73a49';
-                    group.style.borderRadius = '6px';
+                    group.style.borderRadius = '0';
                     group.style.padding = '4px';
                     setTimeout(() => {
                         group.style.outline = '';
@@ -1351,7 +1357,7 @@
                     w += `|-\n! Composite Overall !! Full Evaluation !! 100% !! — !! — !! ${score} / 100 !! ${ratingLabel}\n`;
                     w += `|}\n\n`;
 
-                    w += `=== Contributor Participation Footprint ===\n`;
+                    w += `=== Contributor Participation ===\n`;
                     w += `* '''Total Evaluated Uploaders:''' ${d.counts.target.toLocaleString()}\n`;
                     w += `* '''Baseline Reference Uploaders:''' ${d.counts.base.toLocaleString()}\n`;
                     w += `* '''Retained Prior Contributors:''' ${d.counts.overlap.toLocaleString()}\n`;
@@ -1387,7 +1393,7 @@
                     m += `| Contributor Diversity | Participation Equity | ${d.metrics.diversity.weight} | ${d.metrics.diversity.raw} | ${d.metrics.diversity.benchmark} | ${d.metrics.diversity.score} / 100 | ${d.metrics.diversity.stars} |\n`;
                     m += `| **Composite Overall** | **Full Evaluation** | **100%** | — | — | **${score} / 100** | **${ratingLabel}** |\n\n`;
 
-                    m += `### Contributor Participation Footprint\n\n`;
+                    m += `### Contributor Participation\n\n`;
                     m += `- **Total Evaluated Uploaders:** ${d.counts.target.toLocaleString()}\n`;
                     m += `- **Baseline Reference Uploaders:** ${d.counts.base.toLocaleString()}\n`;
                     m += `- **Retained Prior Contributors:** ${d.counts.overlap.toLocaleString()}\n`;
@@ -1624,7 +1630,7 @@
 
             btn.disabled = true;
             btn.style.opacity = '0.75';
-            btn.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-right:8px;"></span> Loading matrices…';
+            btn.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:0;animation:spin 0.8s linear infinite;margin-right:8px;"></span> Loading matrices…';
 
             try {
                 const url = `/api/retention/heatmaps?target_campaigns=${encodeURIComponent(targetCampaignsValue)}&offset=${currentHeatmapOffset}&limit=6`;
@@ -1830,7 +1836,7 @@
                 <div class="wikitext-modal-title" id="wikitext-modal-title">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        <rect x="8" y="2" width="8" height="4" rx="0" ry="0"></rect>
                     </svg>
                     <span>MediaWiki Wikitext Table Export</span>
                 </div>
@@ -1901,5 +1907,199 @@
         </div>
     </div>
 
+    <!-- Publication Citation Generator Modal -->
+    <div id="citation-modal-overlay" class="wikitext-modal-overlay" style="display: none;" onclick="if(event.target === this) closeCitationModal()">
+        <div class="wikitext-modal" role="dialog" aria-modal="true" aria-labelledby="citation-modal-title" style="max-width: 680px; border-radius: 0;">
+            <div class="wikitext-modal-header" style="border-radius: 0;">
+                <div class="wikitext-modal-title" id="citation-modal-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span>Cite this work</span>
+                </div>
+                <button type="button" class="wikitext-modal-close" onclick="closeCitationModal()" aria-label="Close dialog" style="border-radius: 0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="wikitext-modal-body" style="padding: 18px 20px;">
+                <p style="font-size: 0.85rem; color: #54595d; margin: 0 0 14px 0; line-height: 1.5;">
+                    CampTools research data and analytical metrics are open and reusable under CC BY-SA 4.0. Please cite this tool in grant reports, academic publications, or community documentation:
+                </p>
+                <div class="citation-group" style="margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);">MediaWiki Wikitext</span>
+                        <button type="button" class="btn btn-sm" onclick="copyCitation('wikitext')" style="padding: 2px 8px; font-size: 0.74rem; background: #fff; border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">Copy Wikitext</button>
+                    </div>
+                    <textarea id="citation-wikitext" class="wikitext-textarea" readonly spellcheck="false" style="height: 68px; font-size: 0.8rem;"></textarea>
+                </div>
+                <div class="citation-group" style="margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);">APA (7th Edition)</span>
+                        <button type="button" class="btn btn-sm" onclick="copyCitation('apa')" style="padding: 2px 8px; font-size: 0.74rem; background: #fff; border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">Copy APA</button>
+                    </div>
+                    <textarea id="citation-apa" class="wikitext-textarea" readonly spellcheck="false" style="height: 58px; font-size: 0.8rem;"></textarea>
+                </div>
+                <div class="citation-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);">BibTeX</span>
+                        <button type="button" class="btn btn-sm" onclick="copyCitation('bibtex')" style="padding: 2px 8px; font-size: 0.74rem; background: #fff; border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">Copy BibTeX</button>
+                    </div>
+                    <textarea id="citation-bibtex" class="wikitext-textarea" readonly spellcheck="false" style="height: 90px; font-size: 0.78rem;"></textarea>
+                </div>
+            </div>
+            <div class="wikitext-modal-footer" style="border-radius: 0;">
+                <button type="button" class="btn btn-sm" onclick="closeCitationModal()" style="background: #ffffff; border: 1px solid var(--border-color); color: var(--text-ink); cursor: pointer; border-radius: 0;">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="camp-toast" class="camp-toast" role="status" aria-live="polite">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span id="camp-toast-message">Action confirmed</span>
+    </div>
+
+    <!-- Client-Side Interaction Controller -->
+    <script>
+        function showCampToast(msg) {
+            const toast = document.getElementById('camp-toast');
+            const label = document.getElementById('camp-toast-message');
+            if (!toast || !label) return;
+            label.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(window.__campToastTimer);
+            window.__campToastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2800);
+        }
+
+        function openCitationModal(toolName, path) {
+            const overlay = document.getElementById('citation-modal-overlay');
+            if (!overlay) return;
+            const fullUrl = window.location.origin + (path || window.location.pathname);
+            const today = new Date().toISOString().split('T')[0];
+            const cleanTool = toolName || 'Wikimedia Campaign Analytics';
+
+            const wikitext = '{' + '{cite web |url=' + fullUrl + ' |title=CampTools: ' + cleanTool + ' |publisher=Project Korikath / Toolforge |author=CampTools Contributors |year=2026 |access-date=' + today + '}' + '}';
+            const apa = 'Project Korikath. (2026). CampTools: ' + cleanTool + ' [Interactive data platform]. Wikimedia Toolforge. ' + fullUrl;
+            const bibKey = 'camptools2026_' + cleanTool.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const bibtex = '@misc{' + bibKey + ',\n  author = {Project Korikath},\n  title = {CampTools: ' + cleanTool + '},\n  year = {2026},\n  publisher = {Wikimedia Toolforge},\n  url = {' + fullUrl + '}\n}';
+
+            const elWiki = document.getElementById('citation-wikitext');
+            const elApa = document.getElementById('citation-apa');
+            const elBib = document.getElementById('citation-bibtex');
+            if (elWiki) elWiki.value = wikitext;
+            if (elApa) elApa.value = apa;
+            if (elBib) elBib.value = bibtex;
+
+            overlay.style.display = 'flex';
+        }
+
+        function closeCitationModal() {
+            const overlay = document.getElementById('citation-modal-overlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        function copyCitation(format) {
+            const ta = document.getElementById('citation-' + format);
+            if (!ta) return;
+            navigator.clipboard.writeText(ta.value).then(() => {
+                showCampToast('Citation copied to clipboard');
+            }).catch(() => {
+                ta.select();
+                document.execCommand('copy');
+                showCampToast('Citation copied');
+            });
+        }
+
+        function copyPermalink() {
+            const url = window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showCampToast('✓ Permalink copied to clipboard');
+                }).catch(() => {
+                    prompt('Copy permalink:', url);
+                });
+            } else {
+                prompt('Copy permalink:', url);
+            }
+        }
+
+        function switchCampView(viewKey, panelPrefix) {
+            const prefix = panelPrefix || 'analytics';
+            const views = ['visual', 'compare', 'table', 'methodology'];
+            views.forEach(v => {
+                const el = document.getElementById(`${prefix}-view-${v}`);
+                const btn = document.getElementById(`${prefix}-tab-${v}`);
+                if (el) el.style.display = (v === viewKey) ? 'block' : 'none';
+                if (btn) btn.classList.toggle('active', v === viewKey);
+            });
+            try {
+                history.replaceState(null, '', `#${viewKey}`);
+            } catch (e) {}
+        }
+
+        function filterCampTable(input, tableId) {
+            const filter = (input.value || '').toLowerCase().trim();
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const rows = table.querySelectorAll('tbody tr');
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const matches = text.includes(filter);
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+            const counter = document.getElementById(`${tableId}-counter`);
+            if (counter) {
+                counter.textContent = `Showing ${visibleCount} of ${rows.length} rows`;
+            }
+        }
+
+        function applyYearSpan(span, startId, endId) {
+            const endInput = document.getElementById(endId || 'builder_yr_end');
+            const startInput = document.getElementById(startId || 'builder_yr_start');
+            if (!endInput || !startInput) return;
+            const currentYear = new Date().getFullYear();
+            endInput.value = currentYear;
+            if (span === 'all') {
+                startInput.value = 2010;
+            } else {
+                const yrs = parseInt(span, 10) || 3;
+                startInput.value = Math.max(2010, currentYear - yrs + 1);
+            }
+            if (window.event && window.event.target && window.event.target.classList && window.event.target.classList.contains('date-preset-pill')) {
+                const rail = window.event.target.closest('.date-preset-rail');
+                if (rail) {
+                    rail.querySelectorAll('.date-preset-pill').forEach(b => b.classList.remove('active'));
+                    window.event.target.classList.add('active');
+                }
+            }
+            if (typeof syncRetentionBuilder === 'function') {
+                syncRetentionBuilder();
+            }
+            if (typeof syncInfluxBuilder === 'function') {
+                syncInfluxBuilder();
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.location.hash) {
+                const h = window.location.hash.replace('#', '').toLowerCase();
+                if (['visual', 'compare', 'table'].includes(h)) {
+                    switchCampView(h);
+                }
+            }
+        });
+    </script>
 </body>
 </html>
+

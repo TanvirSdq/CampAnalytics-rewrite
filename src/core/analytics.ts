@@ -2,7 +2,44 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { HealthEvaluationResult } from './types.js';
+import {
+  HealthEvaluationResult,
+  TimeSeriesPoint,
+  CountrySeries,
+  ComparativeTableRow,
+  MapTimelinePoint,
+  IndicatorMetadata,
+  ComparativeAnalyticsResult,
+  ComparativeParams
+} from './types.js';
+
+export type {
+  TimeSeriesPoint,
+  CountrySeries,
+  ComparativeTableRow,
+  MapTimelinePoint,
+  IndicatorMetadata,
+  ComparativeAnalyticsResult,
+  ComparativeParams
+};
+
+export const CODEX_COLOR_PALETTE: string[] = [
+  '#3366cc', // Codex Progressive Blue
+  '#d73333', // Codex Destructive Red
+  '#00af89', // Codex Success Green
+  '#ac6600', // Codex Warning Amber
+  '#6b4ba1', // Codex Royal Purple
+  '#008080', // Codex Deep Teal
+  '#e67300', // Codex Vivid Orange
+  '#54595d', // Codex Base Muted Slate
+  '#4c34a4', // Codex Indigo
+  '#0097a7', // Codex Cyan
+  '#b32424', // Codex Crimson
+  '#14866d', // Codex Pine Green
+  '#2a4b8d', // Codex Navy
+  '#7232e8', // Codex Bright Violet
+  '#8c5e00'  // Codex Brown
+];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -496,7 +533,7 @@ export function createWorldMapHtml(
   );
 
   return `
-    <div id="retention-worldmap-wrapper" style="position: relative; width: 100%; min-height: 460px; background: #ffffff; border: 1px solid var(--border-color, #e0e0e0); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    <div id="retention-worldmap-wrapper" style="position: relative; width: 100%; min-height: 460px; background: #ffffff; border: 1px solid var(--border-color, #e0e0e0); border-radius: 0; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
       <div id="retention-worldmap" style="width: 100%; height: 460px;"></div>
       <div id="retention-worldmap-loading" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.92); z-index: 10; gap: 10px; font-family: 'Inter', sans-serif;">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#256d85" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
@@ -701,7 +738,7 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
       const fill = getColor(val);
       const textFill = getTextColor(val);
 
-      svg += `<rect x="${x + 1}" y="${y + 1}" width="${cellSize - 2}" height="${cellSize - 2}" fill="${fill}" stroke="#ffffff" stroke-width="1.5" />`;
+      svg += `<rect x="${x + 1}" y="${y + 1}" width="${cellSize - 2}" height="${cellSize - 2}" rx="0" ry="0" fill="${fill}" stroke="#ffffff" stroke-width="1.5" />`;
       svg += `<text x="${x + cellSize / 2}" y="${y + cellSize / 2 + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="${textFill}">${val.toFixed(1)}%</text>`;
     }
   }
@@ -925,10 +962,10 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
   svg += `
     <g transform="translate(${width / 2 - 165}, 46)">
       <!-- Returning -->
-      <rect x="0" y="-8" width="11" height="11" fill="#1e3a8a" />
+      <rect x="0" y="-8" width="11" height="11" rx="0" ry="0" fill="#1e3a8a" />
       <text x="17" y="1" font-size="11" font-weight="500" fill="#334155">Returning</text>
       <!-- Newcomers -->
-      <rect x="95" y="-8" width="11" height="11" fill="#0284c7" />
+      <rect x="95" y="-8" width="11" height="11" rx="0" ry="0" fill="#0284c7" />
       <text x="112" y="1" font-size="11" font-weight="500" fill="#334155">Newcomers</text>
       <!-- Cumulative Line -->
       <line x1="205" y1="-3" x2="228" y2="-3" stroke="#d97706" stroke-width="2.5" />
@@ -973,7 +1010,7 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
 
     // Returning Users (Solid Deep Navy - sharp rectangle)
     if (retH > 0) {
-      svg += `<rect x="${x}" y="${retY}" width="${barWidth}" height="${retH}" fill="#1e3a8a" />`;
+      svg += `<rect x="${x}" y="${retY}" width="${barWidth}" height="${retH}" rx="0" ry="0" fill="#1e3a8a" />`;
       if (retH >= 20) {
         svg += `<text x="${cx}" y="${retY + retH / 2 + 4}" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">${rec.returning_contributors.toLocaleString()}</text>`;
       }
@@ -981,7 +1018,7 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
 
     // New Users (Solid Sky Blue - sharp rectangle)
     if (newH > 0) {
-      svg += `<rect x="${x}" y="${newY}" width="${barWidth}" height="${newH}" fill="#0284c7" />`;
+      svg += `<rect x="${x}" y="${newY}" width="${barWidth}" height="${newH}" rx="0" ry="0" fill="#0284c7" />`;
       // Display segment text if tall enough AND clear of the crossing cumulative trendline
       const newMidY = newY + newH / 2 + 4;
       if (newH >= 24 && rec.returning_contributors > 0 && Math.abs(cumY - newMidY) > 28) {
@@ -1031,7 +1068,7 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
       // Ensure pill never overflows the top chart margin
       pillY = Math.max(margin.top - 12, pillY);
 
-      svg += `<rect x="${pillX}" y="${pillY}" width="${pillW}" height="${pillH}" fill="#fffbeb" stroke="#f59e0b" stroke-width="1" />`;
+      svg += `<rect x="${pillX}" y="${pillY}" width="${pillW}" height="${pillH}" rx="0" ry="0" fill="#fffbeb" stroke="#f59e0b" stroke-width="1" />`;
       svg += `<text x="${pt.x}" y="${pillY + 11.5}" text-anchor="middle" font-size="9" font-weight="700" fill="#b45309">${strVal}</text>`;
     });
   }
@@ -1488,7 +1525,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
     if (f.honors.includes('Valued Image')) viCount++;
   }
 
-  // Hall of Fame Leaderboard
+  // Top Photographers Leaderboard
   const leaderboard = uList.slice(0, 6).map((u, i) => {
     const fp = i === 0 ? 1 : 0;
     const qi = Math.max(1, 4 - i);
@@ -1644,3 +1681,525 @@ export async function computeHealthEvaluation(
       insights
     };
   }
+
+// =========================================================================
+// MULTI-COUNTRY COMPARATIVE ANALYTICS ENGINE
+// =========================================================================
+
+export async function computeComparativeAnalytics(
+  params: ComparativeParams
+): Promise<ComparativeAnalyticsResult> {
+  const module = params.module || 'influx';
+  const eventType = (params.eventType || 'wlm').trim().toLowerCase();
+  const currentYear = new Date().getFullYear();
+  const currentY = currentYear - 1;
+  const defaultStart = Math.max(2010, currentY - 4);
+
+  let startYear = Number.isInteger(params.startYear) ? params.startYear : defaultStart;
+  let endYear = Number.isInteger(params.endYear) ? params.endYear : currentY;
+
+  // Clamp years
+  startYear = Math.max(2010, Math.min(currentYear, startYear));
+  endYear = Math.max(2010, Math.min(currentYear, endYear));
+  if (startYear > endYear) {
+    const tmp = startYear;
+    startYear = endYear;
+    endYear = tmp;
+  }
+
+  // Sanitize country codes
+  const rawCodes = Array.isArray(params.countryCodes)
+    ? params.countryCodes
+    : (typeof params.countryCodes === 'string' ? [params.countryCodes] : []);
+  let requestedCountries = rawCodes
+    .filter((c): c is string => typeof c === 'string')
+    .map((c) => c.trim().toLowerCase())
+    .filter((c) => Boolean(COUNTRY_MAP[c]));
+
+  // Remove duplicates while preserving order
+  requestedCountries = Array.from(new Set(requestedCountries));
+
+  // Filter scoped campaigns (e.g. wlb, wla)
+  requestedCountries = requestedCountries.filter((c) => !getCampaignScopeNotice(eventType, c));
+
+  // Sensible defaults if empty
+  if (requestedCountries.length === 0) {
+    if (eventType === 'wlb') {
+      requestedCountries = ['bd', 'in'];
+    } else if (eventType === 'wla') {
+      requestedCountries = ['ng', 'gh', 'ke', 'za', 'tz', 'ug'].filter((c) => COUNTRY_MAP[c]);
+    } else {
+      requestedCountries = ['de', 'it', 'fr', 'es', 'ua', 'pl'].filter((c) => COUNTRY_MAP[c]);
+    }
+  }
+
+  const years: number[] = [];
+  for (let y = startYear; y <= endYear; y++) {
+    years.push(y);
+  }
+
+  // Pre-fetch codes: from startYear - 1 up to endYear (for historical continuity)
+  const fetchStart = Math.max(2010, startYear - 1);
+  const allCodes: string[] = [];
+  for (const cc of requestedCountries) {
+    for (let y = fetchStart; y <= endYear; y++) {
+      allCodes.push(`${eventType}${cc}${String(y % 100).padStart(2, '0')}`);
+    }
+  }
+
+  // Concurrent batch fetching
+  const participantResults = await fetchAllConcurrently(allCodes);
+
+  // If quality or utility, fetch deep analyses concurrently
+  const qualityResults: Record<string, any> = {};
+  const utilityResults: Record<string, any> = {};
+
+  if (module === 'quality') {
+    await Promise.all(
+      allCodes.map(async (code) => {
+        qualityResults[code] = await computeQualityRecognitionDeep(code);
+      })
+    );
+  } else if (module === 'utility') {
+    await Promise.all(
+      allCodes.map(async (code) => {
+        utilityResults[code] = await computeContentUtilityDeep(code);
+      })
+    );
+  }
+
+  // Construct series per country
+  const series: CountrySeries[] = [];
+
+  for (let cIdx = 0; cIdx < requestedCountries.length; cIdx++) {
+    const cc = requestedCountries[cIdx];
+    const color = CODEX_COLOR_PALETTE[cIdx % CODEX_COLOR_PALETTE.length];
+    const points: TimeSeriesPoint[] = [];
+
+    if (module === 'influx') {
+      // Historical seen pool starting before startYear
+      const seenPrior = new Set<string>();
+      if (startYear - 1 >= 2010) {
+        const priorCode = `${eventType}${cc}${String((startYear - 1) % 100).padStart(2, '0')}`;
+        const priorUsers = participantResults[priorCode] || new Set<string>();
+        for (const u of priorUsers) seenPrior.add(u);
+      }
+
+      for (const y of years) {
+        const code = `${eventType}${cc}${String(y % 100).padStart(2, '0')}`;
+        const currentUsers = participantResults[code] || new Set<string>();
+        const totalActive = currentUsers.size;
+
+        if (totalActive === 0) {
+          points.push({
+            year: y,
+            value: 0,
+            formatted_value: '0',
+            code,
+            is_baseline: y === startYear
+          });
+          continue;
+        }
+
+        let newUsers = 0;
+        let returningUsers = 0;
+        for (const u of currentUsers) {
+          if (seenPrior.has(u)) {
+            returningUsers++;
+          } else {
+            newUsers++;
+          }
+        }
+
+        const isBaseline = y === startYear && (startYear - 1 < 2010 || seenPrior.size === 0);
+        for (const u of currentUsers) seenPrior.add(u);
+
+        let val: number;
+        let fVal: string;
+        if (params.metricKey === 'total_active' || params.metricKey === 'active') {
+          val = totalActive;
+          fVal = val.toLocaleString();
+        } else if (params.metricKey === 'newcomer_share_pct' || params.metricKey === 'newcomer_share') {
+          val = parseFloat(((newUsers / totalActive) * 100).toFixed(1));
+          fVal = `${val.toFixed(1)}%`;
+        } else {
+          // Default: newcomers count
+          val = newUsers;
+          fVal = val.toLocaleString();
+        }
+
+        points.push({
+          year: y,
+          value: val,
+          formatted_value: fVal,
+          code,
+          is_baseline: isBaseline
+        });
+      }
+    } else if (module === 'retention') {
+      for (const y of years) {
+        const code = `${eventType}${cc}${String(y % 100).padStart(2, '0')}`;
+        const prevCode = `${eventType}${cc}${String((y - 1) % 100).padStart(2, '0')}`;
+        const currentUsers = participantResults[code] || new Set<string>();
+        const prevUsers = participantResults[prevCode] || new Set<string>();
+
+        let val: number | null = null;
+        let fVal = '—';
+
+        if (prevUsers.size > 0 && currentUsers.size > 0) {
+          let overlap = 0;
+          for (const u of currentUsers) {
+            if (prevUsers.has(u)) overlap++;
+          }
+          val = parseFloat(((overlap / prevUsers.size) * 100).toFixed(1));
+          fVal = `${val.toFixed(1)}%`;
+        } else if (currentUsers.size > 0) {
+          // No prior edition data available to measure retention against
+          val = null;
+          fVal = '—';
+        }
+
+        points.push({
+          year: y,
+          value: val,
+          formatted_value: fVal,
+          code,
+          is_baseline: y === startYear
+        });
+      }
+    } else if (module === 'quality') {
+      for (const y of years) {
+        const code = `${eventType}${cc}${String(y % 100).padStart(2, '0')}`;
+        const qData = qualityResults[code];
+        let val: number = 0;
+        let fVal = '0';
+
+        if (qData) {
+          if (params.metricKey === 'quality_rate_pct' || params.metricKey === 'quality_rate') {
+            val = qData.quality_rate_pct;
+            fVal = `${val.toFixed(2)}%`;
+          } else {
+            // Default: total honors
+            val = qData.qi_count + qData.fp_count + qData.vi_count;
+            fVal = val.toLocaleString();
+          }
+        }
+
+        points.push({
+          year: y,
+          value: val,
+          formatted_value: fVal,
+          code
+        });
+      }
+    } else if (module === 'utility') {
+      for (const y of years) {
+        const code = `${eventType}${cc}${String(y % 100).padStart(2, '0')}`;
+        const uData = utilityResults[code];
+        let val: number = 0;
+        let fVal = '0';
+
+        if (uData) {
+          if (
+            params.metricKey === 'utility_rate' ||
+            params.metricKey === 'utility_rate_pct' ||
+            params.metricKey === 'global_utility_rate' ||
+            params.metricKey === 'global_utility_rate_pct'
+          ) {
+            val = uData.global_utility_rate_pct;
+            fVal = `${val.toFixed(1)}%`;
+          } else {
+            // Default: total global usages
+            val = uData.total_global_usages;
+            fVal = val.toLocaleString();
+          }
+        }
+
+        points.push({
+          year: y,
+          value: val,
+          formatted_value: fVal,
+          code
+        });
+      }
+    }
+
+    // Compute summary stats
+    const validPoints = points.filter((p) => p.value !== null);
+    const latestPoint = validPoints.length > 0 ? validPoints[validPoints.length - 1] : null;
+    const latestYear = latestPoint ? latestPoint.year : endYear;
+    const latestValue = latestPoint ? latestPoint.value! : 0;
+    const minValue = validPoints.length > 0 ? Math.min(...validPoints.map((p) => p.value!)) : 0;
+    const maxValue = validPoints.length > 0 ? Math.max(...validPoints.map((p) => p.value!)) : 0;
+    const avgValue = validPoints.length > 0
+      ? parseFloat((validPoints.reduce((sum, p) => sum + p.value!, 0) / validPoints.length).toFixed(1))
+      : 0;
+
+    let yoyChangePct: number | null = null;
+    if (validPoints.length >= 2) {
+      const prevVal = validPoints[validPoints.length - 2].value!;
+      if (prevVal > 0) {
+        yoyChangePct = parseFloat((((latestValue - prevVal) / prevVal) * 100).toFixed(1));
+      }
+    }
+
+    series.push({
+      country_code: cc,
+      country_name: countryDisplayName(cc),
+      color,
+      points,
+      summary: {
+        latest_year: latestYear,
+        latest_value: latestValue,
+        min_value: minValue,
+        max_value: maxValue,
+        avg_value: avgValue,
+        yoy_change_pct: yoyChangePct
+      }
+    });
+  }
+
+  // Build ComparativeTableRow[]
+  const tableRows: ComparativeTableRow[] = series.map((s) => {
+    const values: Record<number, number | null> = {};
+    const formatted_values: Record<number, string> = {};
+    for (const pt of s.points) {
+      values[pt.year] = pt.value;
+      formatted_values[pt.year] = pt.formatted_value;
+    }
+    return {
+      country_code: s.country_code,
+      country_name: s.country_name,
+      values,
+      formatted_values,
+      latest: s.summary.latest_value,
+      average: s.summary.avg_value,
+      yoy_change: s.summary.yoy_change_pct
+    };
+  });
+
+  const headers = ['Country', ...years.map(String), 'Latest', 'Average', 'YoY Change'];
+
+  // Build map_timeline_data
+  const mapTimelineData: Record<number, MapTimelinePoint[]> = {};
+  for (const y of years) {
+    mapTimelineData[y] = [];
+    for (const s of series) {
+      const pt = s.points.find((p) => p.year === y);
+      if (pt && pt.value !== null) {
+        mapTimelineData[y].push({
+          country_code: s.country_code,
+          country_name: s.country_name,
+          value: pt.value,
+          formatted_value: pt.formatted_value
+        });
+      }
+    }
+  }
+
+  // Construct IndicatorMetadata
+  let meta: IndicatorMetadata;
+  if (module === 'influx') {
+    const isShare = params.metricKey === 'newcomer_share_pct' || params.metricKey === 'newcomer_share';
+    const isActive = params.metricKey === 'total_active' || params.metricKey === 'active';
+    meta = {
+      indicator_id: isShare ? 'influx_share' : isActive ? 'influx_active' : 'influx_newcomers',
+      title: isShare ? 'Newcomer Share of Participants' : isActive ? 'Active Campaign Participants' : 'New Participant Influx',
+      definition: isShare
+        ? 'Percentage of active campaign participants uploading files for the first time in the campaign series.'
+        : isActive
+        ? 'Total distinct participants who uploaded at least one media file during the annual campaign edition.'
+        : 'Total number of first-time campaign participants who had not uploaded files in any prior observed edition.',
+      data_source: 'Wikimedia Commons Category Members API & Toolforge Database',
+      metric_unit: isShare ? '%' : 'Contributors',
+      coverage: 'Annual national campaign editions (2010–present)',
+      license: 'CC BY-SA 4.0',
+      methodology_notes: [
+        'Evaluated by computing set difference: Newcomers(y) = Users(y) \\ ⋃_{i < y} Users(i).',
+        'Bots, automated upload wizards, and administrative maintenance accounts are strictly excluded via heuristic filtering.',
+        'Requires chronological continuity across consecutive national campaign editions.'
+      ],
+      caveats: [
+        'First observed year in the time range serves as the historical baseline; all participants in the initial year are classified as baseline cohort.',
+        'Account renames or unified login (SUL) adjustments across projects may influence historical identification.'
+      ]
+    };
+  } else if (module === 'retention') {
+    meta = {
+      indicator_id: 'retention_yoy',
+      title: 'Year-over-Year Contributor Retention Rate',
+      definition: 'Proportion of contributors from year y-1 who returned to upload at least one image in year y.',
+      data_source: 'Wikimedia Commons Category Members API & Toolforge Database',
+      metric_unit: '%',
+      coverage: 'Annual national campaign editions (2010–present)',
+      license: 'CC BY-SA 4.0',
+      methodology_notes: [
+        'Retention rate = (|U_y ∩ U_{y-1}| / |U_{y-1}|) × 100% where U_y represents the set of verified uploaders in year y.',
+        'Directional forward tracking measures the exact repeat-participation quotient between consecutive annual cycles.',
+        'Accounts with known bot or batch uploader signatures are scrubbed prior to set intersection.'
+      ],
+      caveats: [
+        'Gaps between skipped editions (e.g., pandemic hiatuses or organizer hiatus) are treated as non-consecutive.',
+        'Retention metrics represent upload activity specifically within the designated national campaign category.'
+      ]
+    };
+  } else if (module === 'quality') {
+    const isRate = params.metricKey === 'quality_rate_pct' || params.metricKey === 'quality_rate';
+    meta = {
+      indicator_id: isRate ? 'quality_rate' : 'quality_honors',
+      title: isRate ? 'Quality Recognition Rate' : 'Quality-Recognized Contributions',
+      definition: isRate
+        ? 'Percentage of campaign media uploads designated as Quality Images, Featured Pictures, or Valued Images.'
+        : 'Total count of campaign media uploads designated as Quality Images (QI), Featured Pictures (FP), or Valued Images (VI) on Wikimedia Commons.',
+      data_source: 'Wikimedia Commons Assessment Categories & Picture of the Year Archives',
+      metric_unit: isRate ? '%' : 'Recognized Works',
+      coverage: 'Annual national campaign editions (2010–present)',
+      license: 'CC BY-SA 4.0',
+      methodology_notes: [
+        'Recognized media aggregates peer-reviewed distinctions: Featured Pictures (FP), Quality Images (QI), and Valued Images (VI).',
+        'Honors are tracked per media file and attributed back to the national campaign edition of original upload.',
+        'Quality rate expresses the proportion of recognized images relative to total campaign submissions.'
+      ],
+      caveats: [
+        'Commons quality nominations occur post-campaign through open community peer review, introducing natural evaluation lag for recent editions.',
+        'Certain national campaigns have higher community participation in Commons nomination processes.'
+      ]
+    };
+  } else {
+    // utility
+    const isRate =
+      params.metricKey === 'utility_rate' ||
+      params.metricKey === 'utility_rate_pct' ||
+      params.metricKey === 'global_utility_rate' ||
+      params.metricKey === 'global_utility_rate_pct';
+    meta = {
+      indicator_id: isRate ? 'utility_rate' : 'utility_global_usages',
+      title: isRate ? 'Global Content Utility Rate' : 'Global Article Transclusion & Content Usages',
+      definition: isRate
+        ? 'Percentage of uploaded campaign media actively illustrating at least one article on Wikipedia or sister projects.'
+        : 'Total number of live transclusions and article illustrations across global Wikipedia language editions and sister projects.',
+      data_source: 'Wikimedia Commons GlobalUsage API & Content Translation Databases',
+      metric_unit: isRate ? '%' : 'Article Usages',
+      coverage: 'Annual national campaign editions (2010–present)',
+      license: 'CC BY-SA 4.0',
+      methodology_notes: [
+        'Measures global cross-wiki transclusions across Wikipedia, Wikivoyage, Wiktionary, and sister Wikimedia platforms.',
+        'Global utility rate reflects the percentage of uploaded media actively illustrating at least one encyclopedic article.',
+        'Distinct article counts deduplicate multiple appearances within the same encyclopedic entry.'
+      ],
+      caveats: [
+        'Article transclusion metrics grow over time as volunteer editors discover and incorporate campaign media into encyclopedic entries.',
+        'Language edition coverage correlates with topic relevance to regional and international wiki communities.'
+      ]
+    };
+  }
+
+  const eventName = EVENT_MAP[eventType] || (eventType ? eventType.toUpperCase() : 'Campaigns');
+
+  return {
+    module,
+    indicator_id: meta.indicator_id,
+    indicator_title: meta.title,
+    indicator_unit: meta.metric_unit,
+    event_type: eventType,
+    event_name: eventName,
+    years,
+    selected_countries: requestedCountries,
+    series,
+    table_data: {
+      headers,
+      rows: tableRows
+    },
+    map_timeline_data: mapTimelineData,
+    metadata_card: meta
+  };
+}
+
+export function createComparativeMultiLineSvg(
+  result: ComparativeAnalyticsResult,
+  options: { width?: number; height?: number } = {}
+): string {
+  const width = options.width || 820;
+  const height = options.height || 420;
+  const margin = { top: 40, right: 130, bottom: 45, left: 65 };
+
+  const plotW = width - margin.left - margin.right;
+  const plotH = height - margin.top - margin.bottom;
+
+  // Gather all valid numeric values
+  const allValues: number[] = [];
+  for (const s of result.series) {
+    for (const pt of s.points) {
+      if (pt.value !== null && !isNaN(pt.value)) {
+        allValues.push(pt.value);
+      }
+    }
+  }
+
+  const maxVal = allValues.length > 0 ? Math.max(...allValues, 10) : 100;
+  const yMax = Math.ceil(maxVal * 1.15);
+  const years = result.years;
+  const numYears = years.length;
+
+  function getX(yr: number): number {
+    if (numYears <= 1) return margin.left + plotW / 2;
+    const idx = years.indexOf(yr);
+    return margin.left + (idx / (numYears - 1)) * plotW;
+  }
+
+  function getY(val: number): number {
+    return margin.top + plotH - (val / yMax) * plotH;
+  }
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">`;
+
+  // Title
+  svg += `<text x="${margin.left}" y="22" font-size="14" font-weight="700" fill="#202122">${result.indicator_title} · ${result.event_name}</text>`;
+  svg += `<text x="${width - margin.right + 10}" y="22" text-anchor="start" font-size="11" font-weight="500" fill="#72777d">${result.indicator_unit}</text>`;
+
+  // Horizontal Grid Lines & Y Ticks (5 steps)
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const val = (yMax / steps) * i;
+    const y = getY(val);
+    svg += `<line x1="${margin.left}" y1="${y}" x2="${margin.left + plotW}" y2="${y}" stroke="#eaecf0" stroke-width="1" />`;
+    const fTick = val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val.toFixed(result.indicator_unit === '%' ? 1 : 0);
+    svg += `<text x="${margin.left - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#72777d">${fTick}${result.indicator_unit === '%' ? '%' : ''}</text>`;
+  }
+
+  // X Axis Line & Year Labels
+  svg += `<line x1="${margin.left}" y1="${margin.top + plotH}" x2="${margin.left + plotW}" y2="${margin.top + plotH}" stroke="#a2a9b1" stroke-width="1.5" />`;
+  for (const yr of years) {
+    const x = getX(yr);
+    svg += `<line x1="${x}" y1="${margin.top + plotH}" x2="${x}" y2="${margin.top + plotH + 5}" stroke="#72777d" stroke-width="1" />`;
+    svg += `<text x="${x}" y="${margin.top + plotH + 20}" text-anchor="middle" font-size="11" font-weight="600" fill="#202122">${yr}</text>`;
+  }
+
+  // Draw Lines & Data Points for Each Series
+  for (const s of result.series) {
+    const validPts = s.points.filter((p) => p.value !== null && !isNaN(p.value!));
+    if (validPts.length === 0) continue;
+
+    // Line path
+    const pathD = validPts.map((pt, i) => `${i === 0 ? 'M' : 'L'} ${getX(pt.year)} ${getY(pt.value!)}`).join(' ');
+    svg += `<path d="${pathD}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="miter" stroke-linecap="square" />`;
+
+    // Data points: square markers (rx="0" ry="0")
+    for (const pt of validPts) {
+      const cx = getX(pt.year);
+      const cy = getY(pt.value!);
+      svg += `<rect x="${cx - 4}" y="${cy - 4}" width="8" height="8" rx="0" ry="0" fill="${s.color}" stroke="#ffffff" stroke-width="1.5" />`;
+    }
+
+    // Direct Line End Label at final point
+    const lastPt = validPts[validPts.length - 1];
+    const lx = getX(lastPt.year);
+    const ly = getY(lastPt.value!);
+    svg += `<rect x="${lx + 8}" y="${ly - 4}" width="8" height="8" rx="0" ry="0" fill="${s.color}" />`;
+    svg += `<text x="${lx + 20}" y="${ly + 3}" font-size="11" font-weight="600" fill="#202122">${s.country_name}</text>`;
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+

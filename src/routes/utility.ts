@@ -7,10 +7,26 @@ const router = Router();
 export async function handleUtility(req: Request, res: Response): Promise<void> {
   const reqDict = req.method === 'POST' ? req.body : req.query;
   const currentYear = new Date().getFullYear();
+  const currentY = currentYear - 1;
+  const defaultStart = currentY - 4;
+
   let targetCampaign = ((reqDict.target_campaign || reqDict.utility_event) as string || '').trim();
-  const eventType = ((reqDict.utility_event_type as string) || '').trim().toLowerCase();
-  const country = ((reqDict.utility_country as string) || '').trim().toLowerCase();
-  const year = ((reqDict.utility_year as string) || '').trim();
+  const eventType = ((reqDict.utility_event_type || reqDict.event_type) as string || '').trim().toLowerCase() || 'wlm';
+  const country = ((reqDict.utility_country || reqDict.country) as string || '').trim().toLowerCase();
+  const year = ((reqDict.utility_year || reqDict.year) as string || '').trim();
+  const yrStart = parseInt((reqDict.utility_yr_start || reqDict.yr_start || reqDict.start_year) as string, 10) || defaultStart;
+  const yrEnd = parseInt((reqDict.utility_yr_end || reqDict.yr_end || reqDict.end_year || year) as string, 10) || currentY;
+
+  // Multi-country parsing
+  let countryList: string[] = [];
+  const rawCountries = reqDict.countries || reqDict.utility_countries;
+  if (Array.isArray(rawCountries)) {
+    countryList = rawCountries.map(String).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  } else if (typeof rawCountries === 'string' && rawCountries.trim()) {
+    countryList = rawCountries.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  } else if (country) {
+    countryList = country.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  }
 
   if (req.method === 'GET' && Object.keys(req.query).length === 0 && !targetCampaign) {
     res.render('utility.html', {
@@ -22,18 +38,35 @@ export async function handleUtility(req: Request, res: Response): Promise<void> 
       utility_country: '',
       utility_year: String(currentYear - 1),
       utility_result: null,
+      comparative_result: null,
       error: null
     });
     return;
   }
 
-  if (!targetCampaign && country && year) {
-    const evt = eventType || 'wlm';
-    const yy = String(parseInt(year, 10) % 100).padStart(2, '0');
-    targetCampaign = `${evt}${country}${yy}`;
+  if (!targetCampaign && countryList.length > 0) {
+    const singleC = countryList[0];
+    const yy = String(yrEnd % 100).padStart(2, '0');
+    targetCampaign = `${eventType}${singleC}${yy}`;
   }
 
-  if (!targetCampaign) {
+  let comparativeResult: analytics.ComparativeAnalyticsResult | null = null;
+  if (countryList.length > 0) {
+    try {
+      comparativeResult = await analytics.computeComparativeAnalytics({
+        module: 'utility',
+        eventType,
+        countryCodes: countryList,
+        startYear: yrStart,
+        endYear: yrEnd,
+        metricKey: (reqDict.metric || reqDict.metric_key) as string
+      });
+    } catch (err: any) {
+      console.error('Comparative utility computation failed:', err);
+    }
+  }
+
+  if (!targetCampaign && !comparativeResult) {
     res.render('utility.html', {
       ...getGlobalContext(req),
       PAGE_TITLE: 'CampTools - Content Utility',
@@ -43,6 +76,7 @@ export async function handleUtility(req: Request, res: Response): Promise<void> 
       utility_country: country,
       utility_year: year || String(currentYear - 1),
       utility_result: null,
+      comparative_result: null,
       error: null
     });
     return;
@@ -52,9 +86,9 @@ export async function handleUtility(req: Request, res: Response): Promise<void> 
   let utilityResult: any = null;
 
   const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
-  if (!m) {
+  if (!m && !comparativeResult) {
     error = `Invalid campaign code format '${targetCampaign}'. Please specify in standard syntax e.g. wlmde24, wlmit23.`;
-  } else {
+  } else if (m) {
     const [, evt, cc] = m;
     const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
     if (scopeNotice) {
@@ -70,21 +104,47 @@ export async function handleUtility(req: Request, res: Response): Promise<void> 
 
   res.render('utility.html', {
     ...getGlobalContext(req),
-    PAGE_TITLE: `CampTools - Content Utility: ${targetCampaign.toUpperCase()}`,
+    PAGE_TITLE: targetCampaign ? `CampTools - Content Utility: ${targetCampaign.toUpperCase()}` : 'CampTools - Content Utility Comparison',
     mode: 'Content Utility',
     target_campaign: targetCampaign,
     utility_event_type: m ? m[1] : eventType || 'wlm',
-    utility_country: m ? m[2] : country || 'de',
-    utility_year: m ? String(2000 + parseInt(m[3], 10)) : year || '2024',
+    utility_country: m ? m[2] : country || (countryList[0] || 'de'),
+    utility_year: m ? String(2000 + parseInt(m[3], 10)) : String(yrEnd),
     utility_result: utilityResult,
+    comparative_result: comparativeResult,
     error
   });
 }
 
 export async function handleUtilityApi(req: Request, res: Response): Promise<void> {
+  const countriesParam = ((req.query.countries || req.query.utility_countries) as string || '').trim();
+  if (countriesParam) {
+    const countryCodes = countriesParam.split(/[,\s]+/).filter(Boolean);
+    const eventType = ((req.query.event_type || req.query.utility_event_type) as string || 'wlm').trim().toLowerCase();
+    const yrStart = parseInt((req.query.yr_start || req.query.start_year) as string, 10);
+    const yrEnd = parseInt((req.query.yr_end || req.query.end_year) as string, 10);
+    const metricKey = (req.query.metric || req.query.metric_key) as string;
+
+    try {
+      const result = await analytics.computeComparativeAnalytics({
+        module: 'utility',
+        eventType,
+        countryCodes,
+        startYear: yrStart,
+        endYear: yrEnd,
+        metricKey
+      });
+      res.json(result);
+      return;
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+  }
+
   const targetCampaign = ((req.query.target_campaign || req.query.utility_event) as string || '').trim();
   if (!targetCampaign) {
-    res.status(400).json({ error: 'Missing target_campaign parameter' });
+    res.status(400).json({ error: 'Missing target_campaign or countries parameter' });
     return;
   }
   const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());

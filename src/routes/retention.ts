@@ -7,6 +7,9 @@ const router = Router();
 export async function handleRetention(req: Request, res: Response): Promise<void> {
   const reqDict = req.method === 'POST' ? req.body : req.query;
   const currentYear = new Date().getFullYear();
+  const currentY = currentYear - 1;
+  const defaultStart = Math.max(2010, currentY - 4);
+
   let targetCampaigns = ((reqDict.target_campaigns as string) || '').trim();
   const viewMode = (reqDict.view_mode as string) || 'Both';
   const metricChoice = (reqDict.metric_choice as string) || 'Average';
@@ -17,6 +20,32 @@ export async function handleRetention(req: Request, res: Response): Promise<void
   let builderEvents = reqDict.builder_events;
   if (!Array.isArray(builderEvents)) {
     builderEvents = builderEvents ? [builderEvents] : [];
+  }
+
+  let eventType = ((reqDict.event_type || reqDict.eventType || reqDict.retention_event_type) as string || '').trim().toLowerCase();
+  if (!eventType && builderEvents.length > 0) {
+    const nonAll = builderEvents.find((e: string) => e !== 'all');
+    if (nonAll) eventType = nonAll.toLowerCase();
+  }
+  if (!eventType || eventType === 'all') {
+    eventType = 'wlm';
+  }
+
+  const yrStart = parseInt((reqDict.yr_start || reqDict.start_year || reqDict.retention_yr_start || reqDict.builder_yr_start) as string, 10) || defaultStart;
+  const yrEnd = parseInt((reqDict.yr_end || reqDict.end_year || reqDict.retention_yr_end || reqDict.builder_yr_end) as string, 10) || currentY;
+
+  // Multi-country parsing harmonized across all analytical modules
+  let countryList: string[] = [];
+  const rawCountries = reqDict.countries || reqDict.retention_countries;
+  if (Array.isArray(rawCountries)) {
+    countryList = rawCountries.map(String).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  } else if (typeof rawCountries === 'string' && rawCountries.trim()) {
+    countryList = rawCountries.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  }
+
+  const singleCountry = ((reqDict.retention_country || reqDict.country) as string || '').trim().toLowerCase();
+  if (!countryList.length && singleCountry) {
+    countryList = singleCountry.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
   }
 
   if (!targetCampaigns && builderCountry && builderEvents.length > 0) {
@@ -49,7 +78,7 @@ export async function handleRetention(req: Request, res: Response): Promise<void
     targetCampaigns = targetCodes.join(' ');
   }
 
-  if (req.method === 'GET' && Object.keys(req.query).length === 0 && !targetCampaigns) {
+  if (req.method === 'GET' && Object.keys(req.query).length === 0 && !targetCampaigns && countryList.length === 0) {
     res.render('retention.html', {
       ...getGlobalContext(req),
       PAGE_TITLE: 'CampTools - Contributor Retention',
@@ -62,15 +91,32 @@ export async function handleRetention(req: Request, res: Response): Promise<void
       heatmaps: [],
       worldmap_html: '',
       total_heatmaps_count: 0,
-      remaining_heatmaps_count: 0
+      remaining_heatmaps_count: 0,
+      comparator_countries: [],
+      comparative_result: null
     });
     return;
+  }
+
+  let comparativeResult: analytics.ComparativeAnalyticsResult | null = null;
+  if (countryList.length > 0) {
+    try {
+      comparativeResult = await analytics.computeComparativeAnalytics({
+        module: 'retention',
+        eventType,
+        countryCodes: countryList,
+        startYear: yrStart,
+        endYear: yrEnd
+      });
+    } catch (err: any) {
+      console.error('Comparative retention computation failed:', err);
+    }
   }
 
   if (!targetCampaigns) {
     res.render('retention.html', {
       ...getGlobalContext(req),
-      PAGE_TITLE: 'CampTools - Contributor Retention',
+      PAGE_TITLE: countryList.length > 0 ? 'CampTools - Contributor Retention Comparison' : 'CampTools - Contributor Retention',
       mode: 'Retention Analytics',
       target_campaigns: '',
       view_mode: viewMode,
@@ -80,7 +126,9 @@ export async function handleRetention(req: Request, res: Response): Promise<void
       heatmaps: [],
       worldmap_html: '',
       total_heatmaps_count: 0,
-      remaining_heatmaps_count: 0
+      remaining_heatmaps_count: 0,
+      comparator_countries: [],
+      comparative_result: comparativeResult
     });
     return;
   }
@@ -169,6 +217,95 @@ export async function handleRetention(req: Request, res: Response): Promise<void
           heatmaps.push([cName, svgB64]);
         }
         remainingHeatmapsCount = Math.max(0, totalHeatmapsCount - initialLimit);
+
+        const comparatorCountries: Array<{
+          code: string;
+          name: string;
+          occurrences: number;
+          avgRetention: number;
+          medianRetention: number;
+          forwardRetention: number;
+          maxRetention: number;
+          totalParticipants: number;
+          events: string[];
+        }> = [];
+
+        for (const [countryCode, events] of Object.entries(validCountries)) {
+          const retDict = analytics.computeRetentionPercentages(events, false, true);
+          const { all, forward } = retDict;
+          if (!all || all.length === 0) continue;
+
+          const mean = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+          const median = (arr: number[]) => {
+            if (!arr.length) return 0;
+            const s = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(s.length / 2);
+            return s.length % 2 !== 0 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+          };
+
+          const fwdVal = forward && forward.length ? mean(forward) : mean(all);
+          const maxVal = Math.max(...all);
+          const totalP = Object.values(events).reduce((sum, u) => sum + u.size, 0);
+
+          comparatorCountries.push({
+            code: countryCode,
+            name: analytics.countryDisplayName(countryCode),
+            occurrences: Object.keys(events).length,
+            avgRetention: parseFloat(mean(all).toFixed(1)),
+            medianRetention: parseFloat(median(all).toFixed(1)),
+            forwardRetention: parseFloat(fwdVal.toFixed(1)),
+            maxRetention: parseFloat(maxVal.toFixed(1)),
+            totalParticipants: totalP,
+            events: Object.keys(events)
+          });
+        }
+
+        comparatorCountries.sort((a, b) => b.avgRetention - a.avgRetention);
+
+        const derivedCountries = Object.keys(validCountries);
+        if (derivedCountries.length > 0) {
+          try {
+            let detectedEventType = 'wlm';
+            const yearsFound: number[] = [];
+            for (const c of valid) {
+              const m = analytics.CODE_RE.exec(c);
+              if (m) {
+                if (m[1] && m[1] !== 'all') detectedEventType = m[1];
+                if (m[3]) yearsFound.push(2000 + parseInt(m[3], 10));
+              }
+            }
+            const startYear = yearsFound.length > 0 ? Math.min(...yearsFound) : currentYear - 4;
+            const endYear = yearsFound.length > 0 ? Math.max(...yearsFound) : currentYear - 1;
+
+            comparativeResult = await analytics.computeComparativeAnalytics({
+              module: 'retention',
+              eventType: detectedEventType,
+              countryCodes: derivedCountries,
+              startYear,
+              endYear
+            });
+          } catch (err: any) {
+            console.error('Comparative retention computation failed:', err);
+          }
+        }
+
+        res.render('retention.html', {
+          ...getGlobalContext(req),
+          PAGE_TITLE: 'CampTools - Retention Analysis Dashboard',
+          mode: 'Retention Analytics',
+          target_campaigns: targetCampaigns,
+          view_mode: viewMode,
+          metric_choice: metricChoice,
+          error,
+          tables,
+          heatmaps,
+          worldmap_html: worldmapHtml,
+          total_heatmaps_count: totalHeatmapsCount,
+          remaining_heatmaps_count: remainingHeatmapsCount,
+          comparator_countries: comparatorCountries,
+          comparative_result: comparativeResult
+        });
+        return;
       }
     } catch (err: any) {
       error = `Error processing retention analysis: ${err.message}`;
@@ -187,11 +324,35 @@ export async function handleRetention(req: Request, res: Response): Promise<void
     heatmaps,
     worldmap_html: worldmapHtml,
     total_heatmaps_count: totalHeatmapsCount,
-    remaining_heatmaps_count: remainingHeatmapsCount
+    remaining_heatmaps_count: remainingHeatmapsCount,
+    comparator_countries: [],
+    comparative_result: null
   });
 }
 
 export async function handleRetentionApi(req: Request, res: Response): Promise<void> {
+  const countriesParam = ((req.query.countries || req.query.retention_countries) as string || '').trim();
+  if (countriesParam) {
+    const countryCodes = countriesParam.split(/[,\s]+/).filter(Boolean);
+    const eventType = ((req.query.event_type || req.query.eventType) as string || 'wlm').trim().toLowerCase();
+    const yrStart = parseInt((req.query.yr_start || req.query.start_year) as string, 10);
+    const yrEnd = parseInt((req.query.yr_end || req.query.end_year) as string, 10);
+    try {
+      const result = await analytics.computeComparativeAnalytics({
+        module: 'retention',
+        eventType,
+        countryCodes,
+        startYear: yrStart,
+        endYear: yrEnd
+      });
+      res.json(result);
+      return;
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+  }
+
   const targetCampaigns = ((req.query.target_campaigns as string) || '').trim();
   if (!targetCampaigns) {
     res.status(400).json({ error: 'Missing target_campaigns parameter' });

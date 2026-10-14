@@ -81,8 +81,8 @@ Scores campaign editions on a 0–100 scale across five core dimensions grouped 
   * **Quality Images (QI)**: Technical excellence verified by Commons reviewers.
   * **Featured Pictures (FP)**: Finest photographic achievements chosen by community consensus.
   * **Valued Images (VI)**: Most valuable illustrations for encyclopedic subjects.
-* **Documented Works Gallery**: Curatorial showcase with honor badges, contributor attribution, and direct Commons links.
-* **Photographer Hall of Fame**: Contributor leaderboard tracking individual honor counts (QI, FP, VI).
+* **Documented Works Gallery**: Documented media gallery with quality badges, contributor attribution, and direct Commons links.
+* **Top Contributing Photographers**: Contributor leaderboard tracking individual award counts (QI, FP, VI).
 
 ---
 
@@ -98,7 +98,7 @@ All analytical modules provide direct RESTful JSON endpoints for programmatic in
 | `/api/retention` | `GET` | `target_campaigns` (e.g. `wlmde22 wlmde23 wlmde24`) | Computes full pairwise directional retention matrix and participant sets. |
 | `/api/influx` | `GET` | `influx_codes` (e.g. `wlmde20 wlmde21 wlmde22 wlmde23 wlmde24`) | Returns year-over-year newcomer influx, veteran counts, cumulative pool, and lifecycle profile. |
 | `/api/utility` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns global usage rates, article embed counts, wiki breakdown, and top utilized photographers. |
-| `/api/quality` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns QI/FP/VI counts, distinction rates, documented files, and hall-of-fame leaderboard. |
+| `/api/quality` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns QI/FP/VI counts, quality rates, documented files, and top photographers leaderboard. |
 
 ### Example API Request & Response
 

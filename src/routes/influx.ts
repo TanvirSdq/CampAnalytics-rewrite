@@ -12,9 +12,20 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
 
   const eventType = ((reqDict.influx_event_type as string) || 'wlm').trim().toLowerCase() || 'wlm';
   const country = ((reqDict.influx_country as string) || '').trim().toLowerCase();
-  const yrStart = parseInt(reqDict.influx_yr_start as string, 10) || defaultStart;
-  const yrEnd = parseInt(reqDict.influx_yr_end as string, 10) || currentY;
+  const yrStart = parseInt((reqDict.influx_yr_start || reqDict.start_year || reqDict.yr_start) as string, 10) || defaultStart;
+  const yrEnd = parseInt((reqDict.influx_yr_end || reqDict.end_year || reqDict.yr_end) as string, 10) || currentY;
   let rawCodes = ((reqDict.influx_codes as string) || '').trim();
+
+  // Multi-country parsing
+  let countryList: string[] = [];
+  const rawCountries = reqDict.countries || reqDict.influx_countries;
+  if (Array.isArray(rawCountries)) {
+    countryList = rawCountries.map(String).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  } else if (typeof rawCountries === 'string' && rawCountries.trim()) {
+    countryList = rawCountries.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  } else if (country) {
+    countryList = country.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  }
 
   if (req.method === 'GET' && Object.keys(req.query).length === 0) {
     res.render('influx.html', {
@@ -28,20 +39,57 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
       influx_codes: '',
       chart_b64: '',
       influx_result: null,
+      comparative_result: null,
       error: null
     });
     return;
   }
 
-  if (!rawCodes && country) {
+  if (!rawCodes && countryList.length === 1) {
+    const singleC = countryList[0];
     const codesArr: string[] = [];
     for (let y = yrStart; y <= yrEnd; y++) {
-      codesArr.push(`${eventType}${country}${String(y % 100).padStart(2, '0')}`);
+      codesArr.push(`${eventType}${singleC}${String(y % 100).padStart(2, '0')}`);
     }
     rawCodes = codesArr.join(' ');
   }
 
-  if (!rawCodes) {
+  let comparativeResult: analytics.ComparativeAnalyticsResult | null = null;
+  if (countryList.length > 0) {
+    try {
+      comparativeResult = await analytics.computeComparativeAnalytics({
+        module: 'influx',
+        eventType,
+        countryCodes: countryList,
+        startYear: yrStart,
+        endYear: yrEnd,
+        metricKey: (reqDict.metric || reqDict.metric_key) as string
+      });
+    } catch (err: any) {
+      console.error('Comparative influx computation failed:', err);
+    }
+  }
+
+  if (!rawCodes && countryList.length > 1) {
+    // Multi-country comparative mode without manual single-stream raw codes
+    res.render('influx.html', {
+      ...getGlobalContext(req),
+      PAGE_TITLE: 'CampTools - Contributor Influx Comparison',
+      mode: 'New User Influx',
+      influx_event_type: eventType,
+      influx_country: countryList[0] || country,
+      influx_yr_start: yrStart,
+      influx_yr_end: yrEnd,
+      influx_codes: '',
+      chart_b64: '',
+      influx_result: null,
+      comparative_result: comparativeResult,
+      error: null
+    });
+    return;
+  }
+
+  if (!rawCodes && !comparativeResult) {
     res.render('influx.html', {
       ...getGlobalContext(req),
       PAGE_TITLE: 'CampTools - Contributor Influx',
@@ -53,6 +101,7 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
       influx_codes: '',
       chart_b64: '',
       influx_result: null,
+      comparative_result: null,
       error: null
     });
     return;
@@ -63,9 +112,7 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
   let chartB64 = '';
   let influxResult: any = null;
 
-  if (validCodes.length < 2) {
-    error = 'Please specify at least two chronological campaign editions to compute Year-over-Year influx.';
-  } else {
+  if (validCodes.length >= 2) {
     try {
       influxResult = await analytics.computeYoYInflux(validCodes);
       if (!influxResult.records.length || influxResult.records.every((r: any) => r.total_active === 0)) {
@@ -83,6 +130,8 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
     } catch (err: any) {
       error = `Error evaluating influx trends: ${err.message}`;
     }
+  } else if (!comparativeResult) {
+    error = 'Please specify at least two chronological campaign editions to compute Year-over-Year influx.';
   }
 
   res.render('influx.html', {
@@ -95,15 +144,41 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
     influx_yr_end: yrEnd,
     influx_codes: validCodes.length ? validCodes.join(' ') : rawCodes,
     influx_result: influxResult,
+    comparative_result: comparativeResult,
     chart_b64: chartB64,
     error
   });
 }
 
 export async function handleInfluxApi(req: Request, res: Response): Promise<void> {
+  const countriesParam = ((req.query.countries || req.query.influx_countries) as string || '').trim();
+  if (countriesParam) {
+    const countryCodes = countriesParam.split(/[,\s]+/).filter(Boolean);
+    const eventType = ((req.query.event_type || req.query.influx_event_type) as string || 'wlm').trim().toLowerCase();
+    const yrStart = parseInt((req.query.yr_start || req.query.start_year) as string, 10);
+    const yrEnd = parseInt((req.query.yr_end || req.query.end_year) as string, 10);
+    const metricKey = (req.query.metric || req.query.metric_key) as string;
+
+    try {
+      const comparativeResult = await analytics.computeComparativeAnalytics({
+        module: 'influx',
+        eventType,
+        countryCodes,
+        startYear: yrStart,
+        endYear: yrEnd,
+        metricKey
+      });
+      res.json(comparativeResult);
+      return;
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+  }
+
   const influxCodes = ((req.query.influx_codes as string) || '').trim();
   if (!influxCodes) {
-    res.status(400).json({ error: 'Missing influx_codes parameter' });
+    res.status(400).json({ error: 'Missing influx_codes or countries parameter' });
     return;
   }
   const rawCodes = influxCodes.split(/\s+/).filter(Boolean);

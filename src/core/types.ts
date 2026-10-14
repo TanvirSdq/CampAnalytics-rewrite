@@ -97,3 +97,83 @@ export interface HeatmapsApiResponse {
   has_more: boolean;
   remaining_count: number;
 }
+
+export interface TimeSeriesPoint {
+  year: number;
+  value: number | null;
+  formatted_value: string;
+  code: string;
+  is_baseline?: boolean;
+}
+
+export interface CountrySeries {
+  country_code: string;
+  country_name: string;
+  color: string;
+  points: TimeSeriesPoint[];
+  summary: {
+    latest_year: number;
+    latest_value: number;
+    min_value: number;
+    max_value: number;
+    avg_value: number;
+    yoy_change_pct: number | null;
+  };
+}
+
+export interface ComparativeTableRow {
+  country_code: string;
+  country_name: string;
+  values: Record<number, number | null>;
+  formatted_values: Record<number, string>;
+  latest: number | null;
+  average: number | null;
+  yoy_change: number | null;
+}
+
+export interface MapTimelinePoint {
+  country_code: string;
+  country_name: string;
+  value: number;
+  formatted_value: string;
+}
+
+export interface IndicatorMetadata {
+  indicator_id: string;
+  title: string;
+  definition: string;
+  data_source: string;
+  metric_unit: string;
+  coverage: string;
+  license: string;
+  methodology_notes: string[];
+  caveats: string[];
+}
+
+export interface ComparativeAnalyticsResult {
+  module: 'influx' | 'retention' | 'quality' | 'utility';
+  indicator_id: string;
+  indicator_title: string;
+  indicator_unit: string;
+  event_type: string;
+  event_name: string;
+  years: number[];
+  selected_countries: string[];
+  series: CountrySeries[];
+  table_data: {
+    headers: string[];
+    rows: ComparativeTableRow[];
+  };
+  map_timeline_data: Record<number, MapTimelinePoint[]>;
+  metadata_card: IndicatorMetadata;
+}
+
+export interface ComparativeParams {
+  module: 'influx' | 'retention' | 'quality' | 'utility';
+  eventType: string;
+  countryCodes: string[];
+  startYear: number;
+  endYear: number;
+  metricKey?: string;
+}
+

@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="page-title">Documentation</h1>
-        <p class="page-subtitle">Technical specifications, statistical formulations, and analytical usage guidelines for the Campaign Analytics platform.</p>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+    <div>
+        <h1 class="page-title" style="margin-bottom: 0;">Documentation</h1>
+    </div>
+</div>
 
         <!-- ================================================================== -->
         <!-- 1. EVALUATION SECTION                                              -->
@@ -12,13 +15,13 @@
                     <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 01</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Evaluation</span>
                 </div>
-                <a href="/health" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                <a href="/health" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
                 </a>
             </div>
             <div class="display-panel-body">
                 <p style="color: var(--text-muted); line-height: 1.6;">
-                    The Evaluation module computes a multi-dimensional campaign vitality score (0–100) calibrated dynamically against contemporary regional peer performance:
+                    The Evaluation module computes a multi-dimensional campaign evaluation score (0–100) calibrated dynamically against contemporary regional peer performance:
                 </p>
 
                 <h4 style="margin: 14px 0 8px 0; color: var(--text-ink); font-size: 0.95rem;">Step-by-Step Tool Usage &amp; Evaluation Process</h4>
@@ -67,7 +70,7 @@
                     <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 02</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Retention</span>
                 </div>
-                <a href="/retention" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                <a href="/retention" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
                 </a>
             </div>
@@ -123,7 +126,7 @@
                     <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 03</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Influx</span>
                 </div>
-                <a href="/influx" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                <a href="/influx" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
                 </a>
             </div>
@@ -136,7 +139,7 @@
                     <li><strong>Generated Campaign Sequence:</strong> Chronological campaign sequence automatically assembled or customized to evaluate longitudinal trends.</li>
                     <li><strong>Trend Visualizations &amp; Outputs:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
-                            <li><strong>Summary KPI Cards:</strong> Cumulative Community Footprint, Peak Influx Year, Peak Overall Edition, and Contributor Longevity (recurring participants).</li>
+                            <li><strong>Summary KPI Cards:</strong> Cumulative Contributor Pool, Peak Influx Year, Peak Overall Edition, and Contributor Longevity (recurring participants).</li>
                             <li><strong>Visual Influx Dynamics:</strong> Dual-axis stacked bar chart showing first-time newcomers (\(I_t\)) stacked with returning veterans (\(R_t\)) alongside the cumulative pool trajectory.</li>
                             <li><strong>Cohort Lifecycle Segmentation:</strong> Categorization into 1-Time Entrants (one-off contributors), Repeaters (2–3 editions), and Core Veterans (4+ editions).</li>
                             <li><strong>Detailed Data Table:</strong> Comprehensive table with YoY Net Growth, Newcomer Share, Direct Retention, and CSV export capability.</li>
@@ -171,7 +174,7 @@
                 </div>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Cumulative Movement Footprint</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Cumulative Contributor Pool</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
                         The cumulative community pool milestone measures the total distinct individuals who have engaged across the evaluated series up to edition year \(t\):
                     </p>
@@ -191,7 +194,7 @@
                     <span class="tool-card-badge" style="background-color: #ede9fe; color: #6d28d9; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 04</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Content Utility</span>
                 </div>
-                <a href="/utility" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                <a href="/utility" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
                 </a>
             </div>
@@ -206,7 +209,7 @@
                         <ul style="margin-top: 4px; padding-left: 18px;">
                             <li><strong>Overall Utility Rate (\(U_r\)):</strong> Percentage of uploaded files actively utilized in at least one Wikimedia project.</li>
                             <li><strong>Article Inclusions:</strong> Cumulative count of live article instances illustrating encyclopedic knowledge.</li>
-                            <li><strong>Cross-Wiki Footprint:</strong> Distribution across Wikipedia language editions (e.g. English, German, French, Bengali), Wikidata, Wikivoyage, and Commons galleries.</li>
+                            <li><strong>Cross-Wiki Distribution:</strong> Distribution across Wikipedia language editions (e.g. English, German, French, Bengali), Wikidata, Wikivoyage, and Commons galleries.</li>
                             <li><strong>Contributor Impact Leaderboard:</strong> Top photographers ranked by total downstream article usage.</li>
                         </ul>
                     </li>
@@ -236,34 +239,34 @@
                     <span class="tool-card-badge" style="background-color: #fef9c3; color: #a16207; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 05</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Quality Recognition</span>
                 </div>
-                <a href="/quality" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 3px; text-decoration: none; font-weight: 500;">
+                <a href="/quality" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
                 </a>
             </div>
             <div class="display-panel-body">
                 <p style="color: var(--text-muted); line-height: 1.6;">
-                    The Quality Recognition module audits formal community curatorial designations awarded to campaign submissions by Wikimedia Commons peer-review committees:
+                    The Quality Recognition module audits formal community quality designations awarded to campaign submissions by Wikimedia Commons peer-review committees:
                 </p>
                 <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
                     <li><strong>Campaign Query:</strong> Select target event, country, and year (e.g. <code>wlmde24</code>, <code>wleua21</code>).</li>
                     <li><strong>Commons Category Tree Harvesting:</strong> Traverses structured subcategories including <code>Quality images from [Campaign]</code>, <code>Featured pictures from [Campaign]</code>, and <code>Valued images from [Campaign]</code>.</li>
-                    <li><strong>Honors &amp; Showcase Outputs:</strong>
+                    <li><strong>Quality Recognition Outputs:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
                             <li><strong>Overall Quality Rate (\(Q_r\)):</strong> Percentage of submissions achieving formal quality recognition.</li>
-                            <li><strong>Honors Breakdown:</strong> Itemized counts of Quality Images (QI), Featured Pictures (FP), and Valued Images (VI).</li>
-                            <li><strong>Recognized Files Showcase:</strong> Interactive media gallery with lazy-loaded thumbnails, file titles, badge tags, and direct Commons links.</li>
-                            <li><strong>Honored Photographers Hall of Fame:</strong> Distinct accredited photographers whose works were honored by the community.</li>
+                            <li><strong>Awards Breakdown:</strong> Itemized counts of Quality Images (QI), Featured Pictures (FP), and Valued Images (VI).</li>
+                            <li><strong>Recognized Media Files:</strong> Interactive media gallery with lazy-loaded thumbnails, file titles, badge tags, and direct Commons links.</li>
+                            <li><strong>Top Contributing Photographers:</strong> Distinct accredited photographers whose works received quality designations.</li>
                         </ul>
                     </li>
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Quality Distinction Rate Formulation</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Quality Rate Formulation</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
                         For campaign upload portfolio \(F\), let \(F_{\text{honored}}\) denote files awarded QI, FP, or VI status:
                     </p>
                     <div class="math-formula">
-                        \[ Q_r = \left(\frac{|F_{\text{honored}}|}{|F|}\right) \times 100\%, \quad \text{Honored Photographers } H = |\{ \text{uploader}(f) \mid f \in F_{\text{honored}} \}| \]
+                        \[ Q_r = \left(\frac{|F_{\text{honored}}|}{|F|}\right) \times 100\%, \quad \text{Recognized Photographers } H = |\{ \text{uploader}(f) \mid f \in F_{\text{honored}} \}| \]
                     </div>
                 </div>
             </div>
@@ -300,7 +303,7 @@
                             <tr>
                                 <td><strong>Evaluation Index</strong></td>
                                 <td>\(0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}}\)</td>
-                                <td>Composite 0–100 campaign health score regularized with Empirical Bayesian shrinkage against regional peers.</td>
+                                <td>Composite 0–100 campaign evaluation score regularized with Empirical Bayesian shrinkage against regional peers.</td>
                             </tr>
                             <tr>
                                 <td><strong>Directional Retention (\(R_{A \to B}\))</strong></td>

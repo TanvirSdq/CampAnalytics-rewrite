@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { getGlobalContext, getCustomCss } from './core/context.js';
+import { computeComparativeAnalytics } from './core/analytics.js';
 import healthzRouter from './routes/healthz.js';
 import indexRouter from './routes/index.js';
 import healthRouter from './routes/health.js';
@@ -25,7 +26,7 @@ app.use(compression() as any);
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
 
-// XTools-style Execution Timing & Memory Profiling Middleware
+// Execution Timing & Memory Profiling Middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = process.hrtime.bigint();
   const origRender = res.render.bind(res);
@@ -100,6 +101,45 @@ app.use(retentionRouter);
 app.use(utilityRouter);
 app.use(qualityRouter);
 app.use(documentationRouter);
+
+// Unified Comparative Analytics API
+app.get('/api/comparative', async (req: Request, res: Response) => {
+  const moduleParam = ((req.query.module || 'influx') as string).trim().toLowerCase();
+  if (!['influx', 'retention', 'quality', 'utility'].includes(moduleParam)) {
+    res.status(400).json({
+      error: `Invalid module '${moduleParam}'. Supported modules: influx, retention, quality, utility.`
+    });
+    return;
+  }
+
+  const eventType = ((req.query.event_type || req.query.eventType) as string || 'wlm').trim().toLowerCase();
+  const rawCountries = req.query.countries || req.query.country_codes || req.query.countryCodes;
+  let countryCodes: string[] = [];
+  if (Array.isArray(rawCountries)) {
+    countryCodes = rawCountries.map(String).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  } else if (typeof rawCountries === 'string' && rawCountries.trim()) {
+    countryCodes = rawCountries.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+  }
+
+  const yrStart = parseInt((req.query.start_year || req.query.startYear || req.query.yr_start) as string, 10);
+  const yrEnd = parseInt((req.query.end_year || req.query.endYear || req.query.yr_end) as string, 10);
+  const metricKey = ((req.query.metric || req.query.metric_key || req.query.metricKey) as string || '').trim();
+
+  try {
+    const result = await computeComparativeAnalytics({
+      module: moduleParam as 'influx' | 'retention' | 'quality' | 'utility',
+      eventType,
+      countryCodes,
+      startYear: yrStart,
+      endYear: yrEnd,
+      metricKey: metricKey || undefined
+    });
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.use(indexRouter); // Mounted last to allow root handler and fallbacks
 
 // 404 Handler

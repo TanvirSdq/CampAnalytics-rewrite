@@ -13,7 +13,7 @@ The suite comprises five primary analytical tools:
 2. **Retention (Tool 02)**: Longitudinal participant continuity analysis across multi-year editions, directional cohort retention matrices, and geographic choropleth mappings.
 3. **Influx (Tool 03)**: Year-over-Year (YoY) contributor segmentation distinguishing first-time participants from returning veterans to assess participant pipeline sustainability.
 4. **Content Utility (Tool 04)**: Live encyclopedic reuse tracking across Wikimedia projects (`prop=globalusage`), article inclusion volume, cross-wiki project breadth, and photographer impact rankings.
-5. **Quality Recognition (Tool 05)**: Movement-wide curatorial and technical honors tracking (Quality Images, Featured Pictures, Valued Images) with structured Commons category harvesting and contributor hall of fame.
+5. **Quality Recognition (Tool 05)**: Movement-wide curatorial and technical honors tracking (Quality Images, Featured Pictures, Valued Images) with structured Commons category harvesting and top contributing photographers.
 
 ---
 

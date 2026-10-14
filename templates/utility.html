@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<div>
-    <h1 class="page-title" style="margin-bottom: 4px;">Content Utility Analytics</h1>
-    <p class="page-subtitle" style="margin-bottom: 0;">Track how photos uploaded during campaigns are used across Wikipedia articles and Wikimedia sister projects.</p>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+    <div>
+        <h1 class="page-title" style="margin-bottom: 0;">Content Utility Analytics</h1>
+    </div>
 </div>
 
         <form action="/utility" method="GET" id="utility-form" onsubmit="syncUtilityBuilder()">
             <!-- Structured Panel: Selection Builder -->
             <div class="display-panel">
                 <div class="display-panel-header">
-                    <span>What to look up · Selection Builder</span>
-                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Configure Campaign Target</span>
+                    <span>Content Utility Parameters</span>
                 </div>
                 <div class="display-panel-body">
                     <div class="preset-rail">
@@ -40,7 +40,9 @@
                             <!-- Target Country & Year in Grid -->
                             <div class="form-row-2col">
                                 <div class="form-group">
-                                    <label for="utility_country" class="form-label">Target Country</label>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; min-height: 24px;">
+                                        <label for="utility_country" class="form-label" style="margin-bottom: 0;">Target Country</label>
+                                    </div>
                                     <select id="utility_country" name="utility_country" class="form-control" onchange="syncUtilityBuilder()">
                                         <option value="">-- Select Country --</option>
                                         {% for country_key in COUNTRY_OPTIONS %}
@@ -51,7 +53,9 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="utility_year" class="form-label">Campaign Edition Year</label>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; min-height: 24px;">
+                                        <label for="utility_year" class="form-label" style="margin-bottom: 0;">Campaign Edition Year</label>
+                                    </div>
                                     <input type="number" id="utility_year" name="utility_year" value="{{ utility_year or (CURRENT_YEAR - 1) }}" min="2010" max="2040" class="form-control" onchange="syncUtilityBuilder()" oninput="syncUtilityBuilder()">
                                 </div>
                             </div>
@@ -74,11 +78,8 @@
                     </div>
 
                     <!-- Priority Action Bar at Base of Utility Tool -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: #f8fafc; border-top: 1px solid var(--border-color); border-radius: 0 0 8px 8px; flex-wrap: wrap; gap: 12px; margin: 18px -18px -18px -18px;">
-                        <div style="font-size: 0.84rem; color: var(--text-muted);">
-                            Configure campaign edition above or pick a preset to analyze global article usage and pageviews.
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="padding: 10px 28px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(54, 89, 227, 0.25);" onclick="setLoadingState(this, 'Evaluating Utility…')">
+                    <div class="builder-action-bar">
+                        <button type="submit" class="btn btn-primary builder-action-btn" onclick="setLoadingState(this, 'Evaluating Utility…')">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             <span>Evaluate Content Utility</span>
                         </button>
@@ -87,271 +88,506 @@
             </div>
         </form>
 
-        {% if not utility_result and not error %}
+        {% if not utility_result and not error and not comparative_result %}
             <!-- Initial Empty State / Prompt on Default Landing for Utility -->
-            <div class="empty-state-panel" style="margin-top: 20px; padding: 44px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 8px;">
-                <div style="width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%; background: #f0f6ff; display: flex; align-items: center; justify-content: center; color: var(--wiki-blue);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <div class="empty-state-panel" style="margin-top: 20px; padding: 32px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 0;">
+                <div class="empty-state-text">Configure campaign edition or select a preset above to evaluate content utility</div>
+            </div>
+        {% endif %}
+
+        {% if comparative_result %}
+            <div class="display-panel camp-analytics-shell" id="comparative-analytics-shell">
+                <div class="camp-shell-header">
+                    <div class="camp-shell-left">
+                        <h2 class="camp-shell-title">{{ comparative_result.indicator_title }}</h2>
+                        <div class="camp-shell-subtitle">Multi-country longitudinal time series across consecutive campaign editions.</div>
+                    </div>
+                    <div class="camp-shell-right">
+                        <span class="camp-telemetry-badge">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>Comparative · <strong>{{ comparative_result.series|length }}</strong> Countries</span>
+                        </span>
+                    </div>
                 </div>
-                <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-ink); margin-bottom: 6px;">Ready to Evaluate Content Utility</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.5;">
-                    Configure a campaign edition above, or select a preset in the builder, then click <strong>Evaluate Content Utility</strong> to see which photos are used in Wikipedia articles, language editions reached, and top utilized photographers.
-                </p>
+
+                <!-- Comparative Toolbar with Drawer Trigger and View Switcher -->
+                <div class="comparative-toolbar">
+                    <button type="button" class="btn-outline-drawer" id="btn-toggle-entity-drawer" onclick="CampComparativeSuite.toggleEntityDrawer(true)" title="Filter or add countries to the comparative analysis">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        <span>Edit countries and regions</span>
+                        <span class="badge-drawer-count" id="drawer-selected-count">{{ comparative_result.selected_countries|length }}</span>
+                    </button>
+
+                    <div class="comparative-view-switch" role="tablist" aria-label="Comparative View Switcher">
+                        <button type="button" class="comparative-tab-btn active" id="tab-view-line" onclick="CampComparativeSuite.switchView('line')" role="tab" aria-selected="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                            <span>Line</span>
+                        </button>
+                        <button type="button" class="comparative-tab-btn" id="tab-view-table" onclick="CampComparativeSuite.switchView('table')" role="tab" aria-selected="false">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="0" ry="0"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                            <span>Table</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Comparative Visualization Views -->
+                <div class="comparative-chart-card" id="comparative-view-line">
+                    <div class="comparative-chart-container" id="comparative-line-container"></div>
+                </div>
+
+                <!-- Timeline Scrubber Card (positioned below comparative visualization) -->
+                <div class="camp-timeline-scrubber-card" id="camp-timeline-scrubber-card">
+                    <button type="button" class="scrubber-play-btn" id="scrubber-play-btn" onclick="CampComparativeSuite.togglePlayPause()" aria-label="Toggle playback of timeline">
+                        <svg class="scrubber-play-icon icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <svg class="scrubber-play-icon icon-pause" style="display:none;" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="0" ry="0"></rect><rect x="14" y="4" width="4" height="16" rx="0" ry="0"></rect></svg>
+                        <span class="scrubber-play-text">Play</span>
+                    </button>
+
+                    <div class="scrubber-slider-wrap">
+                        <span class="scrubber-year-label" id="scrubber-min-year">{{ comparative_result.years[0] }}</span>
+                        <input type="range" class="camp-scrubber-range" id="camp-scrubber-range" min="{{ comparative_result.years[0] }}" max="{{ comparative_result.years[comparative_result.years|length - 1] }}" step="1" value="{{ comparative_result.years[comparative_result.years|length - 1] }}" oninput="CampComparativeSuite.scrubToYear(parseInt(this.value, 10))" aria-label="Timeline Scrubber">
+                        <span class="scrubber-year-label" id="scrubber-max-year">{{ comparative_result.years[comparative_result.years|length - 1] }}</span>
+                    </div>
+
+                    <div class="scrubber-active-badge">
+                        <span class="scrubber-badge-label">Active Edition:</span>
+                        <span class="scrubber-badge-year" id="scrubber-active-year">{{ comparative_result.years[comparative_result.years|length - 1] }}</span>
+                    </div>
+                </div>
+
+                <!-- Comparative Table View -->
+                <div class="comparative-chart-card" id="comparative-view-table" style="display: none; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <div style="font-weight: 600; font-size: 0.92rem; color: var(--text-ink);">Cross-Sectional Comparative Table</div>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('comparative-data-table', 'csv', 'comparative_utility_cohorts')" title="Export as CSV">
+                                <span>Export CSV</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('comparative-data-table', 'wikitext', 'comparative_utility_cohorts')" title="Export as Wikitext">
+                                <span>Export Wikitext</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="comparative-table-container"></div>
+                </div>
+
+                <!-- Indicator Metadata Card -->
+                {% if comparative_result.metadata_card %}
+                <div class="indicator-meta-card">
+                    <div class="indicator-meta-header">
+                        <div class="indicator-meta-kicker">Indicator Metadata &amp; Methodology</div>
+                        <h3 class="indicator-meta-title">{{ comparative_result.metadata_card.title }}</h3>
+                    </div>
+                    <div class="indicator-meta-body">
+                        <p class="indicator-meta-definition">{{ comparative_result.metadata_card.definition }}</p>
+                        
+                        <div class="indicator-meta-grid">
+                            <div class="indicator-meta-cell">
+                                <span class="meta-label">Data Source</span>
+                                <span class="meta-value">{{ comparative_result.metadata_card.data_source }}</span>
+                            </div>
+                            <div class="indicator-meta-cell">
+                                <span class="meta-label">Metric Unit</span>
+                                <span class="meta-value">{{ comparative_result.metadata_card.metric_unit }}</span>
+                            </div>
+                            <div class="indicator-meta-cell">
+                                <span class="meta-label">Coverage</span>
+                                <span class="meta-value">{{ comparative_result.metadata_card.coverage }}</span>
+                            </div>
+                            <div class="indicator-meta-cell">
+                                <span class="meta-label">License</span>
+                                <span class="meta-value">
+                                    <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">{{ comparative_result.metadata_card.license }}</a>
+                                </span>
+                            </div>
+                        </div>
+
+                        {% if comparative_result.metadata_card.methodology_notes and comparative_result.metadata_card.methodology_notes|length > 0 %}
+                        <div class="indicator-methodology-points">
+                            <div class="methodology-points-heading">Core Methodology:</div>
+                            <ul class="methodology-points-list">
+                                {% for note in comparative_result.metadata_card.methodology_notes %}
+                                    <li>{{ note }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <details class="indicator-collapsible-notes">
+                            <summary class="indicator-notes-summary">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                <span>Detailed Methodology &amp; Mathematical Formulation</span>
+                            </summary>
+                            <div class="indicator-notes-content">
+                                {% if comparative_result.metadata_card.formula %}
+                                <div class="indicator-math-formula">
+                                    \[ {{ comparative_result.metadata_card.formula }} \]
+                                </div>
+                                {% endif %}
+                                {% if comparative_result.metadata_card.notes %}
+                                <p class="indicator-notes-text">{{ comparative_result.metadata_card.notes }}</p>
+                                {% endif %}
+                                <div class="indicator-notes-footer">
+                                    For full empirical specifications and peer frameworks, consult the <a href="/documentation">Documentation</a>.
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Sliding Entity Selection Drawer Markup -->
+                <div class="entity-drawer-backdrop" id="entity-drawer-backdrop" onclick="CampComparativeSuite.toggleEntityDrawer(false)"></div>
+                <div class="entity-drawer" id="entity-drawer" role="dialog" aria-modal="true" aria-labelledby="entity-drawer-title">
+                    <div class="entity-drawer-header">
+                        <h3 class="entity-drawer-title" id="entity-drawer-title">Select Countries &amp; Regions</h3>
+                        <button type="button" class="entity-drawer-close" onclick="CampComparativeSuite.toggleEntityDrawer(false)" aria-label="Close country drawer">&times;</button>
+                    </div>
+                    <div class="entity-drawer-controls">
+                        <div class="entity-search-box">
+                            <svg class="entity-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" class="entity-search-input" id="entity-search-input" placeholder="Search countries..." oninput="CampComparativeSuite.filterEntities(this.value)" autocomplete="off">
+                        </div>
+                        <div class="entity-filter-row">
+                            <div class="entity-sort-group">
+                                <span class="entity-sort-label">Sort:</span>
+                                <button type="button" class="entity-sort-btn active" id="sort-btn-metric" onclick="CampComparativeSuite.setSortOrder('metric')">Sort by Metric</button>
+                                <button type="button" class="entity-sort-btn" id="sort-btn-alpha" onclick="CampComparativeSuite.setSortOrder('alpha')">Alphabetical</button>
+                            </div>
+                            <div class="entity-drawer-actions">
+                                <button type="button" class="entity-action-btn" onclick="CampComparativeSuite.selectAllEntities()">Select all</button>
+                                <span class="entity-action-sep">·</span>
+                                <button type="button" class="entity-action-btn" onclick="CampComparativeSuite.clearAllEntities()">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="entity-drawer-list" id="entity-drawer-list"></ul>
+                    <div class="entity-drawer-footer">
+                        <span class="entity-selection-summary" id="entity-selection-summary">{{ comparative_result.selected_countries|length }} selected</span>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="CampComparativeSuite.applyEntities()" style="border-radius: 0;">Done</button>
+                    </div>
+                </div>
+
+                <!-- Initialize CampComparativeSuite -->
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        if (typeof CampComparativeSuite !== 'undefined') {
+                            CampComparativeSuite.init({
+                                module: 'utility',
+                                data: {{ comparative_result | tojson }},
+                                containerId: 'comparative-line-container',
+                                initialView: 'line'
+                            });
+                        }
+                    });
+                </script>
             </div>
         {% endif %}
 
         {% if utility_result %}
-            <!-- Documentation (Placed immediately before statistics) -->
-            <details class="methodology-details" style="margin-top: 20px; margin-bottom: 20px;">
-                <summary class="methodology-summary">
-                    <span style="display: inline-flex; align-items: center; gap: 8px;">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                        <span>Documentation</span>
-                    </span>
-                    <span style="font-size: 0.78rem; color: var(--wiki-blue); font-weight: 500;">Documentation ▾</span>
-                </summary>
-                <div class="methodology-content">
-                    <div class="math-formula" style="margin: 4px 0; font-size: 0.92rem;">
-                        \[ F_{\text{in-use}} = \{ f \in F \mid |P(f)| > 0 \}, \quad \text{Utility Rate } U_r = \left(\frac{|F_{\text{in-use}}|}{|F|}\right) \times 100\%, \quad I_{\text{total}} = \sum_{f \in F} |P(f)| \]
+            <div class="display-panel camp-analytics-shell" id="utility-results">
+                <div class="camp-shell-header">
+                    <div class="camp-shell-left">
+                        <h2 class="camp-shell-title">Content Utility &amp; Wikimedia Propagation</h2>
+                        <div class="camp-shell-subtitle">Global usage rates and cross-wiki illustration reach for {{ utility_result.code|upper }} ({{ utility_result.year }}).</div>
+                        <details class="camp-data-notes">
+                            <summary class="camp-data-notes-summary">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <span>Learn more about this data &amp; caveats</span>
+                            </summary>
+                            <div class="camp-data-notes-body">
+                                <div class="camp-data-notes-grid">
+                                    <div class="camp-data-notes-col">
+                                        <span class="camp-data-notes-heading">Global Utility Rate</span>
+                                        <p class="camp-data-notes-text">Percentage of uploaded media files actively transcluded on at least one content page across all Wikimedia language editions.</p>
+                                    </div>
+                                    <div class="camp-data-notes-col">
+                                        <span class="camp-data-notes-heading">Namespace Filtering</span>
+                                        <p class="camp-data-notes-text">Excludes user talk pages, sandbox drafts, and maintenance categories to ensure metric reflects true encyclopedic content utility.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
                     </div>
-                    <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
-                        Evaluates live media integration across all Wikimedia language editions, Wikidata, and sister projects via prop=globalusage with mainspace article filtering.
-                        <a href="/documentation#utility-guide" style="color: var(--wiki-blue); margin-left: 6px; font-weight: 500;">Documentation →</a>
-                    </div>
-                </div>
-            </details>
-
-            <!-- Summary Metric Cards -->
-            <div class="display-panel" style="margin-top: 0;">
-                <div class="display-panel-header">
-                    <span>Campaign Utility Summary · {{ utility_result.code|upper }}</span>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <span class="xtools-execution-badge" style="font-size: 0.76rem; color: var(--text-muted); background: #f8fafc; border: 1px solid #e2e8f0; padding: 2px 7px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
+                    <div class="camp-shell-right">
+                        <span class="camp-telemetry-badge">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                             <span>Executed in <strong>{{ execution_time_sec or '0.002' }}</strong> s</span>
                         </span>
-                        <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">{{ utility_result.year }} Edition</span>
+                        <button type="button" class="btn-share-permalink" onclick="copyPermalink()" title="Copy shareable permalink to clipboard">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <span>Copy Permalink</span>
+                        </button>
                     </div>
                 </div>
-                <div class="display-panel-body">
-                    <div class="scorecard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                        <div class="dimension-card">
-                            <div class="dim-title">Global Utility Rate</div>
-                            <div class="dim-score-val" style="color: var(--wiki-blue); font-size: 1.8rem; font-weight: 700;">
-                                {{ utility_result.global_utility_rate_pct }}%
-                            </div>
-                            <div class="dim-metric-subtext">Uploads used across Wikimedia projects</div>
+                <!-- Analytical 3-Way Segmented View Switcher -->
+                    <div class="segmented-control-bar">
+                        <div class="segmented-control" role="tablist" aria-label="Analytical View Switcher">
+                            <button type="button" id="utility-tab-visual" class="segmented-btn active" onclick="switchCampView('visual', 'utility')" role="tab" aria-selected="true">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="12" width="4" height="8" rx="0"></rect><rect x="10" y="8" width="4" height="12" rx="0"></rect><rect x="17" y="4" width="4" height="16" rx="0"></rect></svg>
+                                <span>Visual Breakdown &amp; Leaders</span>
+                            </button>
+                            <button type="button" id="utility-tab-table" class="segmented-btn" onclick="switchCampView('table', 'utility')" role="tab" aria-selected="false">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="0"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                                <span>Media Articles Table</span>
+                            </button>
                         </div>
-                        <div class="dimension-card">
-                            <div class="dim-title">Total Global Usages</div>
-                            <div class="dim-score-val" style="color: #7c3aed; font-size: 1.8rem; font-weight: 700;">
-                                {{ utility_result.total_global_usages }}
-                            </div>
-                            <div class="dim-metric-subtext">Cumulative page embeds across wikis</div>
+                        <div class="segmented-actions">
+                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('utility-media-table', 'wikitext', 'camptools_utility_{{ utility_result.code }}')" title="Export MediaWiki wikitext grant report table">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
+                                <span>Export Wikitext</span>
+                            </button>
                         </div>
-                        <div class="dimension-card">
-                            <div class="dim-title">Unique Articles Reached</div>
-                            <div class="dim-score-val" style="color: #16a34a; font-size: 1.8rem; font-weight: 700;">
-                                {{ utility_result.unique_articles_count }}
+                    </div>
+                <div class="display-panel-body camp-shell-body">
+                    <!-- Analytical KPI Summary Grid -->
+                    <div class="stat-kpi-grid">
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Global Utility Rate</span>
+                                <span class="stat-kpi-badge badge-primary">Impact</span>
                             </div>
-                            <div class="dim-metric-subtext">Distinct articles illustrating content</div>
+                            <div class="stat-kpi-value" style="color: var(--wiki-blue);">{{ utility_result.global_utility_rate_pct }}%</div>
+                            <div class="stat-kpi-subtext">Uploads used across Wikimedia projects</div>
                         </div>
-                        <div class="dimension-card">
-                            <div class="dim-title">Top Consuming Project</div>
-                            <div class="dim-score-val" style="color: var(--text-ink); font-size: 1.35rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                {{ utility_result.top_consuming_project }}
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Total Global Usages</span>
+                                <span class="stat-kpi-badge badge-positive">Embeds</span>
                             </div>
-                            <div class="dim-metric-subtext">Leading consumer wiki domain</div>
+                            <div class="stat-kpi-value">{{ utility_result.total_global_usages }}</div>
+                            <div class="stat-kpi-subtext">Cumulative page embeds across wikis</div>
                         </div>
-                        <div class="dimension-card">
-                            <div class="dim-title">Evaluated Upload Pool</div>
-                            <div class="dim-score-val" style="color: var(--text-muted); font-size: 1.8rem; font-weight: 700;">
-                                {{ utility_result.total_sampled }}
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Articles Reached</span>
+                                <span class="stat-kpi-badge badge-neutral">Reach</span>
                             </div>
-                            <div class="dim-metric-subtext">Sampled competition submissions</div>
+                            <div class="stat-kpi-value">{{ utility_result.unique_articles_count }}</div>
+                            <div class="stat-kpi-subtext">Distinct articles illustrating content</div>
+                        </div>
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Top Project</span>
+                                <span class="stat-kpi-badge badge-neutral">Domain</span>
+                            </div>
+                            <div class="stat-kpi-value" style="font-size: 1.15rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ utility_result.top_consuming_project }}</div>
+                            <div class="stat-kpi-subtext">Leading consumer wiki project</div>
+                        </div>
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Evaluated Upload Pool</span>
+                                <span class="stat-kpi-badge badge-neutral">Sample</span>
+                            </div>
+                            <div class="stat-kpi-value">{{ utility_result.total_sampled }}</div>
+                            <div class="stat-kpi-subtext">Submissions sampled for usage</div>
                         </div>
                     </div>
 
-                    <!-- Visual Project Propagation Distribution Bar -->
-                    {% if utility_result.media_usages and utility_result.media_usages|length > 0 %}
-                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-ink); text-transform: uppercase; letter-spacing: 0.5px;">Wikimedia Project Propagation Distribution</span>
-                            <span style="font-size: 0.78rem; color: var(--text-muted);">{{ utility_result.media_usages|length }} Representative Sample Embeds</span>
-                        </div>
-                        <div style="display: flex; height: 12px; border-radius: 0; overflow: hidden; background: #e2e8f0; gap: 2px;">
-                            <div style="width: 50%; background: #2563eb;" title="Primary Project: {{ utility_result.top_consuming_project }} (50%)"></div>
-                            <div style="width: 25%; background: #0ea5e9;" title="English Wikipedia (25%)"></div>
-                            <div style="width: 15%; background: #10b981;" title="Wikimedia Commons (15%)"></div>
-                            <div style="width: 10%; background: #64748b;" title="Other Language Wikis (10%)"></div>
-                        </div>
-                        <div style="display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
-                                <span style="width: 8px; height: 8px; border-radius: 0; background: #2563eb; display: inline-block;"></span>
-                                <span>{{ utility_result.top_consuming_project }}: <strong>50%</strong></span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
-                                <span style="width: 8px; height: 8px; border-radius: 0; background: #0ea5e9; display: inline-block;"></span>
-                                <span>en.wikipedia.org: <strong>25%</strong></span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
-                                <span style="width: 8px; height: 8px; border-radius: 0; background: #10b981; display: inline-block;"></span>
-                                <span>commons.wikimedia.org: <strong>15%</strong></span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
-                                <span style="width: 8px; height: 8px; border-radius: 0; background: #64748b; display: inline-block;"></span>
-                                <span>Sister Wikis: <strong>10%</strong></span>
-                            </div>
-                        </div>
-                        <div style="display: flex; justify-content: flex-end; margin-top: 8px; font-size: 0.72rem; color: var(--text-muted);">camptools.toolforge.org · CampTools</div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+                    
 
-            <!-- Media Articles Breakdown Table -->
-            <div class="display-panel" style="margin-top: 24px;">
-                <div class="display-panel-header">
-                    <span>Live Media Articles Utilization Breakdown</span>
-                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">{{ utility_result.media_usages|length }} Documented Embeds</span>
-                </div>
-                <div class="display-panel-body" style="padding: 0;">
-                    <div class="table-interactive-wrapper" data-table-id="utility-media-table">
-                        <div class="table-toolbar">
-                            <div class="table-toolbar-left">
-                                <div class="table-search-wrapper">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    </svg>
-                                    <input type="text" class="table-search-input" placeholder="Search file, article, wiki..." oninput="CampTableSuite.filterTable('utility-media-table', this.value)">
+                    <!-- VIEW 1: VISUAL BREAKDOWN & LEADERBOARD -->
+                    <div id="utility-view-visual" class="camp-view-panel">
+                        {% if utility_result.media_usages and utility_result.media_usages|length > 0 %}
+                            <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 16px; margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-ink); text-transform: uppercase; letter-spacing: 0.5px;">Wikimedia Project Propagation Distribution</span>
+                                    <span style="font-size: 0.78rem; color: var(--text-muted);">{{ utility_result.media_usages|length }} Representative Sample Embeds</span>
+                                </div>
+                                <div style="display: flex; height: 14px; border-radius: 0; overflow: hidden; background: #e2e8f0; gap: 2px;">
+                                    <div style="width: 50%; background: #2563eb;" title="Primary Project: {{ utility_result.top_consuming_project }} (50%)"></div>
+                                    <div style="width: 25%; background: #0ea5e9;" title="English Wikipedia (25%)"></div>
+                                    <div style="width: 15%; background: #10b981;" title="Wikimedia Commons (15%)"></div>
+                                    <div style="width: 10%; background: #64748b;" title="Other Language Wikis (10%)"></div>
+                                </div>
+                                <div style="display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                        <span style="width: 8px; height: 8px; border-radius: 0; background: #2563eb; display: inline-block;"></span>
+                                        <span>{{ utility_result.top_consuming_project }}: <strong>50%</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                        <span style="width: 8px; height: 8px; border-radius: 0; background: #0ea5e9; display: inline-block;"></span>
+                                        <span>en.wikipedia.org: <strong>25%</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                        <span style="width: 8px; height: 8px; border-radius: 0; background: #10b981; display: inline-block;"></span>
+                                        <span>commons.wikimedia.org: <strong>15%</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                        <span style="width: 8px; height: 8px; border-radius: 0; background: #64748b; display: inline-block;"></span>
+                                        <span>Sister Wikis: <strong>10%</strong></span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="table-toolbar-right">
-                                <div class="btn-export-group">
-                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportCSV('utility-media-table', 'camptools_utility_{{ utility_result.code }}.csv')">Export CSV</button>
-                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportWikitext('utility-media-table')">Export Wikitext</button>
-                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportJSON('utility-media-table', 'camptools_utility_{{ utility_result.code }}.json')">Export JSON</button>
+                        {% endif %}
+
+                        <!-- Top Utilized Photographers Leaderboard -->
+                        <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: #f8fafc;">
+                                <div>
+                                    <span style="font-weight: 600; font-size: 0.92rem; color: var(--text-ink);">Top Utilized Photographers Leaderboard</span>
+                                    <span style="font-size: 0.78rem; color: var(--text-muted); margin-left: 8px;">Direct Educational Impact by Contributor</span>
+                                </div>
+                                <div class="table-search-box" style="margin-bottom: 0;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    <input type="text" class="table-search-input" placeholder="Search photographers..." oninput="filterCampTable(this, 'utility-photographers-table')" style="padding: 4px 8px; font-size: 0.78rem;">
                                 </div>
                             </div>
-                        </div>
-                        <div class="table-scroll-container">
-                            <table class="data-table" id="utility-media-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 56px;">Preview</th>
-                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-media-table', 1)">File Title</th>
-                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-media-table', 2)">Utilizing Article</th>
-                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-media-table', 3)">Wiki Project</th>
-                                        <th style="width: 80px; text-align: center;">Commons</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for row in utility_result.media_usages %}
+                            <div class="table-scroll-container">
+                                <table class="data-table" id="utility-photographers-table" data-sortable="true">
+                                    <thead>
                                         <tr>
-                                            <td>
-                                                {% if row.thumb_url %}
-                                                    <img src="{{ row.thumb_url }}" alt="Thumb" class="media-thumb-img" loading="lazy">
-                                                {% else %}
-                                                    <div class="media-thumb-img" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.7rem;">File</div>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <a href="{{ row.commons_url }}" target="_blank" rel="noopener noreferrer" class="media-file-link">
-                                                    {{ row.file_title }}
-                                                </a>
-                                            </td>
-                                            <td>
-                                                <strong>{{ row.article }}</strong>
-                                            </td>
-                                            <td>
-                                                <span class="wiki-project-badge">{{ row.wiki }}</span>
-                                            </td>
-                                            <td style="text-align: center;">
-                                                <a href="{{ row.commons_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="padding: 2px 8px; font-size: 0.76rem;">
-                                                    View &rarr;
-                                                </a>
-                                            </td>
+                                            <th style="width: 60px; text-align: center;">Rank</th>
+                                            <th>Contributor</th>
+                                            <th style="text-align: right;">Utilized Files</th>
+                                            <th style="text-align: right;">Total Article Usages</th>
                                         </tr>
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
-                                                No global usage embeds detected for sampled files in this cohort.
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="table-pagination-bar" data-target="utility-media-table">
-                            <div class="table-pagination-info">Showing rows...</div>
-                            <div class="table-pagination-nav"></div>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in utility_result.top_photographers %}
+                                            <tr>
+                                                <td style="text-align: center; font-weight: 600;">#{{ p.rank }}</td>
+                                                <td>
+                                                    <a href="https://commons.wikimedia.org/wiki/User:{{ p.uploader | replace(' ', '_') }}" target="_blank" rel="noopener noreferrer" style="color: var(--wiki-blue); text-decoration: none; font-weight: 500;">
+                                                        {{ p.uploader }}
+                                                    </a>
+                                                </td>
+                                                <td style="text-align: right; font-weight: 600;">{{ p.used_files_count }}</td>
+                                                <td style="text-align: right; font-weight: 700; color: #7c3aed;">{{ p.total_usages }}</td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                                                    No contributor data available.
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Top Utilized Photographers Leaderboard -->
-            <div class="display-panel" style="margin-top: 24px;">
-                <div class="display-panel-header">
-                    <span>Top Utilized Photographers Leaderboard</span>
-                    <span style="font-weight: normal; font-size: 0.82rem; color: var(--text-muted);">Impact by Contributor</span>
+                    <!-- VIEW 2: MEDIA ARTICLES DATA TABLE -->
+                    <div id="utility-view-table" class="camp-view-panel" style="display: none;">
+                        <div class="table-interactive-wrapper" data-table-id="utility-media-table" style="margin-top: 0; border: 1px solid var(--border-color); border-radius: 0;">
+                            <div class="table-toolbar">
+                                <div class="table-toolbar-left">
+                                    <div class="table-search-box">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <input type="text" class="table-search-input" placeholder="Search file, article, wiki domain..." oninput="filterCampTable(this, 'utility-media-table')">
+                                    </div>
+                                    <span class="table-counter-text" id="utility-media-table-counter"></span>
+                                </div>
+                                <div class="table-toolbar-right">
+                                    <div class="btn-export-group">
+                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('utility-media-table', 'csv', 'camptools_utility_{{ utility_result.code }}')">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            <span>CSV</span>
+                                        </button>
+                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('utility-media-table', 'wikitext', 'camptools_utility_{{ utility_result.code }}')">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
+                                            <span>Wikitext</span>
+                                        </button>
+                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('utility-media-table', 'json', 'camptools_utility_{{ utility_result.code }}')">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                            <span>JSON</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="table-scroll-container">
+                                <table class="data-table" id="utility-media-table" data-sortable="true">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 56px;">Preview</th>
+                                            <th>File Title</th>
+                                            <th>Utilizing Article</th>
+                                            <th>Wiki Project</th>
+                                            <th style="width: 80px; text-align: center;">Commons</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in utility_result.media_usages %}
+                                            <tr>
+                                                <td>
+                                                    {% if row.thumb_url %}
+                                                        <img src="{{ row.thumb_url }}" alt="Thumb" class="media-thumb-img" loading="lazy" style="border-radius: 0;">
+                                                    {% else %}
+                                                        <div class="media-thumb-img" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.7rem; border-radius: 0;">File</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="{{ row.commons_url }}" target="_blank" rel="noopener noreferrer" class="media-file-link">
+                                                        {{ row.file_title }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <strong>{{ row.article }}</strong>
+                                                </td>
+                                                <td>
+                                                    <span class="wiki-project-badge" style="border-radius: 0;">{{ row.wiki }}</span>
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    <a href="{{ row.commons_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="padding: 2px 8px; font-size: 0.76rem; border-radius: 0;">
+                                                        View &rarr;
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                                                    No global usage embeds detected for sampled files in this cohort.
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+
+
                 </div>
-                <div class="display-panel-body" style="padding: 0;">
-                    <div class="table-interactive-wrapper" data-table-id="utility-photographers-table">
-                        <div class="table-toolbar">
-                            <div class="table-toolbar-left">
-                                <div class="table-search-wrapper">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    </svg>
-                                    <input type="text" class="table-search-input" placeholder="Search contributor..." oninput="CampTableSuite.filterTable('utility-photographers-table', this.value)">
-                                </div>
-                            </div>
-                            <div class="table-toolbar-right">
-                                <div class="btn-export-group">
-                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportCSV('utility-photographers-table', '{{ utility_result.code }}_utilized_photographers.csv')">Export CSV</button>
-                                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportWikitext('utility-photographers-table')">Export Wikitext</button>
-                                </div>
-                            </div>
+
+                <!-- Analytical Suite Signature Footer -->
+                <div class="camp-shell-footer">
+                    <div class="camp-footer-left">
+                        <div class="camp-footer-source">
+                            <strong>Data Source:</strong> Wikimedia Commons Action API &amp; Toolforge Replicas
                         </div>
-                        <div class="table-scroll-container">
-                            <table class="data-table" id="utility-photographers-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 60px; text-align: center;">Rank</th>
-                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-photographers-table', 1)">Contributor</th>
-                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-photographers-table', 2)" style="text-align: right;">Utilized Files</th>
-                                        <th class="sortable" onclick="CampTableSuite.sortTable('utility-photographers-table', 3)" style="text-align: right;">Total Article Usages</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for p in utility_result.top_photographers %}
-                                        <tr>
-                                            <td style="text-align: center; font-weight: 600;">#{{ p.rank }}</td>
-                                            <td>
-                                                <a href="https://commons.wikimedia.org/wiki/User:{{ p.uploader | replace(' ', '_') }}" target="_blank" rel="noopener noreferrer" style="color: var(--wiki-blue); text-decoration: none; font-weight: 500;">
-                                                    {{ p.uploader }}
-                                                </a>
-                                            </td>
-                                            <td style="text-align: right; font-weight: 600;">{{ p.used_files_count }}</td>
-                                            <td style="text-align: right; font-weight: 700; color: #7c3aed;">{{ p.total_usages }}</td>
-                                        </tr>
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">
-                                                No contributor data available.
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        <div class="camp-footer-license">
+                            Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a> · Project Korikath
                         </div>
-                        <div class="table-pagination-bar" data-target="utility-photographers-table">
-                            <div class="table-pagination-info">Showing rows...</div>
-                            <div class="table-pagination-nav"></div>
-                        </div>
+                    </div>
+                    <div class="camp-footer-actions">
+                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('utility-media-table', 'csv', 'camptools_utility_{{ utility_result.code }}')" title="Download utility data as CSV">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span>CSV</span>
+                        </button>
+                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('utility-media-table', 'wikitext', 'camptools_utility_{{ utility_result.code }}')" title="Export MediaWiki wikitext grant report table">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
+                            <span>Wikitext</span>
+                        </button>
+                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('utility-media-table', 'json', 'camptools_utility_{{ utility_result.code }}')" title="Download utility data as JSON">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                            <span>JSON</span>
+                        </button>
+                        <button type="button" class="camp-footer-btn" onclick="openCitationModal('Content Utility', '/utility')" title="Cite this utility dataset">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            <span>Cite</span>
+                        </button>
+                        <button type="button" class="camp-footer-btn" onclick="copyPermalink()" title="Share deep-link">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            <span>Share Link</span>
+                        </button>
                     </div>
                 </div>
             </div>
