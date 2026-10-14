@@ -174,7 +174,7 @@
                 {% if comparative_result.metadata_card %}
                 <div class="indicator-meta-card">
                     <div class="indicator-meta-header">
-                        <div class="indicator-meta-kicker">Indicator Metadata &amp; Methodology</div>
+                        <div class="indicator-meta-kicker">Indicator Metadata</div>
                         <h3 class="indicator-meta-title">{{ comparative_result.metadata_card.title }}</h3>
                     </div>
                     <div class="indicator-meta-body">
@@ -200,17 +200,6 @@
                                 </span>
                             </div>
                         </div>
-
-                        {% if comparative_result.metadata_card.methodology_notes and comparative_result.metadata_card.methodology_notes|length > 0 %}
-                        <div class="indicator-methodology-points">
-                            <div class="methodology-points-heading">Core Methodology:</div>
-                            <ul class="methodology-points-list">
-                                {% for note in comparative_result.metadata_card.methodology_notes %}
-                                    <li>{{ note }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
 
                         <div class="indicator-notes-footer" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-subtle); font-size: 0.82rem; color: var(--text-muted);">
                             For full empirical specifications and peer frameworks, consult the <a href="/documentation">Documentation</a>.

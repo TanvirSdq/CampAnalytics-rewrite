@@ -89,6 +89,11 @@ app.get('/styles.css', (req: Request, res: Response) => {
   res.type('text/css').send(getCustomCss());
 });
 
+app.get('/robots.txt', (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.type('text/plain').send('User-agent: *\nAllow: /\n');
+});
+
 app.get('/plotly.min.js', (req: Request, res: Response) => {
   res.sendFile(path.join(PROJECT_ROOT, 'node_modules/plotly.js-dist-min/plotly.min.js'));
 });
