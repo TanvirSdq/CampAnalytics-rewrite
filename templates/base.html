@@ -242,27 +242,44 @@
     </div> <!-- .app-layout -->
 
 
-    <!-- Wikimedia Toolforge Compact Footer -->
+    <!-- Wikimedia Toolforge Footer with Recognition Badges -->
     <footer class="toolforge-footer">
-        <div class="toolforge-footer-content">
-            <div>
-                Hosted on <a href="https://toolforge.org" target="_blank" rel="noopener noreferrer">Wikimedia Toolforge</a> ·
-                Released under the <a href="https://www.gnu.org/licenses/gpl-2.0.html" target="_blank" rel="noopener noreferrer">GPL-2.0+</a> ·
-                Built with ❤️ by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">Tanvir Siddique</a> and <a href="https://commons.wikimedia.org/wiki/User:Kaim_Amin" target="_blank" rel="noopener noreferrer">Kaim Amin</a> ·
-                Rewrite and Expansion by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">Tanvir Siddique</a> ·
-                <span class="camp-execution-timer" style="display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -1px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    Executed in <strong>{{ execution_time_sec or '0.001' }}</strong> sec
-                </span>
-                <span>·</span>
-                <span>Memory: <strong>{{ memory_usage_mb or '18.4' }} MB</strong></span>
+        <div class="toolforge-footer-inner">
+            <div class="toolforge-footer-meta">
+                <small>
+                    <span>Executed in <strong>{{ execution_time_sec or '0.001' }}</strong> seconds.</span> ·
+                    <span>Taken <strong>{{ memory_usage_mb or '11.0' }}</strong> megabytes of memory to execute.</span>
+                </small>
             </div>
-            <div class="toolforge-footer-links">
-                <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite/issues" target="_blank" rel="noopener noreferrer">Create an issue</a>
-                <span>·</span>
-                <a href="https://toolhub.wikimedia.org/tools/toolforge-camptools">Toolhub</a>
-                <span>·</span>
-                <a href="https://meta.wikimedia.org/wiki/Project_Korikath" target="_blank" rel="noopener noreferrer">Project Korikath</a>
+            <hr class="toolforge-footer-divider">
+            <div class="toolforge-footer-content">
+                <div class="toolforge-footer-branding">
+                    <a href="https://meta.wikimedia.org/wiki/Project_Korikath" target="_blank" rel="noopener noreferrer" title="Project Korikath">
+                        <img src="/images/korikath-logo.svg" alt="Project Korikath" width="36" height="36" class="footer-badge-icon">
+                    </a>
+                    <a href="https://toolhub.wikimedia.org/tools/toolforge-camptools" target="_blank" rel="noopener noreferrer" title="CampTools on Toolhub">
+                        <img src="/images/toolhub-badge.svg" alt="CampTools on Toolhub" width="36" height="36" class="footer-badge-icon">
+                    </a>
+                </div>
+                <div class="toolforge-footer-about">
+                    <div>
+                        Hosted on <a href="https://toolforge.org" target="_blank" rel="noopener noreferrer">Wikimedia Toolforge</a> ·
+                        Released under the <a href="https://www.gnu.org/licenses/gpl-2.0.html" target="_blank" rel="noopener noreferrer">GPL-2.0+</a>
+                    </div>
+                    <div>
+                        Built with ❤️ by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">Tanvir Siddique</a> and <a href="https://commons.wikimedia.org/wiki/User:Kaim_Amin" target="_blank" rel="noopener noreferrer">Kaim Amin</a> ·
+                        Rewrite and Expansion by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">Tanvir Siddique</a>
+                    </div>
+                    <div class="toolforge-footer-links">
+                        <a href="https://github.com/TanvirSdq/CampAnalytics-rewrite/issues" target="_blank" rel="noopener noreferrer">Create an issue</a>
+                        <span>·</span>
+                        <a href="https://toolhub.wikimedia.org/tools/toolforge-camptools" target="_blank" rel="noopener noreferrer">Toolhub</a>
+                        <span>·</span>
+                        <a href="https://meta.wikimedia.org/wiki/Project_Korikath" target="_blank" rel="noopener noreferrer">Project Korikath</a>
+                        <span>·</span>
+                        <a href="/documentation">Documentation</a>
+                    </div>
+                </div>
             </div>
         </div>
     </footer>

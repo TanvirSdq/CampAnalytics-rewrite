@@ -1927,28 +1927,74 @@ table.data-table tfoot td:first-child {
    Toolforge Footer
    ========================================================================== */
 .toolforge-footer {
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-subtle);
     background-color: var(--bg-surface);
-    padding: 24px 20px;
-    text-align: center;
+    padding: 24px 20px 28px;
     font-size: 0.82rem;
     color: var(--text-muted);
-    margin-top: 32px;
+    margin-top: 40px;
+}
+
+.toolforge-footer-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.toolforge-footer-meta {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: left;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.toolforge-footer-divider {
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+    margin: 0 0 16px 0;
 }
 
 .toolforge-footer-content {
-    max-width: 900px;
-    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    text-align: left;
+}
+
+.toolforge-footer-about {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--text-muted);
 }
 
 .toolforge-footer-links {
     display: flex;
-    justify-content: center;
-    gap: 16px;
+    align-items: center;
+    gap: 12px;
     flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.toolforge-footer-branding {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    order: 2;
+}
+
+.footer-badge-icon {
+    width: 36px;
+    height: 36px;
+    display: block;
+    object-fit: contain;
+    border-radius: 0 !important;
 }
 
 .toolforge-footer a {
@@ -1959,6 +2005,22 @@ table.data-table tfoot td:first-child {
 .toolforge-footer a:hover {
     color: var(--wiki-blue-hover);
     text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .toolforge-footer {
+        padding: 20px 16px 26px;
+        margin-top: 28px;
+    }
+    .toolforge-footer-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+    .toolforge-footer-branding {
+        order: -1;
+        margin-bottom: 2px;
+    }
 }
 
 .form-row-2col {
@@ -3660,16 +3722,6 @@ table.data-table td {
 .map-scope-btn.active {
     color: var(--accent-blue) !important;
     background: #fff !important;
-}
-
-.toolforge-footer {
-    margin-top: 20px !important;
-    padding: 16px 14px !important;
-    font-size: .72rem !important;
-}
-
-.toolforge-footer-content {
-    gap: 5px !important;
 }
 
 /* Tame legacy inline spacing while retaining the existing template structure. */
