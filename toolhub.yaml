@@ -1,9 +1,15 @@
 ---
 - name: camptools
-  title: CampTools (Rewrite)
-  description: Analytics suite for Wikimedia Commons campaigns.
+  title: CampTools - Analysis of Wikimedia Campaigns
+  description: A comprehensive analytics suite for Wikimedia campaigns, providing real-time metrics on user retention, content quality, and participant influx.
   url: https://camptools.toolforge.org/
   repository: https://github.com/TanvirSdq/CampAnalytics-rewrite
+  icon: https://camptools.toolforge.org/images/camptools-icon.svg
   keywords:
-    - commons
     - analytics
+    - campaigns
+    - commons
+    - evaluation
+    - influx
+    - retention
+    - wikiloves

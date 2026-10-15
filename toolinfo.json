@@ -1,9 +1,26 @@
 {
     "name": "camptools",
-    "title": "CampTools (Rewrite)",
-    "description": "A high-performance analytics suite for Wikimedia Commons campaigns, longitudinal contributor retention analysis, and cross-campaign ecosystem influx.",
+    "title": "CampTools - Analysis of Wikimedia Campaigns",
+    "description": "A comprehensive analytics suite for Wikimedia campaigns, providing real-time metrics on user retention, content quality, and participant influx.",
     "url": "https://camptools.toolforge.org/",
-    "keywords": ["commons", "analytics", "campaigns", "retention", "metrics"],
-    "author": "TanvirSdq, Kaim Amin",
-    "repository": "https://github.com/TanvirSdq/CampAnalytics-rewrite"
+    "keywords": [
+        "analytics",
+        "article quality",
+        "campaigns",
+        "commons",
+        "evaluation",
+        "influx",
+        "retention",
+        "user retention",
+        "wikimedia commons"
+    ],
+    "author": "TanvirSdqBot, Tanvir",
+    "repository": "https://github.com/TanvirSdq/CampAnalytics-rewrite",
+    "icon": "https://camptools.toolforge.org/images/camptools-icon.svg",
+    "tool_type": "web app",
+    "license": "GPL-2.0-or-later",
+    "api_url": "https://camptools.toolforge.org/api/comparative",
+    "user_docs_url": "https://camptools.toolforge.org/documentation",
+    "feedback_url": "https://github.com/TanvirSdq/CampAnalytics-rewrite/issues",
+    "bugtracker_url": "https://github.com/TanvirSdq/CampAnalytics-rewrite/issues"
 }
