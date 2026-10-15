@@ -139,6 +139,14 @@ html, body {
     height: 100%;
 }
 
+.camptools-navbar-logo {
+    width: 24px;
+    height: 24px;
+    margin-right: 7px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
 .navbar-brand {
     font-size: 1.25rem;
     letter-spacing: -0.3px;
@@ -6544,14 +6552,14 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
 
 .camp-brand-title {
     margin: 0 0 4px;
-    font-family: var(--font-serif);
-    font-size: clamp(2rem, 3.5vw, 2.7rem);
-    letter-spacing: -0.02em;
+    font-family: var(--font-sans);
+    font-size: clamp(2.4rem, 4.5vw, 3.2rem);
+    letter-spacing: -0.03em;
     line-height: 1.15;
 }
 
 .camp-brand-title .brand-bold {
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-ink);
 }
 

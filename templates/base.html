@@ -72,13 +72,12 @@
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
-                {% if request.path != '/' and request.path != '' and mode != 'Home' and mode != 'CampTools' %}
                 <div class="navbar-brand-group">
                     <a href="/" class="navbar-brand" title="CampTools Home">
+                        <img src="/images/camptools-icon.svg" alt="CampTools" class="camptools-navbar-logo" width="24" height="24">
                         <span class="brand-bold">Camp</span><span class="brand-accent">Tools</span>
                     </a>
                 </div>
-                {% endif %}
             </div>
             <nav class="site-desktop-nav" aria-label="Main Navigation">
                 <ul class="site-nav-list">
@@ -109,10 +108,8 @@
     <aside id="mobile-nav-drawer" class="mobile-nav-drawer" aria-label="Mobile Navigation" role="dialog" aria-modal="true">
         <div class="mobile-nav-header">
             <div class="mobile-nav-brand">
-                <a href="https://meta.wikimedia.org/wiki/Project_Korikath" target="_blank" rel="noopener noreferrer" title="Project Korikath — Wikimedia Community Initiative" aria-label="Project Korikath — Wikimedia Community Initiative" style="display: inline-flex; align-items: center;">
-                    <img src="{{ KORIKATH_LOGO_URL }}" alt="Project Korikath Logo" class="mobile-nav-logo">
-                </a>
                 <a href="/" class="navbar-brand" style="text-decoration: none;">
+                    <img src="/images/camptools-icon.svg" alt="CampTools" class="camptools-navbar-logo" width="24" height="24">
                     <span class="brand-bold">Camp</span><span class="brand-accent">Tools</span>
                 </a>
             </div>
