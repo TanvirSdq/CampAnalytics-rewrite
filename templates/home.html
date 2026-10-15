@@ -1,108 +1,48 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="section-heading" id="analytical-tools" style="margin-top: 4px;">
-    <div>
-        <span class="section-kicker">Analytical Tools</span>
-        <h2>Choose a workspace module</h2>
+<div class="camp-directory-container">
+    <div class="camp-brand-hero">
+        <img src="/images/camptools-icon.svg" alt="CampTools" class="camp-brand-logo" width="80" height="80">
+        <h1 class="camp-brand-title">CampTools</h1>
+        <p class="camp-brand-tagline">Evaluating Wikimedia campaigns</p>
+    </div>
+
+    <div class="camp-tool-list">
+        <a href="/health" class="camp-tool-row">
+            <span class="camp-tool-name">Health Evaluation</span>
+            <span class="camp-tool-sep">—</span>
+            <span class="camp-tool-desc">Grade overall campaign vitality across regional peer baselines</span>
+        </a>
+
+        <a href="/retention" class="camp-tool-row">
+            <span class="camp-tool-name">Retention Analytics</span>
+            <span class="camp-tool-sep">—</span>
+            <span class="camp-tool-desc">Track returning contributors and multi-year retention heatmaps</span>
+        </a>
+
+        <a href="/influx" class="camp-tool-row">
+            <span class="camp-tool-name">Participant Influx</span>
+            <span class="camp-tool-sep">—</span>
+            <span class="camp-tool-desc">Measure first-time uploaders versus returning participants over time</span>
+        </a>
+
+        <a href="/utility" class="camp-tool-row">
+            <span class="camp-tool-name">Content Utility</span>
+            <span class="camp-tool-sep">—</span>
+            <span class="camp-tool-desc">Discover where campaign media is used across Wikipedia articles and projects</span>
+        </a>
+
+        <a href="/quality" class="camp-tool-row">
+            <span class="camp-tool-name">Quality Recognition</span>
+            <span class="camp-tool-sep">—</span>
+            <span class="camp-tool-desc">Track awards received by photos including Quality Images and Featured Pictures</span>
+        </a>
+
+        <a href="/documentation" class="camp-tool-row">
+            <span class="camp-tool-name">Documentation</span>
+            <span class="camp-tool-sep">—</span>
+            <span class="camp-tool-desc">Methodology, mathematical formulations, and indicator definitions</span>
+        </a>
     </div>
 </div>
-
-<section class="home-tool-grid">
-    <a href="/health" class="home-tool-card">
-        <div class="home-tool-top">
-            <div class="home-tool-meta">
-                <span class="home-tool-index">MODULE 01</span>
-                <span class="home-tool-category cat-indigo">CORE EVALUATION</span>
-            </div>
-            <span class="home-tool-arrow" aria-hidden="true">↗</span>
-        </div>
-        <div class="home-tool-icon icon-indigo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-        </div>
-        <h3>Health Evaluation</h3>
-        <p>Grade overall campaign health across five key metrics—retention, growth, usage, quality, and diversity—calibrated against regional peers.</p>
-        <div class="home-tool-tags">
-            <span class="tool-tag">5 Evaluation Metrics</span>
-            <span class="tool-tag">Regional Peer Baselines</span>
-            <span class="tool-tag">Scorecard &amp; Stars</span>
-        </div>
-    </a>
-
-    <a href="/retention" class="home-tool-card">
-        <div class="home-tool-top">
-            <div class="home-tool-meta">
-                <span class="home-tool-index">MODULE 02</span>
-                <span class="home-tool-category cat-teal">YEAR-OVER-YEAR</span>
-            </div>
-            <span class="home-tool-arrow" aria-hidden="true">↗</span>
-        </div>
-        <div class="home-tool-icon icon-teal">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="12" r="6"></circle><circle cx="15" cy="12" r="6"></circle></svg>
-        </div>
-        <h3>Retention Analytics</h3>
-        <p>Measure how many photographers return across multiple campaign years, with interactive heatmaps and global geographic maps.</p>
-        <div class="home-tool-tags">
-            <span class="tool-tag">10-Year Cohorts</span>
-            <span class="tool-tag">Retention Heatmaps</span>
-            <span class="tool-tag">Global Map</span>
-        </div>
-    </a>
-
-    <a href="/influx" class="home-tool-card">
-        <div class="home-tool-top">
-            <div class="home-tool-meta">
-                <span class="home-tool-index">MODULE 03</span>
-                <span class="home-tool-category cat-coral">PARTICIPATION</span>
-            </div>
-            <span class="home-tool-arrow" aria-hidden="true">↗</span>
-        </div>
-        <div class="home-tool-icon icon-coral">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        </div>
-        <h3>Participant Influx</h3>
-        <p>Track first-time uploaders versus returning participants each year to see how your community pool is growing over time.</p>
-        <div class="home-tool-tags">
-            <span class="tool-tag">New vs Returning Editors</span>
-            <span class="tool-tag">Cumulative Community Growth</span>
-        </div>
-    </a>
-
-    <a href="/utility" class="home-tool-card">
-        <div class="home-tool-top">
-            <div class="home-tool-meta">
-                <span class="home-tool-index">MODULE 04</span>
-                <span class="home-tool-category cat-amber">IMAGE USAGE</span>
-            </div>
-            <span class="home-tool-arrow" aria-hidden="true">↗</span>
-        </div>
-        <div class="home-tool-icon icon-amber">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="0" ry="0"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-        </div>
-        <h3>Content Utility</h3>
-        <p>Discover where campaign photos are actually used across Wikipedia articles and sister projects in different languages.</p>
-        <div class="home-tool-tags">
-            <span class="tool-tag">Wikipedia Article Usage</span>
-            <span class="tool-tag">Top Used Photographers</span>
-        </div>
-    </a>
-
-    <a href="/quality" class="home-tool-card">
-        <div class="home-tool-top">
-            <div class="home-tool-meta">
-                <span class="home-tool-index">MODULE 05</span>
-                <span class="home-tool-category cat-violet">IMAGE QUALITY</span>
-            </div>
-            <span class="home-tool-arrow" aria-hidden="true">↗</span>
-        </div>
-        <div class="home-tool-icon icon-violet">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-        </div>
-        <h3>Quality Recognition</h3>
-        <p>Track community awards received by campaign photos—including Quality Images and Featured Pictures—and top contributing photographers.</p>
-        <div class="home-tool-tags">
-            <span class="tool-tag">Quality &amp; Featured Pictures</span>
-            <span class="tool-tag">Top Contributors</span>
-        </div>
-    </a>
-</section>
 {% endblock %}

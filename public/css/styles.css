@@ -6522,4 +6522,124 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     font-variant-numeric: tabular-nums;
 }
 
+/* Compact Tool Directory Layout */
+.camp-directory-container {
+    max-width: 680px;
+    margin: 16px auto 44px;
+    padding: 0 16px;
+    box-sizing: border-box;
+}
+
+.camp-brand-hero {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.camp-brand-logo {
+    display: inline-block;
+    width: 76px;
+    height: 76px;
+    margin-bottom: 10px;
+}
+
+.camp-brand-title {
+    margin: 0 0 4px;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 3.5vw, 2.7rem);
+    font-weight: 700;
+    color: var(--text-ink);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+.camp-brand-tagline {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.camp-tool-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.camp-tool-row {
+    display: block;
+    padding: 13px 18px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    text-decoration: none;
+    color: var(--text-ink);
+    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+    line-height: 1.4;
+    box-sizing: border-box;
+}
+
+.camp-tool-row:hover {
+    background: #f8f9fa;
+    border-color: var(--wiki-blue);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.camp-tool-row:active {
+    transform: translateY(0);
+}
+
+.camp-tool-name {
+    font-weight: 700;
+    color: var(--text-ink);
+    font-size: 0.95rem;
+}
+
+.camp-tool-row:hover .camp-tool-name {
+    color: var(--wiki-blue);
+}
+
+.camp-tool-sep {
+    color: var(--text-muted);
+    margin: 0 6px;
+}
+
+.camp-tool-desc {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+@media (max-width: 600px) {
+    .camp-directory-container {
+        margin: 8px auto 24px;
+        padding: 0 12px;
+    }
+    .camp-brand-hero {
+        margin-bottom: 18px;
+    }
+    .camp-brand-logo {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 6px;
+    }
+    .camp-brand-title {
+        font-size: 2.1rem;
+    }
+    .camp-brand-tagline {
+        font-size: 0.92rem;
+    }
+    .camp-tool-row {
+        padding: 12px 14px;
+    }
+    .camp-tool-name {
+        display: inline;
+        font-size: 0.92rem;
+    }
+    .camp-tool-desc {
+        font-size: 0.84rem;
+    }
+}
+
+
 
