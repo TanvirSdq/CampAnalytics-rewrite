@@ -223,7 +223,44 @@ export function getSubCampaignCodes(code: string): string[] {
 const _participantCache = new Map<string, { users: Set<string>; ts: number }>();
 const _userCountsCache = new Map<string, { counts: Map<string, number>; ts: number }>();
 const _metricsCache = new Map<string, { data: any; ts: number }>();
+const _categoryFileCountCache = new Map<string, { count: number; ts: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export async function fetchCategoryFileCount(category: string): Promise<number> {
+  const norm = category.replace(/\s+/g, '_').toLowerCase();
+  const cached = _categoryFileCountCache.get(norm);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return cached.count;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const catTitle = category.startsWith('Category:') ? category : `Category:${category}`;
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(catTitle)}&prop=categoryinfo&format=json`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      const pages = data?.query?.pages || {};
+      for (const pid of Object.keys(pages)) {
+        const cinfo = pages[pid]?.categoryinfo;
+        if (cinfo && typeof cinfo.files === 'number') {
+          _categoryFileCountCache.set(norm, { count: cinfo.files, ts: Date.now() });
+          return cinfo.files;
+        }
+      }
+    }
+  } catch {
+    // Network fallback
+  }
+
+  _categoryFileCountCache.set(norm, { count: 0, ts: Date.now() });
+  return 0;
+}
 
 
 export async function fetchParticipantsForCategory(category: string): Promise<Set<string>> {
@@ -265,17 +302,22 @@ export async function fetchParticipantsForCategory(category: string): Promise<Se
   }
 
   try {
-    const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:${encodeURIComponent(category)}&gcmlimit=500&prop=imageinfo&iiprop=user&format=json`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
-    const res = await fetch(commonsUrl, {
-      headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org)' },
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
+    let continueToken: string | undefined = undefined;
+    let iterations = 0;
+    while (iterations < 10) {
+      iterations++;
+      const continueParam: string = continueToken ? `&gcmcontinue=${encodeURIComponent(continueToken)}` : '';
+      const commonsUrl: string = `https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:${encodeURIComponent(category)}&gcmlimit=500&prop=imageinfo&iiprop=user&format=json${continueParam}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const res: Response = await fetch(commonsUrl, {
+        headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
 
-    if (res.ok) {
-      const data = await res.json();
+      if (!res.ok) break;
+      const data: any = await res.json();
       const pages = data?.query?.pages || {};
       for (const pageId of Object.keys(pages)) {
         const ii = pages[pageId]?.imageinfo;
@@ -283,10 +325,19 @@ export async function fetchParticipantsForCategory(category: string): Promise<Se
           const u = ii[0].user;
           if (!isBotAccount(u)) {
             users.add(u);
+            counts.set(u, (counts.get(u) || 0) + 1);
           }
         }
       }
-      if (users.size > 0) return users;
+      if (data?.continue?.gcmcontinue) {
+        continueToken = data.continue.gcmcontinue;
+      } else {
+        break;
+      }
+    }
+    if (users.size > 0) {
+      _userCountsCache.set(category.toLowerCase(), { counts, ts: Date.now() });
+      return users;
     }
   } catch {
     // Fall through
@@ -402,8 +453,26 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
     return cached.data;
   }
 
+  const match = CODE_RE.exec(clean);
+  const isAll = match && match[1] === 'all';
+
   const countsMap = await getParticipantsWithUploadCounts(clean);
-  if (countsMap.size === 0) {
+  const uploadCounts = Array.from(countsMap.values());
+  let totalUploads = uploadCounts.reduce((a, b) => a + b, 0);
+
+  // If upload counts from user mapping are 0, check candidate categories on Commons directly
+  if (!isAll && totalUploads === 0) {
+    const categories = getCategoryCandidates(clean);
+    for (const cat of categories) {
+      const fileCount = await fetchCategoryFileCount(cat);
+      if (fileCount > 0) {
+        totalUploads = fileCount;
+        break;
+      }
+    }
+  }
+
+  if (!isAll && countsMap.size === 0 && totalUploads === 0) {
     const emptyMetrics = {
       quality_image_share: 0.0,
       top10_uploader_share: 0.0,
@@ -414,16 +483,13 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
     return emptyMetrics;
   }
 
-  const uploadCounts = Array.from(countsMap.values());
-  const totalUploads = uploadCounts.reduce((a, b) => a + b, 0);
   uploadCounts.sort((a, b) => b - a);
 
   const top10Count = Math.max(1, Math.ceil(countsMap.size * 0.10));
   const top10Uploads = uploadCounts.slice(0, top10Count).reduce((a, b) => a + b, 0);
-  const top10Share = totalUploads > 0 ? parseFloat(((top10Uploads / totalUploads) * 100).toFixed(1)) : 100.0;
+  const top10Share = totalUploads > 0 && top10Uploads > 0 ? parseFloat(((top10Uploads / totalUploads) * 100).toFixed(1)) : (countsMap.size > 0 ? 100.0 : 0.0);
 
-  const match = CODE_RE.exec(clean);
-  if (match && match[1] === 'all') {
+  if (isAll) {
     const subCodes = getSubCampaignCodes(clean);
     let totalSubUploads = 0;
     let totalQualityCount = 0;
@@ -445,7 +511,7 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
 
     const metrics = {
       quality_image_share: qualityShare,
-      top10_uploader_share: top10Share,
+      top10_uploader_share: countsMap.size > 0 ? top10Share : 0.0,
       usage_share: usageShare,
       total_uploads: effectiveTotalUploads
     };
@@ -465,32 +531,11 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
     ];
     for (const qcat of qiCandidates) {
       if (qcat === catClean || qcat === cat) continue;
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(
-          `https://commons.wikimedia.org/w/api.php?action=query&titles=Category:${encodeURIComponent(qcat)}&prop=categoryinfo&format=json`,
-          {
-            headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-            signal: controller.signal
-          }
-        );
-        clearTimeout(timeout);
-        if (res.ok) {
-          const data = await res.json();
-          const pages = data?.query?.pages || {};
-          for (const pid of Object.keys(pages)) {
-            const cinfo = pages[pid]?.categoryinfo;
-            if (cinfo && cinfo.files > 0) {
-              qualityCount = cinfo.files;
-              break;
-            }
-          }
-        }
-      } catch {
-        // Network fallback
+      const count = await fetchCategoryFileCount(qcat);
+      if (count > 0) {
+        qualityCount = count;
+        break;
       }
-      if (qualityCount > 0) break;
     }
     if (qualityCount > 0) break;
   }
@@ -531,7 +576,7 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
 
   const metrics = {
     quality_image_share: qualityShare,
-    top10_uploader_share: top10Share,
+    top10_uploader_share: countsMap.size > 0 ? top10Share : 0.0,
     usage_share: usageShare,
     total_uploads: totalUploads
   };
@@ -1441,8 +1486,8 @@ export function generateHealthMetrics(
   const isInaugural = !baselineUsers || baselineUsers.size === 0;
   const targetCount = targetUsers.size;
   const baseCount = baselineUsers ? baselineUsers.size : 0;
-  const totalUploads = structuralMetrics.total_uploads || Math.max(targetCount * 6, 85);
-  const baseUploads = baselineStructural?.total_uploads || (baseCount > 0 ? Math.max(baseCount * 6, 85) : 0);
+  const totalUploads = structuralMetrics.total_uploads || 0;
+  const baseUploads = baselineStructural?.total_uploads || 0;
 
   // 1. Community Scale (Active Uploaders Volume)
   const scaleBm = benchmarks.scale || GLOBAL_MOVEMENT_BASELINES.scale;
@@ -1587,7 +1632,7 @@ export function generateHealthMetrics(
   };
 
   // 6. Contributor Diversity (Top 10% Upload Share)
-  const rawDiversity = parseFloat(structuralMetrics.top10_uploader_share || 70.0);
+  const rawDiversity = targetCount > 0 ? parseFloat(structuralMetrics.top10_uploader_share ?? 0.0) : 0.0;
   const divBm = benchmarks.diversity || GLOBAL_MOVEMENT_BASELINES.diversity;
   const divRegDelta = parseFloat((rawDiversity - divBm).toFixed(1));
   const divDeltaFormatted = divRegDelta <= 0 ? `▲ ${Math.abs(divRegDelta).toFixed(1)}% broader` : `▼ +${divRegDelta.toFixed(1)}% concentrated`;
@@ -2319,7 +2364,7 @@ export async function computeHealthEvaluation(
       for (const u of tU) if (!bU.has(u)) n++;
       repGrowths.push(n);
 
-      const estUploads = struct.total_uploads || Math.max(tU.size * 6, 85);
+      const estUploads = struct.total_uploads || 0;
       if (struct.quality_image_share !== undefined) {
         repQualityRates.push(struct.quality_image_share);
         repQualityCounts.push(Math.round((estUploads * struct.quality_image_share) / 100));
@@ -2378,7 +2423,7 @@ export async function computeHealthEvaluation(
     const uSet = allFetched[cCode] || new Set<string>();
     if (uSet.size === 0) continue;
     const struct = structuralMetrics[cCode] || {};
-    const uploads = struct.total_uploads || Math.max(uSet.size * 6, 85);
+    const uploads = struct.total_uploads || 0;
     let retained = 0;
     let newcomers = uSet.size;
     let retPct: number | null = null;
@@ -2409,7 +2454,7 @@ export async function computeHealthEvaluation(
 
   // Build Regional Peer Comparisons
   const peerComparisons: PeerComparisonPoint[] = [];
-  const targetUploads = targetStructural.total_uploads || Math.max(targetUsers.size * 6, 85);
+  const targetUploads = targetStructural.total_uploads || 0;
   const targetRetPct = baseUsers.size > 0 ? parseFloat(((overlap / baseUsers.size) * 100).toFixed(1)) : null;
 
   peerComparisons.push({
@@ -2430,7 +2475,7 @@ export async function computeHealthEvaluation(
     const pbUsers = allFetched[pbCode] || new Set<string>();
     if (pUsers.size === 0) continue;
     const pStruct = structuralMetrics[pCode] || {};
-    const pUploads = pStruct.total_uploads || Math.max(pUsers.size * 6, 85);
+    const pUploads = pStruct.total_uploads || 0;
     let pOverlap = 0;
     for (const u of pUsers) if (pbUsers.has(u)) pOverlap++;
     const pRetPct = pbUsers.size > 0 ? parseFloat(((pOverlap / pbUsers.size) * 100).toFixed(1)) : null;
@@ -2450,7 +2495,7 @@ export async function computeHealthEvaluation(
   const newcomerCount = Math.max(0, targetUsers.size - overlap);
   const newcomerPct = targetUsers.size > 0 ? parseFloat(((newcomerCount / targetUsers.size) * 100).toFixed(1)) : 0;
   const retentionPct = baseUsers.size > 0 ? parseFloat(((overlap / baseUsers.size) * 100).toFixed(1)) : 0;
-  const totalUploadsEst = targetStructural.total_uploads || Math.max(targetUsers.size * 5, 20);
+  const totalUploadsEst = targetStructural.total_uploads || 0;
   const usageShare = targetStructural.usage_share || 0;
   const qualityShare = targetStructural.quality_image_share || 0;
 
@@ -2475,7 +2520,7 @@ export async function computeHealthEvaluation(
     articles_illustrated_estimate: Math.round((totalUploadsEst * usageShare) / 100),
     quality_image_share_pct: qualityShare,
     quality_images_estimate: Math.round((totalUploadsEst * qualityShare) / 100),
-    top10_uploader_share_pct: targetStructural.top10_uploader_share || 60,
+    top10_uploader_share_pct: targetUsers.size > 0 ? (targetStructural.top10_uploader_share ?? 0) : 0,
     dimensions: metrics,
     benchmarks,
     historical_series: historicalSeries,
