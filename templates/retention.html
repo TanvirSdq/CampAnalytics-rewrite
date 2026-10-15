@@ -52,17 +52,8 @@
                             <!-- Target Country & Year Range in Grid -->
                             <div class="form-row-2col">
                                 <div class="form-group">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; min-height: 24px;">
                                         <label for="builder_country" class="form-label" style="margin-bottom: 0;">Target Country</label>
-                                        <div style="display: flex; gap: 6px; align-items: center;">
-                                            <button type="button" class="btn btn-sm" onclick="selectAllCountries();" title="Select all available countries" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 0.78rem; background: #eef6ff; color: var(--wiki-blue); border: 1px solid #c8dafc; border-radius: 0; cursor: pointer; font-weight: 500;">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                                <span>Select All Countries</span>
-                                            </button>
-                                            <button type="button" class="btn btn-sm" onclick="clearCountrySelection()" title="Clear country selection" style="padding: 2px 8px; font-size: 0.78rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">
-                                                Clear
-                                            </button>
-                                        </div>
                                     </div>
                                     <select id="builder_country" name="builder_country" class="form-control" onchange="syncRetentionBuilder()">
                                         <option value="">-- Select Country Matrix --</option>
