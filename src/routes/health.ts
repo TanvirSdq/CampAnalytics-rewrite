@@ -80,7 +80,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     const d = result.dimensions;
     const b = result.benchmarks;
 
-    const groVal = typeof b.expansion === 'number' ? b.expansion : (typeof b.growth === 'number' ? b.growth : null);
+    const groVal = typeof b.expansion === 'number' ? b.expansion : (typeof b.growth === 'number' ? b.growth : (typeof b.newcomers === 'number' ? b.newcomers : null));
 
     benchmarkComparisons = [
       {
@@ -100,8 +100,8 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         observedStr: d.Retention?.raw_formatted || d.Retention?.raw || '—',
         observedVal: typeof d.Retention?.yoy_delta_pct === 'number' ? d.Retention.yoy_delta_pct : 0,
         benchmarkStr: typeof b.retention === 'number' ? `${b.retention.toFixed(1)}%` : '—',
-        benchmarkVal: b.retention,
-        deltaFormatted: d.Retention?.yoy_delta_formatted || 'N/A',
+        benchmarkVal: typeof b.retention === 'number' ? b.retention : null,
+        deltaFormatted: d.Retention?.yoy_delta_formatted || '—',
         isPositive: d.Retention?.is_positive !== false,
         isInaugural: d.Retention?.is_inaugural || false
       },
@@ -122,7 +122,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         observedStr: d.Uploads?.raw || '—',
         observedVal: d.Uploads?.count || 0,
         benchmarkStr: '—',
-        benchmarkVal: 0,
+        benchmarkVal: null,
         deltaFormatted: d.Uploads?.yoy_delta_formatted || '—',
         isPositive: d.Uploads?.is_positive !== false,
         isInaugural: d.Uploads?.is_inaugural || false
@@ -132,8 +132,14 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         name: 'Content Utility',
         observedStr: d.Usage?.raw_formatted || `${d.Usage?.raw || 0}%`,
         observedVal: typeof d.Usage?.raw === 'number' ? d.Usage.raw : 0,
-        benchmarkStr: typeof b.usage === 'number' ? (typeof b.usage_count === 'number' ? `${Math.round(b.usage_count).toLocaleString()} usages (${b.usage.toFixed(1)}%)` : `${b.usage.toFixed(1)}%`) : '—',
-        benchmarkVal: b.usage,
+        benchmarkStr: typeof b.usage === 'number'
+          ? (typeof b.usage_count === 'number'
+              ? `${Math.round(b.usage_count).toLocaleString()} usages (${b.usage.toFixed(1)}%)`
+              : `${b.usage.toFixed(1)}%`)
+          : (typeof b.usage_count === 'number'
+              ? `${Math.round(b.usage_count).toLocaleString()} usages`
+              : '—'),
+        benchmarkVal: typeof b.usage === 'number' ? b.usage : null,
         deltaFormatted: d.Usage?.yoy_delta_formatted || '—',
         isPositive: d.Usage?.is_positive !== false,
         isInaugural: false
@@ -143,8 +149,14 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         name: 'Quality Recognition',
         observedStr: d.Quality?.raw_formatted || `${d.Quality?.raw || 0}%`,
         observedVal: typeof d.Quality?.raw === 'number' ? d.Quality.raw : 0,
-        benchmarkStr: typeof b.quality === 'number' ? (typeof b.quality_count === 'number' ? `${Math.round(b.quality_count).toLocaleString()} works (${b.quality.toFixed(1)}%)` : `${b.quality.toFixed(1)}%`) : '—',
-        benchmarkVal: b.quality,
+        benchmarkStr: typeof b.quality === 'number'
+          ? (typeof b.quality_count === 'number'
+              ? `${Math.round(b.quality_count).toLocaleString()} works (${b.quality.toFixed(1)}%)`
+              : `${b.quality.toFixed(1)}%`)
+          : (typeof b.quality_count === 'number'
+              ? `${Math.round(b.quality_count).toLocaleString()} works`
+              : '—'),
+        benchmarkVal: typeof b.quality === 'number' ? b.quality : null,
         deltaFormatted: d.Quality?.yoy_delta_formatted || '—',
         isPositive: d.Quality?.is_positive !== false,
         isInaugural: false
@@ -155,7 +167,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         observedStr: d.Diversity?.raw_formatted || `${d.Diversity?.raw || 0}%`,
         observedVal: typeof d.Diversity?.raw === 'number' ? d.Diversity.raw : 0,
         benchmarkStr: typeof b.diversity === 'number' ? `${b.diversity.toFixed(1)}%` : '—',
-        benchmarkVal: b.diversity,
+        benchmarkVal: typeof b.diversity === 'number' ? b.diversity : null,
         deltaFormatted: d.Diversity?.yoy_delta_formatted || '—',
         isPositive: d.Diversity?.is_positive !== false,
         isInaugural: false
