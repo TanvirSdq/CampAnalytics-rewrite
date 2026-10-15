@@ -60,9 +60,26 @@ CampAnalytics-rewrite/
 ├── public/
 │   └── css/styles.css     # Compiled static styles
 ├── tests/
-│   ├── routes.e2e.test.ts # 28-assertion Node test suite
-│   └── verify_routes.sh   # 16-assertion curl smoke tests
+│   ├── routes.e2e.test.ts # End-to-end route test suite
+│   ├── comparative.unit.test.ts # Unit tests for analytics calculations
+│   └── quality_gates.test.ts    # Automated brand, geometry & hygiene gates
+├── config.json            # Campaign taxonomy, region maps, and bot filters
+├── toolinfo.json          # Wikimedia Toolhub crawler manifest
+├── toolhub.yaml           # Wikimedia Toolhub configuration
+├── CONTRIBUTING.md        # Contributor guide and environment setup
+├── METHODOLOGY.md         # Mathematical formulations and peer benchmarks
 ├── .github/workflows/ci.yml
-├── Procfile               # web: node dist/server.js
+├── Procfile               # web: npm start
 └── tsconfig.json
 ```
+
+## Configuration & Toolhub Metadata
+
+- **`config.json`**: Domain reference data and campaign taxonomy:
+  - `EVENT_MAP` & `EVENT_DISPLAY_MAP`: Short codes to official campaign names (`wlm`, `wle`, `wlf`, `wla`, `wlb`).
+  - `EVENT_COUNTRY_SCOPE`: Geographic scope rules (e.g. continental restrictions for Wiki Loves Africa).
+  - `KNOWN_BOTS` & `BOT_REGEX`: Automated maintenance bot and upload wizard accounts excluded from contributor counts.
+  - `COUNTRY_MAP` & `REGION_COUNTRY_MAPPING`: ISO 3166-1 alpha-2 country mappings and regional benchmark clusters.
+  *(Contains strictly public taxonomy data with zero credentials or tokens).*
+- **`metadata.json`**: Application manifest describing runtime capabilities and description.
+- **`toolinfo.json` & `toolhub.yaml`**: Official Wikimedia Toolhub metadata manifests for indexing `camptools` on [toolhub.wikimedia.org](https://toolhub.wikimedia.org/).
