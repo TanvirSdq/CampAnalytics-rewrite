@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{% block extra_head %}
+<script src="/plotly.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js';"></script>
+{% endblock %}
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
     <div>
@@ -246,14 +249,19 @@
                 </button>
 
                 <div class="scrubber-slider-wrap">
-                    <span class="scrubber-year-label">Top 1%</span>
+                    <span class="scrubber-year-label">1%</span>
                     <input type="range" class="camp-scrubber-range" id="diversity-percentile-slider" min="1" max="100" step="1" value="10" oninput="updateDiversityPercentile(parseInt(this.value, 10))" aria-label="Top Contributor Percentile Slider">
-                    <span class="scrubber-year-label">Top 100%</span>
+                    <span class="scrubber-year-label">100%</span>
                 </div>
 
-                <div class="scrubber-active-badge">
+                <div class="scrubber-active-badge" style="display: flex; align-items: center; gap: 4px;">
                     <span class="scrubber-badge-label">Cohort:</span>
-                    <span class="scrubber-badge-year" id="div-slider-label">Top 10%</span>
+                    <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-ink);">Top</span>
+                    <input type="number" id="div-percentile-input" min="1" max="100" value="10" 
+                           style="width: 48px; padding: 2px 4px; font-size: 0.82rem; font-weight: 700; border: 1px solid var(--border-color); border-radius: 0; text-align: center; background: #ffffff; color: var(--text-ink);" 
+                           oninput="updateDiversityPercentile(parseInt(this.value, 10))" aria-label="Enter specific percentile percentage">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-ink);">%</span>
+                    <span class="scrubber-badge-year" id="div-slider-label" style="display: none;">Top 10%</span>
                 </div>
             </div>
 
@@ -264,7 +272,10 @@
                 <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(5)">Top 5%</button>
                 <button type="button" class="preset-chip div-pct-chip active" id="chip-pct-10" onclick="setDiversityPercentile(10)">Top 10% (Pareto)</button>
                 <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(20)">Top 20%</button>
+                <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(35)">Top 35%</button>
                 <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(50)">Top 50%</button>
+                <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(75)">Top 75%</button>
+                <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(100)">100% (All)</button>
             </div>
         </div>
 
@@ -367,103 +378,197 @@ var currentPercentile = 10;
 
 function getDiversitySharesForPercentile(pct) {
     if (!diversityRecords || diversityRecords.length === 0) return [];
+    var safePct = Math.max(1, Math.min(100, Math.round(pct)));
     return diversityRecords.map(function(r) {
-        if (r.percentile_shares && r.percentile_shares.length > pct) {
-            return r.percentile_shares[pct];
+        if (r.percentile_shares && r.percentile_shares.length > safePct) {
+            return r.percentile_shares[safePct];
         }
-        if (pct === 10) return r.top_10_percent_share;
-        if (pct === 20) return r.top_20_percent_share;
-        return pct;
+        if (safePct === 10) return r.top_10_percent_share;
+        if (safePct === 20) return r.top_20_percent_share;
+        if (safePct === 100) return 100;
+        return safePct;
     });
+}
+
+function renderNativeSvgLineChart(years, shares, pct) {
+    var width = 800;
+    var height = 360;
+    var padLeft = 60;
+    var padRight = 40;
+    var padTop = 32;
+    var padBottom = 40;
+
+    var plotW = width - padLeft - padRight;
+    var plotH = height - padTop - padBottom;
+    var numPts = years.length;
+
+    var getX = function(idx) {
+        return padLeft + (numPts <= 1 ? plotW / 2 : (idx / (numPts - 1)) * plotW);
+    };
+    var getY = function(val) {
+        return padTop + plotH - (Math.max(0, Math.min(100, val)) / 100) * plotH;
+    };
+
+    var svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" style="width: 100%; height: auto; min-height: 340px; font-family: system-ui, -apple-system, sans-serif;" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<rect width="' + width + '" height="' + height + '" fill="#ffffff" />';
+
+    // Y Axis Grid lines (0%, 25%, 50%, 75%, 100%)
+    var yTicks = [0, 25, 50, 75, 100];
+    for (var i = 0; i < yTicks.length; i++) {
+        var tick = yTicks[i];
+        var yPos = getY(tick);
+        svg += '<line x1="' + padLeft + '" y1="' + yPos + '" x2="' + (width - padRight) + '" y2="' + yPos + '" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="' + (tick === 0 ? 'none' : '3,3') + '" />';
+        svg += '<text x="' + (padLeft - 10) + '" y="' + (yPos + 4) + '" font-size="11" fill="#72777d" text-anchor="end">' + tick + '%</text>';
+    }
+
+    svg += '<line x1="' + padLeft + '" y1="' + getY(0) + '" x2="' + (width - padRight) + '" y2="' + getY(0) + '" stroke="#72777d" stroke-width="1.5" />';
+
+    var pts = [];
+    for (var j = 0; j < numPts; j++) {
+        pts.push({ x: getX(j), y: getY(shares[j]), val: shares[j], year: years[j] });
+    }
+
+    // Light blue solid area under curve (zero gradients)
+    if (pts.length > 1) {
+        var areaD = 'M ' + pts[0].x + ' ' + getY(0) + ' L ' + pts[0].x + ' ' + pts[0].y;
+        for (var k = 1; k < pts.length; k++) {
+            areaD += ' L ' + pts[k].x + ' ' + pts[k].y;
+        }
+        areaD += ' L ' + pts[pts.length - 1].x + ' ' + getY(0) + ' Z';
+        svg += '<path d="' + areaD + '" fill="#f0f4f9" />';
+    }
+
+    // Solid blue line
+    if (pts.length > 1) {
+        var lineD = 'M ' + pts[0].x + ' ' + pts[0].y;
+        for (var m = 1; m < pts.length; m++) {
+            lineD += ' L ' + pts[m].x + ' ' + pts[m].y;
+        }
+        svg += '<path d="' + lineD + '" fill="none" stroke="#3366cc" stroke-width="3" stroke-linejoin="round" />';
+    }
+
+    // Points & labels
+    for (var p = 0; p < pts.length; p++) {
+        var pt = pts[p];
+        svg += '<text x="' + pt.x + '" y="' + (height - 12) + '" font-size="12" font-weight="600" fill="#202122" text-anchor="middle">' + pt.year + '</text>';
+
+        var textY = pt.y < padTop + 22 ? pt.y + 20 : pt.y - 10;
+        svg += '<rect x="' + (pt.x - 24) + '" y="' + (textY - 11) + '" width="48" height="15" fill="#ffffff" stroke="#c8ccd1" stroke-width="1" rx="0" ry="0" />';
+        svg += '<text x="' + pt.x + '" y="' + textY + '" font-size="11" font-weight="700" fill="#3366cc" text-anchor="middle">' + pt.val + '%</text>';
+
+        svg += '<rect x="' + (pt.x - 5) + '" y="' + (pt.y - 5) + '" width="10" height="10" rx="0" ry="0" fill="#3366cc" stroke="#ffffff" stroke-width="2">';
+        svg += '<title>' + pt.year + ': Top ' + pct + '% contributors produced ' + pt.val + '% of uploads</title>';
+        svg += '</rect>';
+    }
+
+    svg += '</svg>';
+    return svg;
 }
 
 function renderDiversityLineChart(pct) {
     var chartEl = document.getElementById('diversity-line-chart');
     if (!chartEl || !diversityRecords || diversityRecords.length === 0) return;
-    if (typeof Plotly === 'undefined') return;
 
     var years = diversityRecords.map(function(r) { return r.year; });
     var shares = getDiversitySharesForPercentile(pct);
-    var textLabels = shares.map(function(s) { return s + '%'; });
 
-    var trace = {
-        x: years,
-        y: shares,
-        type: 'scatter',
-        mode: 'lines+markers+text',
-        text: textLabels,
-        textposition: 'top center',
-        textfont: {
-            family: 'system-ui, -apple-system, sans-serif',
-            size: 11,
-            color: '#202122'
-        },
-        line: {
-            color: '#3366cc',
-            width: 3,
-            shape: 'linear'
-        },
-        marker: {
-            color: '#3366cc',
-            size: 8,
-            symbol: 'square'
-        },
-        name: 'Top ' + pct + '% Share'
-    };
+    if (typeof Plotly !== 'undefined') {
+        var textLabels = shares.map(function(s) { return s + '%'; });
+        var trace = {
+            x: years,
+            y: shares,
+            type: 'scatter',
+            mode: 'lines+markers+text',
+            text: textLabels,
+            textposition: 'top center',
+            textfont: {
+                family: 'system-ui, -apple-system, sans-serif',
+                size: 11,
+                color: '#202122'
+            },
+            line: {
+                color: '#3366cc',
+                width: 3,
+                shape: 'linear'
+            },
+            marker: {
+                color: '#3366cc',
+                size: 8,
+                symbol: 'square'
+            },
+            name: 'Top ' + pct + '% Share'
+        };
 
-    var layout = {
-        margin: { t: 24, r: 24, b: 40, l: 48 },
-        xaxis: {
-            tickmode: 'array',
-            tickvals: years,
-            ticktext: years.map(String),
-            showgrid: true,
-            gridcolor: '#e2e8f0',
-            zeroline: false
-        },
-        yaxis: {
-            title: 'Upload Share (%)',
-            range: [0, 108],
-            showgrid: true,
-            gridcolor: '#e2e8f0',
-            zeroline: false
-        },
-        hovermode: 'x unified',
-        plot_bgcolor: '#ffffff',
-        paper_bgcolor: '#ffffff',
-        showlegend: false
-    };
+        var layout = {
+            margin: { t: 24, r: 24, b: 40, l: 48 },
+            xaxis: {
+                tickmode: 'array',
+                tickvals: years,
+                ticktext: years.map(String),
+                showgrid: true,
+                gridcolor: '#e2e8f0',
+                zeroline: false
+            },
+            yaxis: {
+                title: 'Upload Share (%)',
+                range: [0, 108],
+                showgrid: true,
+                gridcolor: '#e2e8f0',
+                zeroline: false
+            },
+            hovermode: 'x unified',
+            plot_bgcolor: '#ffffff',
+            paper_bgcolor: '#ffffff',
+            showlegend: false
+        };
 
-    var config = {
-        responsive: true,
-        displayModeBar: false
-    };
+        var config = {
+            responsive: true,
+            displayModeBar: false
+        };
 
-    Plotly.react('diversity-line-chart', [trace], layout, config);
-
-    // Update readouts
-    var activePctEl = document.getElementById('div-active-pct');
-    var activeShareEl = document.getElementById('div-active-share');
-    var sliderLabelEl = document.getElementById('div-slider-label');
-    if (activePctEl) activePctEl.textContent = pct;
-    if (activeShareEl && shares.length > 0) activeShareEl.textContent = shares[shares.length - 1] + '%';
-    if (sliderLabelEl) sliderLabelEl.textContent = 'Top ' + pct + '%';
+        Plotly.react('diversity-line-chart', [trace], layout, config);
+    } else {
+        // High-performance native SVG line chart fallback (instant, zero network latency)
+        chartEl.innerHTML = renderNativeSvgLineChart(years, shares, pct);
+    }
 }
 
 function updateDiversityPercentile(pct) {
-    currentPercentile = Math.max(1, Math.min(100, pct));
+    if (isNaN(pct)) return;
+    currentPercentile = Math.max(1, Math.min(100, Math.round(pct)));
+
     var slider = document.getElementById('diversity-percentile-slider');
     if (slider && parseInt(slider.value, 10) !== currentPercentile) {
         slider.value = currentPercentile;
     }
 
+    var numInput = document.getElementById('div-percentile-input');
+    if (numInput && parseInt(numInput.value, 10) !== currentPercentile) {
+        numInput.value = currentPercentile;
+    }
+
     var chips = document.querySelectorAll('.div-pct-chip');
     chips.forEach(function(chip) {
         var label = chip.textContent.trim();
-        var matches = (label === 'Top ' + currentPercentile + '%') || (currentPercentile === 10 && label.includes('Pareto'));
+        var matches = (label === 'Top ' + currentPercentile + '%') || 
+                      (currentPercentile === 10 && label.includes('Pareto')) ||
+                      (currentPercentile === 100 && label.includes('100%'));
         chip.classList.toggle('active', matches);
     });
 
+    // 1. Immediately update text readouts for ANY percentile
+    var shares = getDiversitySharesForPercentile(currentPercentile);
+    var activePctEl = document.getElementById('div-active-pct');
+    var activeShareEl = document.getElementById('div-active-share');
+    var sliderLabelEl = document.getElementById('div-slider-label');
+    if (activePctEl) activePctEl.textContent = currentPercentile;
+    if (activeShareEl && shares.length > 0) activeShareEl.textContent = shares[shares.length - 1] + '%';
+    if (sliderLabelEl) {
+        sliderLabelEl.textContent = (currentPercentile === 100) ? 'All 100%' : 'Top ' + currentPercentile + '%';
+    }
+
+    // 2. Render chart (Plotly or native SVG)
     renderDiversityLineChart(currentPercentile);
 }
 
@@ -488,11 +593,15 @@ function toggleDiversityPlayback() {
         if (iconPause) iconPause.style.display = 'block';
         if (playText) playText.textContent = 'Pause';
 
+        if (currentPercentile >= 100) {
+            updateDiversityPercentile(1);
+        }
+
         diversityPlayTimer = setInterval(function() {
             var next = currentPercentile + 1;
-            if (next > 50) next = 1;
+            if (next > 100) next = 1;
             updateDiversityPercentile(next);
-        }, 120);
+        }, 100);
     }
 }
 
@@ -537,7 +646,7 @@ function switchDiversityView(view) {
         lineEl.style.display = 'block';
         tabLine.classList.add('active');
         tabLine.setAttribute('aria-selected', 'true');
-        renderDiversityLineChart(currentPercentile);
+        updateDiversityPercentile(currentPercentile);
         if (typeof Plotly !== 'undefined') {
             Plotly.Plots.resize('diversity-line-chart');
         }
@@ -549,7 +658,16 @@ function switchDiversityView(view) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    renderDiversityLineChart(10);
+    updateDiversityPercentile(10);
+});
+
+window.addEventListener('load', function() {
+    if (typeof Plotly !== 'undefined') {
+        var lineView = document.getElementById('diversity-view-line');
+        if (lineView && lineView.style.display !== 'none') {
+            renderDiversityLineChart(currentPercentile);
+        }
+    }
 });
 </script>
 {% endblock %}
