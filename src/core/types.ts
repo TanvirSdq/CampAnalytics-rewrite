@@ -40,17 +40,29 @@ export interface HealthBenchmarks {
 
 export interface HealthMetricDimension {
   raw: any;
-  score: number | null;
-  weight: number;
-  benchmark: number;
-  stars?: string;
+  score?: number | null;
+  weight?: number;
+  benchmark?: number;
+  benchmark_count?: number;
+  baseline_val?: number | null;
+  yoy_delta?: number | null;
+  yoy_delta_pct?: number | null;
+  yoy_delta_formatted?: string;
+  regional_median?: number | null;
+  regional_delta?: number | null;
+  is_positive?: boolean;
   is_inaugural?: boolean;
+  stars?: string;
+  count?: number;
+  raw_formatted?: string;
+  newcomers_count?: number;
+  yoy_ratio?: number;
 }
 
 export interface HealthMetrics {
-  composite_score: number;
-  tier: string;
-  stars: [string, number];
+  composite_score?: number | null;
+  tier?: string;
+  stars?: [string, number];
   dimensions: {
     retention: HealthMetricDimension;
     growth: HealthMetricDimension;
@@ -70,10 +82,10 @@ export interface OverallCampaignReport {
   edition_year: number;
   region: string;
   generated_date: string;
-  composite_score: number;
-  tier: string;
-  rating_label: string;
-  stars: [string, number];
+  composite_score?: number | null;
+  tier?: string;
+  rating_label?: string;
+  stars?: [string, number];
   total_uploaders: number;
   newcomer_uploaders: number;
   returning_uploaders: number;
@@ -90,7 +102,32 @@ export interface OverallCampaignReport {
   top10_uploader_share_pct: number;
   dimensions: any;
   benchmarks: HealthBenchmarks;
-  insights: string[];
+  insights?: string[];
+  historical_series?: HistoricalEditionPoint[];
+  peer_comparisons?: PeerComparisonPoint[];
+}
+
+export interface HistoricalEditionPoint {
+  year: number;
+  code: string;
+  uploaders: number;
+  uploads: number;
+  newcomers: number;
+  retained: number;
+  retention_pct: number | null;
+  quality_count: number;
+  usage_count: number;
+}
+
+export interface PeerComparisonPoint {
+  country: string;
+  country_code: string;
+  code: string;
+  uploaders: number;
+  uploads: number;
+  retention_pct: number | null;
+  quality_count: number;
+  usage_count: number;
 }
 
 export interface HealthEvaluationResult {
@@ -100,12 +137,14 @@ export interface HealthEvaluationResult {
   target_users_count: number;
   baseline_users_count: number;
   overlap_users_count: number;
-  composite_score: number;
-  tier: string;
-  stars: [string, number];
+  composite_score?: number | null;
+  tier?: string;
+  stars?: [string, number];
   dimensions: any;
   benchmarks: HealthBenchmarks;
-  insights: string[];
+  insights?: string[];
+  historical_series?: HistoricalEditionPoint[];
+  peer_comparisons?: PeerComparisonPoint[];
   overall_report?: OverallCampaignReport;
 }
 

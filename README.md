@@ -43,27 +43,24 @@ CampTools is organized into five specialized analytical tools accessible via top
 └─────────────┴─────────────┴─────────────┴──────────────┴───────────────┘
 ```
 
-### 1. Health Evaluation (`/health`, `/api/health`)
-Scores campaign editions on a 0–100 scale across six core dimensions grouped into three balanced structural pairs, benchmarked against empirical regional peer distributions:
-* **Community Scale ($S_{\text{scale}}$, 30%)**: Active uploader cohort volume calibrated against regional peer benchmarks using fluid elasticity ($\gamma = 1.15$) to properly measure mobilization reach.
-* **Retention Index ($S_{\text{ret}}$, 20%)**: Percentage of baseline-edition participants who returned in the target edition, applying Bayesian shrinkage for small baseline cohorts.
-* **Content Utility ($S_{\text{util}}$, 20%)**: Dual harmonic metric: 60% global Wikipedia transclusion volume + 40% article inclusion rate (`prop=globalusage`).
-* **Quality Recognition ($S_{\text{qual}}$, 10%)**: Dual harmonic metric: 60% Commons Quality/Featured Image volume + 40% curatorial distinction rate.
-* **Contributor Expansion ($S_{\text{exp}}$, 10%)**: Dual metric: 60% volume-normalized newcomer recruitment yield + 40% YoY community cohort size expansion.
-* **Contributor Diversity ($S_{\text{div}}$, 10%)**: Upload distribution equity (inverse top-10% uploader concentration).
+### 1. Campaign Performance Dynamics (`/health`, `/api/health`)
+Provides empirical, non-imputed visibility into volunteer mobilization, multi-year longitudinal trajectories, and Year-over-Year (YoY) velocity without subjective scores, arbitrary weights, or automated advice:
+* **Community Scale**: Total unique human uploaders submitting $\ge 1$ eligible photograph, with YoY velocity delta ($\Delta = U_t - U_{t-1}$).
+* **Contributor Retention**: Percentage of baseline-edition participants who returned in the target edition ($R = \frac{|U_t \cap U_{t-1}|}{|U_{t-1}|} \times 100\%$).
+* **Contributor Expansion**: Direct first-time newcomer recruitment yield ($N_t = |U_t \setminus \bigcup_{k < t} U_k|$) alongside net community size progression.
+* **Content Utility**: Downstream encyclopedic utilization across Wikipedia language editions and Wikidata via `prop=globalusage`.
+* **Quality Recognition**: Peer-reviewed Wikimedia Commons distinctions (Quality Images, Featured Pictures, Valued Images).
+* **Contributor Diversity**: Grassroots participation equity measured by inverse top-10% uploader volume concentration.
 
 **Zero-Synthetic Data & Unheld Campaign Policy**:
 * 100% live Wikimedia Commons & Toolforge data with zero synthetic cohort generators or mock fallbacks.
 * Unheld editions (e.g. `wlmbd21`, `wlmfr23`) are explicitly flagged as unheld and cannot be evaluated, receiving neither a 0 nor a regional average, and are excluded from peer benchmark groups.
 
-**Interactive Visuals**:
-* Responsive **SVG Spider Radar Chart** comparing the campaign's scores against regional and global benchmark polygons.
-* Composite 5-tier grading badge:
-  * ★★★★★ **Outstanding** (85.0–100.0)
-  * ★★★★☆ **Strong** (70.0–84.9)
-  * ★★★☆☆ **Moderate** (50.0–69.9)
-  * ★★☆☆☆ **Emerging** (30.0–49.9)
-  * ★☆☆☆☆ **Critical / Low** (<30.0)
+**Interactive Manipulative Visuals (Plotly.js)**:
+* **Multi-Year Longitudinal Trajectory**: Interactive dual-axis visualizer tracking active uploader volume, submissions, and quality honors across up to 5 consecutive editions.
+* **Cohort Retention & Newcomer Waterfall**: Stacked breakdown illustrating the operational balance between returning volunteers and recruited newcomers.
+* **Regional Peer Context Comparison**: Interactive bar chart comparing the campaign against active regional peers across selectable metrics.
+* **Year-over-Year Velocity Pills**: Distinct delta indicators ($\Delta$ and $\Delta\%$) showing exact gains or declines across every dimension.
 
 ### 2. Contributor Retention (`/retention`, `/api/retention`, `/api/comparative`)
 * **Directional Persistence**: Evaluates exact retention between baseline and target editions ($A \to B$), preserving directional asymmetry:
@@ -128,7 +125,7 @@ All analytical modules provide direct RESTful JSON endpoints for programmatic in
 | Endpoint | Method | Key Parameters | Description |
 |:---|:---:|:---|:---|
 | `/api/comparative` | `GET` | `module`, `event`, `countries`, `start_year`, `end_year`, `metric_key` | Computes multi-country longitudinal time series, summary statistics, cohort cross-sectional tables, and timeline points. |
-| `/api/health` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns 5-dimension health scores, benchmark comparisons, and composite rating. |
+| `/api/health` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns empirical dimensions, Year-over-Year velocity deltas, multi-year historical series, and regional peer distributions. |
 | `/api/retention` | `GET` | `target_campaigns` (e.g. `wlmde22 wlmde23 wlmde24`) | Computes full pairwise directional retention matrix and participant sets. |
 | `/api/influx` | `GET` | `influx_codes` (e.g. `wlmde20 wlmde21 wlmde22 wlmde23 wlmde24`) | Returns newcomer influx, veteran counts, cumulative pool, and lifecycle profiles. |
 | `/api/utility` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns global usage rates, article embed counts, wiki breakdown, and top utilized photographers. |

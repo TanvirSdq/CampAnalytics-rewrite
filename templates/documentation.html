@@ -13,7 +13,7 @@
             <div class="display-panel-header">
                 <div>
                     <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 01</span>
-                    <span style="font-weight: 700; font-size: 1.05rem;">Evaluation</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Campaign Performance Dynamics</span>
                 </div>
                 <a href="/health" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
@@ -21,42 +21,50 @@
             </div>
             <div class="display-panel-body">
                 <p style="color: var(--text-muted); line-height: 1.6;">
-                    The Evaluation module computes a multi-dimensional campaign evaluation score (0–100) calibrated dynamically against contemporary regional peer performance:
+                    The Campaign Performance Dynamics module provides empirical observability into volunteer mobilization, multi-year longitudinal trajectories, and Year-over-Year (YoY) velocity without subjective scoring indices, arbitrary weights, or automated advice notes:
                 </p>
 
-                <h4 style="margin: 14px 0 8px 0; color: var(--text-ink); font-size: 0.95rem;">Step-by-Step Tool Usage &amp; Evaluation Process</h4>
+                <h4 style="margin: 14px 0 8px 0; color: var(--text-ink); font-size: 0.95rem;">Step-by-Step Tool Usage &amp; Exploration Process</h4>
                 <ol style="color: var(--text-ink); line-height: 1.7; padding-left: 20px;">
                     <li><strong>Target Campaign Code:</strong> Enter the official identifier for the campaign edition you want to evaluate (e.g. <code>wlmbd24</code> for Wiki Loves Monuments 2024 Bangladesh, or <code>wlede23</code> for Wiki Loves Earth Germany).</li>
-                    <li><strong>Baseline Reference Edition:</strong> Select <em>Previous Year Baseline</em> to measure progression against the immediately preceding year (e.g. 2023 vs 2024), or specify a custom baseline edition for multi-year comparisons. Both cohorts must have active upload records.</li>
-                    <li><strong>Regional Peer Calibration:</strong> The tool automatically identifies your country's regional cluster (e.g. South Asia, Northern &amp; Western Europe, ESEAP). Regional benchmarks are computed from active peer campaigns in this group to ensure fair comparison between emerging and veteran communities.</li>
-                    <li><strong>Evaluation Scorecard &amp; Report:</strong> Review the 6 dimension scores, qualitative star ratings, quantitative participant counts, and diagnostic insights. Use the <strong>Export Report</strong> button to generate ready-to-copy summaries for Wikimedia grant reporting, talk pages, or organizing retrospectives.</li>
+                    <li><strong>Baseline Reference Edition:</strong> Select <em>Previous Year Baseline</em> to measure trajectory shifts against the immediately preceding year (e.g. 2023 vs 2024), or specify a custom baseline edition for multi-year comparisons.</li>
+                    <li><strong>Regional Peer Calibration:</strong> The tool automatically identifies your country's regional cluster (e.g. South Asia, Northern &amp; Western Europe, ESEAP). Regional peer medians are computed across active campaigns to provide context without artificial rankings.</li>
+                    <li><strong>Empirical KPIs &amp; Velocity Badges:</strong> Review the 6 core observational cards showing live totals alongside Year-over-Year velocity pills (\(\Delta = X_t - X_{t-1}\)) indicating exact net shifts and percentage progression.</li>
+                    <li><strong>Interactive Manipulative Charts (Plotly.js):</strong> Explore three dynamic visualizers:
+                        <ul style="margin-top: 4px; padding-left: 18px;">
+                            <li><strong>Multi-Year Longitudinal Trajectory:</strong> Dual-axis interactive chart tracking active uploaders, Commons submissions, and quality honors across up to 5 consecutive editions.</li>
+                            <li><strong>Cohort Retention &amp; Newcomer Waterfall:</strong> Stacked breakdown illustrating the operational balance between returning volunteers and recruited newcomers.</li>
+                            <li><strong>Regional Peer Context Comparison:</strong> Interactive bar chart comparing your campaign against active regional peers across selectable metrics.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Export Empirical Report:</strong> Export raw, non-graded observational records in Wikitext, Markdown, or CSV formats for Wikimedia grant reports and affiliate documentation.</li>
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Evaluation Weighting Model</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year (YoY) Velocity Vector Formulation</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 10px 0;">
-                        The composite evaluation score is calculated on a fluid 0–100 scale across six core dimensions organized into complementary structural pairs:
+                        Rather than grading affiliates with subjective points, the platform calculates empirical progression vectors between consecutive campaign editions:
                     </p>
                     <div class="math-formula" style="margin: 10px 0 14px 0;">
-                        \[ \text{Evaluation Index} = 0.30 S_{\text{scale}} + 0.20 S_{\text{ret}} + 0.20 S_{\text{util}} + 0.10 S_{\text{qual}} + 0.10 S_{\text{exp}} + 0.10 S_{\text{div}} \]
+                        \[ \Delta X = X_t - X_{t-1}, \quad \Delta X\% = \frac{X_t - X_{t-1}}{X_{t-1}} \times 100\% \]
                     </div>
                     <ul style="color: var(--text-ink); font-size: 0.88rem; line-height: 1.7; margin: 0; padding-left: 20px;">
-                        <li><strong>Community Scale (30%):</strong> Active uploader cohort volume calibrated against regional peer benchmarks using fluid elasticity (\(\gamma = 1.15\)) to properly reward mobilization reach without cliff-edge score collapses.</li>
-                        <li><strong>Retention Index (20%):</strong> Percentage of baseline cohort participants who contributed to the target edition, applying Empirical Bayesian shrinkage for small baseline cohorts.</li>
-                        <li><strong>Content Utility (20%):</strong> Dual-component harmonic score combining Wikipedia article transclusion volume (60%) and article inclusion rate (40%) via <code>prop=globalusage</code>.</li>
-                        <li><strong>Quality Recognition (10%):</strong> Dual-component harmonic score combining Commons Quality/Featured Image volume (60%) and curatorial distinction rate (40%).</li>
-                        <li><strong>Contributor Expansion (10%):</strong> Dual-component score combining volume-normalized newcomer recruitment yield (60%) and year-over-year net community expansion (40%).</li>
-                        <li><strong>Contributor Diversity (10%):</strong> Distribution equity of contributions, measured inversely against top-10% uploader concentration to reward grassroots participation.</li>
+                        <li><strong>Community Scale:</strong> Net shift in unique human uploaders submitting \(\ge 1\) eligible photograph.</li>
+                        <li><strong>Contributor Retention:</strong> Percentage of baseline cohort participants who returned to upload in the target edition (\(\frac{|U_t \cap U_{t-1}|}{|U_{t-1}|} \times 100\%\)).</li>
+                        <li><strong>Contributor Expansion:</strong> Direct newcomer influx yield (\(|U_t \setminus \bigcup_{k < t} U_k|\)) alongside net community size progression.</li>
+                        <li><strong>Content Utility:</strong> Active encyclopedic deployment footprint across Wikipedia language editions and Wikidata via <code>prop=globalusage</code>.</li>
+                        <li><strong>Quality Recognition:</strong> Movement-wide peer-reviewed curatorial honors (Quality Images, Featured Pictures, Valued Images).</li>
+                        <li><strong>Contributor Diversity:</strong> Participation equity measured by the inverse Pareto concentration of the top-10% uploader cohort.</li>
                     </ul>
                 </div>
 
                 <div class="math-panel" style="margin-bottom: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Empirical Bayesian Shrinkage &amp; Benchmarks</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Regional Peer Context &amp; Zero-Synthetic Invariant</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; line-height: 1.6;">
-                        Regional reference thresholds are computed from active peer campaigns within each geographic cluster. To prevent distortion in regions with small sample sizes (\(N \le 3\)), Empirical Bayesian shrinkage blends regional peer metrics with global movement baselines:
+                        Regional context medians (\(P_{50}\)) provide unranked perspective across active national affiliates in the same geographic cluster, capturing authentic operational diversity.
                     </p>
                     <div class="math-formula" style="margin: 8px 0;">
-                        \[ B_{\text{effective}} = \frac{N}{N + 1.5} B_{\text{regional}} + \frac{1.5}{N + 1.5} B_{\text{global}} \]
+                        \[ \Delta_{\text{peer}} = X_{\text{target}} - \text{Median}(X_{\text{peers}}) \]
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0 0; line-height: 1.5;">
                         <strong>Zero-Synthetic Invariant &amp; Unheld Campaign Policy:</strong> The engine evaluates 100% empirical Wikimedia Commons data without synthetic imputation or mock fallbacks. Unheld editions (e.g. <code>wlmbd21</code>, <code>wlmfr23</code>) are explicitly flagged as unheld and excluded from peer benchmarks rather than being assigned artificial zeros or regional averages.

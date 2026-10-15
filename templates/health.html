@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
+<script src="/plotly.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js';"></script>
 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
     <div>
-        <h1 class="page-title" style="margin-bottom: 0;">Campaign Health Evaluation</h1>
+        <h1 class="page-title" style="margin-bottom: 0;">Campaign Performance Dynamics</h1>
     </div>
 </div>
 
@@ -131,8 +132,8 @@
             <div class="display-panel camp-analytics-shell" id="health-results">
                 <div class="camp-shell-header">
                     <div class="camp-shell-left">
-                        <h2 class="camp-shell-title">Campaign Health Evaluation &amp; Diagnostics</h2>
-                        <div class="camp-shell-subtitle">Multi-dimensional performance scoring calibrated against {{ region }} regional peer benchmarks.</div>
+                        <h2 class="camp-shell-title">Campaign Performance Dynamics &amp; Longitudinal Observability</h2>
+                        <div class="camp-shell-subtitle">Multi-dimensional performance dynamics calibrated against {{ region }} regional peer benchmarks.</div>
                         <details class="camp-data-notes">
                             <summary class="camp-data-notes-summary">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -141,12 +142,12 @@
                             <div class="camp-data-notes-body">
                                 <div class="camp-data-notes-grid">
                                     <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Evaluation Formulation</span>
-                                        <p class="camp-data-notes-text">The composite score (0–100) aggregates 6 core dimensions: Community Scale (30%), Contributor Retention (20%), Content Utility (20%), Photographic Quality (10%), Contributor Expansion (10%), and Contributor Diversity (10%).</p>
+                                        <span class="camp-data-notes-heading">Empirical Observability</span>
+                                        <p class="camp-data-notes-text">Observational metrics reflect actual activity logs from Wikimedia Commons. Year-over-Year (YoY) velocity measures actual net shifts in active photographers, submissions, transclusions, and distinctions without synthetic scores.</p>
                                     </div>
                                     <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Regional Benchmarking</span>
-                                        <p class="camp-data-notes-text">Scores are calibrated against historical 10-year medians for peer affiliates in the {{ region or 'Global' }} region, applying empirical Bayesian shrinkage for smaller cohorts.</p>
+                                        <span class="camp-data-notes-heading">Regional Peer Context</span>
+                                        <p class="camp-data-notes-text">Peer medians represent central tendencies across active national affiliates in the {{ region or 'Global' }} cluster, providing non-graded comparative perspective.</p>
                                     </div>
                                 </div>
                             </div>
@@ -166,145 +167,170 @@
                         </button>
                     </div>
                 </div>
-                <!-- Analytical 3-Way Segmented View Switcher -->
-                    <div class="segmented-control-bar">
-                        <div class="segmented-control" role="tablist" aria-label="Analytical View Switcher">
-                            <button type="button" id="health-tab-visual" class="segmented-btn active" onclick="switchCampView('visual', 'health')" role="tab" aria-selected="true">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
-                                <span>Benchmark Visualizer</span>
-                            </button>
-                            <button type="button" id="health-tab-table" class="segmented-btn" onclick="switchCampView('table', 'health')" role="tab" aria-selected="false">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="0"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
-                                <span>Dimension Data Table</span>
-                            </button>
-                        </div>
-                        <div class="segmented-actions">
-                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.openExportReportModal()" title="Generate detailed campaign evaluation report">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                                <span>Generate Full Report</span>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_health_scorecard')" title="Export MediaWiki wikitext grant report table">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
-                                <span>Export Wikitext</span>
-                            </button>
-                        </div>
+
+                <!-- Analytical Segmented View Switcher -->
+                <div class="segmented-control-bar">
+                    <div class="segmented-control" role="tablist" aria-label="Analytical View Switcher">
+                        <button type="button" id="health-tab-visual" class="segmented-btn active" onclick="switchCampView('visual', 'health')" role="tab" aria-selected="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                            <span>Benchmark Visualizer</span>
+                        </button>
+                        <button type="button" id="health-tab-table" class="segmented-btn" onclick="switchCampView('table', 'health')" role="tab" aria-selected="false">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="0"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                            <span>Dimension Data Table</span>
+                        </button>
                     </div>
+                    <div class="segmented-actions">
+                        <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.openExportReportModal()" title="Generate detailed campaign evaluation report">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                            <span>Export Report</span>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_health_scorecard')" title="Export MediaWiki wikitext grant report table">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
+                            <span>Export Wikitext</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="display-panel-body camp-shell-body">
-                    <!-- Analytical KPI Summary Grid -->
+                    <!-- Observational KPI Summary Grid with YoY Velocity Deltas -->
                     <div class="stat-kpi-grid">
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
-                                <span>Overall Index</span>
-                                <span class="stat-kpi-badge badge-primary">Score</span>
-                            </div>
-                            <div class="stat-kpi-value" style="color: var(--nav-teal);">{{ metrics['Overall'] }} <span style="font-size: 0.95rem; color: var(--text-muted); font-weight: normal;">/ 100</span></div>
-                            <div class="stat-kpi-subtext">Composite multi-metric evaluation</div>
-                        </div>
-                        <div class="stat-kpi-card">
-                            <div class="stat-kpi-label">
-                                <span>Retention Index</span>
-                                <span class="stat-kpi-badge badge-positive">{{ metrics['Retention']['stars'] if metrics['Retention']['stars'] else '—' }}</span>
-                            </div>
-                            <div class="stat-kpi-value">{{ metrics['Retention']['raw'] }}</div>
-                            <div class="stat-kpi-subtext">Score: {% if metrics['Retention']['score'] is not none %}{{ "%.1f"|format(metrics['Retention']['score']) }} / 100{% else %}Inaugural (N/A){% endif %}</div>
-                        </div>
-                        <div class="stat-kpi-card">
-                            <div class="stat-kpi-label">
-                                <span>Contributor Expansion</span>
-                                <span class="stat-kpi-badge badge-positive">{{ metrics['Growth']['stars'] }}</span>
-                            </div>
-                            <div class="stat-kpi-value">{{ metrics['Growth']['raw'] }}</div>
-                            <div class="stat-kpi-subtext">Score: {{ "%.1f"|format(metrics['Growth']['score']) }} / 100</div>
-                        </div>
-                        <div class="stat-kpi-card">
-                            <div class="stat-kpi-label">
                                 <span>Community Scale</span>
-                                <span class="stat-kpi-badge badge-neutral">{{ metrics['Scale']['stars'] if metrics['Scale'] else '—' }}</span>
+                                {% if metrics['Scale'] and metrics['Scale']['is_inaugural'] %}
+                                    <span class="stat-kpi-badge badge-neutral">Inaugural</span>
+                                {% elif metrics['Scale'] and metrics['Scale']['is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
+                                {% else %}
+                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
+                                {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Scale']['raw'] if metrics['Scale'] else target_users_count ~ ' uploaders' }}</div>
-                            <div class="stat-kpi-subtext">Score: {% if metrics['Scale'] and metrics['Scale']['score'] is not none %}{{ "%.1f"|format(metrics['Scale']['score']) }} / 100{% else %}—{% endif %}</div>
+                            <div class="stat-kpi-subtext">Regional Peer Median: {{ metrics['Scale']['regional_median'] if metrics['Scale'] else '—' }} uploaders</div>
                         </div>
+
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Contributor Retention</span>
+                                {% if metrics['Retention']['is_inaugural'] %}
+                                    <span class="stat-kpi-badge badge-neutral">Inaugural</span>
+                                {% elif metrics['Retention']['is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                {% else %}
+                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="stat-kpi-value">{{ metrics['Retention']['raw'] }}</div>
+                            <div class="stat-kpi-subtext">Retained: {{ metrics['Retention']['raw_formatted'] or '—' }}</div>
+                        </div>
+
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Newcomer Recruitment</span>
+                                {% if metrics['Growth']['is_inaugural'] %}
+                                    <span class="stat-kpi-badge badge-neutral">Inaugural</span>
+                                {% elif metrics['Growth']['is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                {% else %}
+                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="stat-kpi-value">{{ metrics['Growth']['raw'] }}</div>
+                            <div class="stat-kpi-subtext">First-Time Intake: {{ "%.1f"|format(metrics['Growth']['yoy_delta_pct'] or 0) }}% of cohort</div>
+                        </div>
+
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
+                                <span>Upload Volume</span>
+                                {% if metrics['Uploads'] and metrics['Uploads']['is_inaugural'] %}
+                                    <span class="stat-kpi-badge badge-neutral">Inaugural</span>
+                                {% elif metrics['Uploads'] and metrics['Uploads']['is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
+                                {% else %}
+                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="stat-kpi-value">{{ metrics['Uploads']['raw'] if metrics['Uploads'] else '—' }}</div>
+                            <div class="stat-kpi-subtext">Baseline: {{ (metrics['Uploads']['baseline_val'] ~ ' submissions') if metrics['Uploads'] and metrics['Uploads']['baseline_val'] else '—' }}</div>
+                        </div>
+
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Content Utility</span>
-                                <span class="stat-kpi-badge badge-neutral">{{ metrics['Usage']['stars'] }}</span>
+                                {% if metrics['Usage']['is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                {% else %}
+                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Usage']['raw_formatted'] if metrics['Usage']['raw_formatted'] else ("%.1f"|format(metrics['Usage']['raw']) ~ '%') }}</div>
-                            <div class="stat-kpi-subtext">Score: {{ "%.1f"|format(metrics['Usage']['score']) }} / 100</div>
+                            <div class="stat-kpi-subtext">Regional Peer Median: {{ "%.1f"|format(metrics['Usage']['regional_median'] or 0) }}% usage</div>
                         </div>
+
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Quality Recognition</span>
-                                <span class="stat-kpi-badge badge-neutral">{{ metrics['Quality']['stars'] }}</span>
+                                {% if metrics['Quality']['is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                {% else %}
+                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Quality']['raw_formatted'] if metrics['Quality']['raw_formatted'] else ("%.1f"|format(metrics['Quality']['raw']) ~ '% QI') }}</div>
-                            <div class="stat-kpi-subtext">Score: {{ "%.1f"|format(metrics['Quality']['score']) }} / 100</div>
-                        </div>
-                        <div class="stat-kpi-card">
-                            <div class="stat-kpi-label">
-                                <span>Contributor Diversity</span>
-                                <span class="stat-kpi-badge badge-neutral">{{ metrics['Diversity']['stars'] }}</span>
-                            </div>
-                            <div class="stat-kpi-value">{{ "%.1f"|format(metrics['Diversity']['raw']) }}%</div>
-                            <div class="stat-kpi-subtext">Score: {{ "%.1f"|format(metrics['Diversity']['score']) }} / 100</div>
+                            <div class="stat-kpi-subtext">Regional Peer Median: {{ "%.1f"|format(metrics['Quality']['regional_median'] or 0) }}% QI</div>
                         </div>
                     </div>
 
                     <!-- Preserve class="scorecard-grid" for test assertion requirement -->
                     <div class="scorecard-grid" style="display: none;"></div>
 
-                    
-
-                    <!-- VIEW 1: BENCHMARK VISUALIZER -->
+                    <!-- VIEW 1: INTERACTIVE DYNAMICS VISUALIZER -->
                     <div id="health-view-visual" class="camp-view-panel">
-                        {% if benchmark_comparisons %}
-                            <div class="benchmark-visualizer-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 20px;">
-                                {% for item in benchmark_comparisons %}
-                                    <div class="benchmark-comp-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 14px 16px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-                                            <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-ink);">
-                                                {{ item.name }}
-                                                <span style="font-size: 0.72rem; font-weight: 500; color: var(--text-muted); margin-left: 4px;">({{ item.weight }}% weight)</span>
-                                            </div>
-                                            <div>
-                                                {% if item.isInaugural %}
-                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
-                                                {% elif item.isPositive %}
-                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">{{ item.deltaFormatted }}</span>
-                                                {% else %}
-                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ item.deltaFormatted }}</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-
-                                        <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.82rem; margin-bottom: 8px;">
-                                            <div>
-                                                <span style="color: var(--text-muted);">Observed:</span>
-                                                <strong style="color: var(--text-ink); font-size: 1rem; margin-left: 4px;">{{ item.observedStr }}</strong>
-                                            </div>
-                                            <div style="text-align: right;">
-                                                <span style="color: var(--text-muted);">Peer Norm:</span>
-                                                <span style="color: #475569; font-weight: 600; margin-left: 4px;">{{ item.benchmarkStr }}</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Progress Bar (Zero gradients, crisp square corners) -->
-                                        <div style="background: #f1f5f9; border-radius: 0; height: 10px; width: 100%; position: relative; overflow: hidden; margin-top: 6px; border: 1px solid #e2e8f0;">
-                                            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ item.benchmarkVal }}%; background: #94a3b8; opacity: 0.35;" title="Peer Benchmark (75th percentile)"></div>
-                                            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ item.observedVal }}%; background: #2563eb; border-radius: 0;" title="Observed Value"></div>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">
-                                            <span>0%</span>
-                                            <span style="display: flex; align-items: center; gap: 4px;">
-                                                <span style="display: inline-block; width: 6px; height: 6px; background: #2563eb; border-radius: 0;"></span> Observed
-                                                <span style="display: inline-block; width: 6px; height: 6px; background: #94a3b8; border-radius: 0; margin-left: 4px;"></span> Peer Norm
-                                            </span>
-                                            <span>100%</span>
-                                        </div>
-                                    </div>
-                                {% endfor %}
+                        <!-- Chart 1: Multi-Year Longitudinal Trajectory -->
+                        <div class="chart-panel" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 18px 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                                <div>
+                                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-ink);">Multi-Year Longitudinal Trajectory</h3>
+                                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Chronological tracking of Active Uploaders, Submissions &amp; Certified Works across editions</div>
+                                </div>
+                                <span style="font-size: 0.75rem; color: #64748b; background: #f8fafc; padding: 3px 8px; border: 1px solid #e2e8f0;">Hover / Click legend to toggle series</span>
                             </div>
-                        {% endif %}
+                            <div id="chart-longitudinal" style="width: 100%; height: 380px;"></div>
+                        </div>
+
+                        <!-- 2-Column Grid: Cohort Waterfall & Regional Peer Context -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-bottom: 20px;">
+                            <!-- Chart 2: Cohort Retention Composition Waterfall -->
+                            <div class="chart-panel" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 18px 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                                    <div>
+                                        <h3 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-ink);">Cohort Retention &amp; Newcomer Breakdown</h3>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Retained Returning Volunteers vs. First-Time Newcomers</div>
+                                    </div>
+                                </div>
+                                <div id="chart-cohort-waterfall" style="width: 100%; height: 340px;"></div>
+                            </div>
+
+                            <!-- Chart 3: Regional Peer Context -->
+                            <div class="chart-panel" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 18px 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                                    <div>
+                                        <h3 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text-ink);">Regional Peer Context Comparison</h3>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Target Campaign vs. Active Regional Peers</div>
+                                    </div>
+                                    <div>
+                                        <select id="peer-metric-select" class="form-control form-control-sm" style="font-size: 0.78rem; padding: 3px 8px; height: auto;" onchange="renderPeerContextChart()">
+                                            <option value="uploaders">Active Uploaders</option>
+                                            <option value="uploads">Total Submissions</option>
+                                            <option value="retention">Retention Rate (%)</option>
+                                            <option value="quality">Quality Images</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="chart-peer-context" style="width: 100%; height: 340px;"></div>
+                            </div>
+                        </div>
 
                         <!-- Longitudinal Footprints Strip -->
                         <div class="footprint-strip" style="margin-top: 0; margin-bottom: 20px;">
@@ -321,18 +347,6 @@
                                 <div class="footprint-lbl">Retained Contributors</div>
                             </div>
                         </div>
-
-                        <!-- Diagnostic Insights Callouts -->
-                        {% if insights %}
-                            <div style="margin-top: 16px;">
-                                <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-ink); margin-bottom: 8px;">Campaign Organizer Diagnostic Insights</div>
-                                {% for insight in insights %}
-                                    <div class="insight-callout" style="border-radius: 0; margin-bottom: 8px;">
-                                        {{ insight }}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
                     </div>
 
                     <!-- VIEW 2: DIMENSION DATA TABLE -->
@@ -345,7 +359,7 @@
                                             <circle cx="11" cy="11" r="8"></circle>
                                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                         </svg>
-                                        <input type="text" class="table-search-input" placeholder="Search dimensions, metrics, ratings..." oninput="filterCampTable(this, 'health-data-table')">
+                                        <input type="text" class="table-search-input" placeholder="Search dimensions, metrics, values..." oninput="filterCampTable(this, 'health-data-table')">
                                     </div>
                                     <span class="table-counter-text" id="health-data-table-counter"></span>
                                 </div>
@@ -371,80 +385,161 @@
                                     <thead>
                                         <tr>
                                             <th>Dimension</th>
-                                            <th>Weight</th>
-                                            <th>Observed Value</th>
-                                            <th>Regional Benchmark (75th)</th>
-                                            <th>Normalized Score</th>
-                                            <th>Rating</th>
+                                            <th>Observed (Current Edition)</th>
+                                            <th>Baseline (Prior Edition)</th>
+                                            <th>Year-over-Year Delta (Δ)</th>
+                                            <th>Regional Peer Median</th>
+                                            <th>Regional Delta (vs Peer)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td style="font-weight: 600;">Retention Index</td>
-                                            <td>{{ metrics['Retention']['weight'] }}%</td>
-                                            <td>{{ metrics['Retention']['raw'] }}</td>
-                                            <td>{{ "%.1f"|format(metrics['Retention']['benchmark']) }}%</td>
-                                            <td style="font-weight: 600; color: var(--wiki-blue);">{% if metrics['Retention']['score'] is not none %}{{ "%.1f"|format(metrics['Retention']['score']) }} / 100{% else %}Inaugural (N/A){% endif %}</td>
-                                            <td>{{ metrics['Retention']['stars'] if metrics['Retention']['stars'] else '—' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-weight: 600;">Contributor Expansion</td>
-                                            <td>{{ metrics['Growth']['weight'] }}%</td>
-                                            <td>{{ metrics['Growth']['raw'] }}</td>
-                                            <td>{{ metrics['Growth']['benchmark'] }} newcomers</td>
-                                            <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Growth']['score']) }} / 100</td>
-                                            <td>{{ metrics['Growth']['stars'] }}</td>
-                                        </tr>
-                                        <tr>
                                             <td style="font-weight: 600;">Community Scale</td>
-                                            <td>{{ metrics['Scale']['weight'] if metrics['Scale'] else 30 }}%</td>
                                             <td>{{ metrics['Scale']['raw'] if metrics['Scale'] else target_users_count ~ ' uploaders' }}</td>
-                                            <td>{{ metrics['Scale']['benchmark'] if metrics['Scale'] else '—' }} uploaders</td>
-                                            <td style="font-weight: 600; color: var(--wiki-blue);">{% if metrics['Scale'] and metrics['Scale']['score'] is not none %}{{ "%.1f"|format(metrics['Scale']['score']) }} / 100{% else %}—{% endif %}</td>
-                                            <td>{{ metrics['Scale']['stars'] if metrics['Scale'] else '—' }}</td>
+                                            <td>{{ (metrics['Scale']['baseline_val'] ~ ' uploaders') if metrics['Scale'] and metrics['Scale']['baseline_val'] else '—' }}</td>
+                                            <td>
+                                                {% if metrics['Scale'] and metrics['Scale']['is_inaugural'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
+                                                {% elif metrics['Scale'] and metrics['Scale']['is_positive'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
+                                                {% else %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ metrics['Scale']['regional_median'] if metrics['Scale'] else '—' }} uploaders</td>
+                                            <td>
+                                                {% if metrics['Scale'] and metrics['Scale']['regional_delta'] is not none %}
+                                                    {% if metrics['Scale']['regional_delta'] >= 0 %}
+                                                        <span style="color: #15803d; font-weight: 600;">+{{ metrics['Scale']['regional_delta'].toLocaleString() }}</span>
+                                                    {% else %}
+                                                        <span style="color: #b91c1c; font-weight: 600;">{{ metrics['Scale']['regional_delta'].toLocaleString() }}</span>
+                                                    {% endif %}
+                                                {% else %}—{% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600;">Contributor Retention</td>
+                                            <td>{{ metrics['Retention']['raw_formatted'] if metrics['Retention']['raw_formatted'] else metrics['Retention']['raw'] }}</td>
+                                            <td>{{ (metrics['Retention']['baseline_val'] ~ ' uploaders') if metrics['Retention'] and metrics['Retention']['baseline_val'] else '—' }}</td>
+                                            <td>
+                                                {% if metrics['Retention']['is_inaugural'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
+                                                {% elif metrics['Retention']['is_positive'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                                {% else %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ "%.1f"|format(metrics['Retention']['regional_median'] or metrics['Retention']['benchmark']) }}%</td>
+                                            <td>
+                                                {% if metrics['Retention']['regional_delta'] is not none %}
+                                                    {% if metrics['Retention']['regional_delta'] >= 0 %}
+                                                        <span style="color: #15803d; font-weight: 600;">+{{ "%.1f"|format(metrics['Retention']['regional_delta']) }}%</span>
+                                                    {% else %}
+                                                        <span style="color: #b91c1c; font-weight: 600;">{{ "%.1f"|format(metrics['Retention']['regional_delta']) }}%</span>
+                                                    {% endif %}
+                                                {% else %}—{% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600;">Newcomer Recruitment</td>
+                                            <td>{{ metrics['Growth']['raw_formatted'] if metrics['Growth']['raw_formatted'] else metrics['Growth']['raw'] }}</td>
+                                            <td>{{ (metrics['Growth']['baseline_val'] ~ ' norm') if metrics['Growth'] and metrics['Growth']['baseline_val'] else '—' }}</td>
+                                            <td>
+                                                {% if metrics['Growth']['is_inaugural'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
+                                                {% elif metrics['Growth']['is_positive'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                                {% else %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ metrics['Growth']['regional_median'] }} newcomers</td>
+                                            <td>
+                                                {% if metrics['Growth']['regional_delta'] is not none %}
+                                                    {% if metrics['Growth']['regional_delta'] >= 0 %}
+                                                        <span style="color: #15803d; font-weight: 600;">+{{ metrics['Growth']['regional_delta'].toLocaleString() }}</span>
+                                                    {% else %}
+                                                        <span style="color: #b91c1c; font-weight: 600;">{{ metrics['Growth']['regional_delta'].toLocaleString() }}</span>
+                                                    {% endif %}
+                                                {% else %}—{% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600;">Upload Volume</td>
+                                            <td>{{ metrics['Uploads']['raw'] if metrics['Uploads'] else '—' }}</td>
+                                            <td>{{ (metrics['Uploads']['baseline_val'] ~ ' files') if metrics['Uploads'] and metrics['Uploads']['baseline_val'] else '—' }}</td>
+                                            <td>
+                                                {% if metrics['Uploads'] and metrics['Uploads']['is_inaugural'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
+                                                {% elif metrics['Uploads'] and metrics['Uploads']['is_positive'] %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
+                                                {% else %}
+                                                    <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>—</td>
+                                            <td>—</td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Content Utility</td>
-                                            <td>{{ metrics['Usage']['weight'] if metrics['Usage'] else 20 }}%</td>
                                             <td>{{ metrics['Usage']['raw_formatted'] if metrics['Usage']['raw_formatted'] else ("%.1f"|format(metrics['Usage']['raw']) ~ '%') }}</td>
-                                            <td>{% if metrics['Usage']['benchmark_count'] %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['benchmark']) }}%){% else %}{{ "%.1f"|format(metrics['Usage']['benchmark']) }}%{% endif %}</td>
-                                            <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Usage']['score']) }} / 100</td>
-                                            <td>{{ metrics['Usage']['stars'] }}</td>
+                                            <td>{{ metrics['Usage']['baseline_val'] if metrics['Usage'] else '—' }}% norm</td>
+                                            <td>
+                                                <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Usage']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                            </td>
+                                            <td>{% if metrics['Usage']['benchmark_count'] %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_median']) }}%){% else %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% endif %}</td>
+                                            <td>
+                                                {% if metrics['Usage']['regional_delta'] is not none %}
+                                                    {% if metrics['Usage']['regional_delta'] >= 0 %}
+                                                        <span style="color: #15803d; font-weight: 600;">+{{ "%.1f"|format(metrics['Usage']['regional_delta']) }}%</span>
+                                                    {% else %}
+                                                        <span style="color: #b91c1c; font-weight: 600;">{{ "%.1f"|format(metrics['Usage']['regional_delta']) }}%</span>
+                                                    {% endif %}
+                                                {% else %}—{% endif %}
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Quality Recognition</td>
-                                            <td>{{ metrics['Quality']['weight'] if metrics['Quality'] else 10 }}%</td>
                                             <td>{{ metrics['Quality']['raw_formatted'] if metrics['Quality']['raw_formatted'] else ("%.1f"|format(metrics['Quality']['raw']) ~ '%') }}</td>
-                                            <td>{% if metrics['Quality']['benchmark_count'] %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['benchmark']) }}%){% else %}{{ "%.1f"|format(metrics['Quality']['benchmark']) }}%{% endif %}</td>
-                                            <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Quality']['score']) }} / 100</td>
-                                            <td>{{ metrics['Quality']['stars'] }}</td>
+                                            <td>{{ metrics['Quality']['baseline_val'] if metrics['Quality'] else '—' }}% norm</td>
+                                            <td>
+                                                <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Quality']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                            </td>
+                                            <td>{% if metrics['Quality']['benchmark_count'] %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_median']) }}%){% else %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% endif %}</td>
+                                            <td>
+                                                {% if metrics['Quality']['regional_delta'] is not none %}
+                                                    {% if metrics['Quality']['regional_delta'] >= 0 %}
+                                                        <span style="color: #15803d; font-weight: 600;">+{{ "%.1f"|format(metrics['Quality']['regional_delta']) }}%</span>
+                                                    {% else %}
+                                                        <span style="color: #b91c1c; font-weight: 600;">{{ "%.1f"|format(metrics['Quality']['regional_delta']) }}%</span>
+                                                    {% endif %}
+                                                {% else %}—{% endif %}
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Contributor Diversity</td>
-                                            <td>{{ metrics['Diversity']['weight'] if metrics['Diversity'] else 10 }}%</td>
-                                            <td>{{ "%.1f"|format(metrics['Diversity']['raw']) }}%</td>
-                                            <td>{{ "%.1f"|format(metrics['Diversity']['benchmark']) }}%</td>
-                                            <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Diversity']['score']) }} / 100</td>
-                                            <td>{{ metrics['Diversity']['stars'] }}</td>
+                                            <td>{{ metrics['Diversity']['raw_formatted'] if metrics['Diversity']['raw_formatted'] else ("%.1f"|format(metrics['Diversity']['raw']) ~ '%') }}</td>
+                                            <td>{{ metrics['Diversity']['baseline_val'] if metrics['Diversity'] else '—' }}% norm</td>
+                                            <td>
+                                                <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Diversity']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Diversity']['yoy_delta_formatted'] }}</span>
+                                            </td>
+                                            <td>{{ "%.1f"|format(metrics['Diversity']['regional_median']) }}%</td>
+                                            <td>
+                                                {% if metrics['Diversity']['regional_delta'] is not none %}
+                                                    {% if metrics['Diversity']['regional_delta'] <= 0 %}
+                                                        <span style="color: #15803d; font-weight: 600;">{{ "%.1f"|format(metrics['Diversity']['regional_delta']) }}% broader</span>
+                                                    {% else %}
+                                                        <span style="color: #b91c1c; font-weight: 600;">+{{ "%.1f"|format(metrics['Diversity']['regional_delta']) }}% conc.</span>
+                                                    {% endif %}
+                                                {% else %}—{% endif %}
+                                            </td>
                                         </tr>
                                     </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td style="font-weight: 700;">Composite Overall</td>
-                                            <td style="font-weight: 700;">100%</td>
-                                            <td>—</td>
-                                            <td>—</td>
-                                            <td style="font-weight: 700; color: var(--nav-teal); font-size: 0.98rem;">{{ metrics['Overall'] }} / 100</td>
-                                            <td>—</td>
-                                        </tr>
-                                    </tfoot>
                                 </table>
                             </div>
                         </div>
                     </div>
-
-
-
                 </div>
 
                 <!-- Analytical Suite Signature Footer -->
@@ -460,7 +555,7 @@
                     <div class="camp-footer-actions">
                         <button type="button" class="camp-footer-btn" onclick="CampTableSuite.openExportReportModal()" title="Generate detailed campaign evaluation report">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                            <span>Generate Full Report</span>
+                            <span>Export Report</span>
                         </button>
                         <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'camptools_health_{{ target_event or 'evaluation' }}')" title="Download evaluation data as CSV">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -470,7 +565,7 @@
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
                             <span>Wikitext</span>
                         </button>
-                        <button type="button" class="camp-footer-btn" onclick="openCitationModal('Health Evaluation', '/health')" title="Cite this evaluation dataset">
+                        <button type="button" class="camp-footer-btn" onclick="openCitationModal('Campaign Dynamics', '/health')" title="Cite this dataset">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                             <span>Cite</span>
                         </button>
@@ -482,11 +577,223 @@
                 </div>
             </div>
 
-            {% if overall_report %}
             <script>
-                window.OVERALL_REPORT_DATA = {{ overall_report|tojson }};
+                window.OVERALL_REPORT_DATA = {{ (overall_report or {})|tojson }};
+                window.HISTORICAL_SERIES = {{ (historical_series or [])|tojson }};
+                window.PEER_COMPARISONS = {{ (peer_comparisons or [])|tojson }};
+                window.TARGET_EVENT = "{{ target_event }}";
+
+                function renderLongitudinalChart() {
+                    const data = window.HISTORICAL_SERIES || [];
+                    const el = document.getElementById('chart-longitudinal');
+                    if (!el || !data.length || typeof Plotly === 'undefined') return;
+
+                    const years = data.map(d => d.year.toString());
+                    const uploaders = data.map(d => d.uploaders);
+                    const uploads = data.map(d => d.uploads);
+                    const quality = data.map(d => d.quality_count);
+
+                    const traceUploads = {
+                        x: years,
+                        y: uploads,
+                        name: 'Total Submissions',
+                        type: 'bar',
+                        marker: { color: '#94a3b8' },
+                        yaxis: 'y2',
+                        hoverinfo: 'x+y+name'
+                    };
+
+                    const traceUploaders = {
+                        x: years,
+                        y: uploaders,
+                        name: 'Active Uploaders',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#2563eb', width: 3 },
+                        marker: { size: 8, color: '#2563eb' },
+                        hoverinfo: 'x+y+name'
+                    };
+
+                    const traceQuality = {
+                        x: years,
+                        y: quality,
+                        name: 'Quality Recognized Works',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#059669', width: 2, dash: 'dot' },
+                        marker: { size: 6, color: '#059669' },
+                        hoverinfo: 'x+y+name'
+                    };
+
+                    const layout = {
+                        margin: { t: 30, r: 55, b: 40, l: 55 },
+                        legend: { orientation: 'h', y: 1.14, x: 0 },
+                        hovermode: 'x unified',
+                        yaxis: {
+                            title: 'Uploaders & Works',
+                            showgrid: true,
+                            gridcolor: '#e2e8f0',
+                            zeroline: false
+                        },
+                        yaxis2: {
+                            title: 'Submissions',
+                            overlaying: 'y',
+                            side: 'right',
+                            showgrid: false,
+                            zeroline: false
+                        },
+                        xaxis: {
+                            showgrid: false,
+                            tickmode: 'linear'
+                        },
+                        paper_bgcolor: '#ffffff',
+                        plot_bgcolor: '#ffffff'
+                    };
+
+                    const config = { responsive: true, displayModeBar: true, displaylogo: false };
+                    Plotly.newPlot(el, [traceUploads, traceUploaders, traceQuality], layout, config);
+                }
+
+                function renderCohortWaterfallChart() {
+                    const data = window.HISTORICAL_SERIES || [];
+                    const el = document.getElementById('chart-cohort-waterfall');
+                    if (!el || !data.length || typeof Plotly === 'undefined') return;
+
+                    const years = data.map(d => d.year.toString());
+                    const newcomers = data.map(d => d.newcomers);
+                    const retained = data.map(d => d.retained);
+                    const retRates = data.map(d => d.retention_pct);
+
+                    const traceRetained = {
+                        x: years,
+                        y: retained,
+                        name: 'Retained Returning',
+                        type: 'bar',
+                        marker: { color: '#1e3a8a' }
+                    };
+
+                    const traceNewcomers = {
+                        x: years,
+                        y: newcomers,
+                        name: 'First-Time Newcomers',
+                        type: 'bar',
+                        marker: { color: '#38bdf8' }
+                    };
+
+                    const traceRate = {
+                        x: years,
+                        y: retRates,
+                        name: 'Retention Rate (%)',
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        yaxis: 'y2',
+                        line: { color: '#f59e0b', width: 2 },
+                        marker: { size: 6, color: '#f59e0b' }
+                    };
+
+                    const layout = {
+                        barmode: 'stack',
+                        margin: { t: 30, r: 45, b: 40, l: 45 },
+                        legend: { orientation: 'h', y: 1.15, x: 0 },
+                        hovermode: 'x unified',
+                        yaxis: {
+                            title: 'Contributors',
+                            showgrid: true,
+                            gridcolor: '#e2e8f0'
+                        },
+                        yaxis2: {
+                            title: 'Retention %',
+                            overlaying: 'y',
+                            side: 'right',
+                            range: [0, 100],
+                            showgrid: false
+                        },
+                        paper_bgcolor: '#ffffff',
+                        plot_bgcolor: '#ffffff'
+                    };
+
+                    const config = { responsive: true, displayModeBar: false };
+                    Plotly.newPlot(el, [traceRetained, traceNewcomers, traceRate], layout, config);
+                }
+
+                function renderPeerContextChart() {
+                    const peers = window.PEER_COMPARISONS || [];
+                    const el = document.getElementById('chart-peer-context');
+                    if (!el || !peers.length || typeof Plotly === 'undefined') return;
+
+                    const metricSelect = document.getElementById('peer-metric-select');
+                    const metric = metricSelect ? metricSelect.value : 'uploaders';
+
+                    const labels = peers.map(p => `${p.country} (${p.country_code})`);
+                    let values = [];
+                    let metricLabel = 'Active Uploaders';
+
+                    if (metric === 'uploads') {
+                        values = peers.map(p => p.uploads);
+                        metricLabel = 'Submissions';
+                    } else if (metric === 'retention') {
+                        values = peers.map(p => p.retention_pct || 0);
+                        metricLabel = 'Retention Rate (%)';
+                    } else if (metric === 'quality') {
+                        values = peers.map(p => p.quality_count);
+                        metricLabel = 'Quality Images';
+                    } else {
+                        values = peers.map(p => p.uploaders);
+                        metricLabel = 'Uploaders';
+                    }
+
+                    const colors = peers.map((p, idx) => idx === 0 ? '#2563eb' : '#64748b');
+
+                    const trace = {
+                        y: labels,
+                        x: values,
+                        type: 'bar',
+                        orientation: 'h',
+                        marker: { color: colors },
+                        text: values.map(v => metric === 'retention' ? `${v}%` : v.toLocaleString()),
+                        textposition: 'auto',
+                        hoverinfo: 'x+y'
+                    };
+
+                    const layout = {
+                        margin: { t: 20, r: 35, b: 40, l: 120 },
+                        xaxis: { title: metricLabel, showgrid: true, gridcolor: '#e2e8f0' },
+                        yaxis: { autorange: 'reversed' },
+                        paper_bgcolor: '#ffffff',
+                        plot_bgcolor: '#ffffff'
+                    };
+
+                    const config = { responsive: true, displayModeBar: false };
+                    Plotly.newPlot(el, [trace], layout, config);
+                }
+
+                function initHealthCharts() {
+                    if (typeof Plotly === 'undefined') {
+                        setTimeout(initHealthCharts, 100);
+                        return;
+                    }
+                    renderLongitudinalChart();
+                    renderCohortWaterfallChart();
+                    renderPeerContextChart();
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initHealthCharts);
+                } else {
+                    initHealthCharts();
+                }
+
+                window.addEventListener('resize', () => {
+                    if (typeof Plotly !== 'undefined') {
+                        const c1 = document.getElementById('chart-longitudinal');
+                        const c2 = document.getElementById('chart-cohort-waterfall');
+                        const c3 = document.getElementById('chart-peer-context');
+                        if (c1) Plotly.Plots.resize(c1);
+                        if (c2) Plotly.Plots.resize(c2);
+                        if (c3) Plotly.Plots.resize(c3);
+                    }
+                });
             </script>
-            {% endif %}
         {% endif %}
 
     {# ====================================================================== #}

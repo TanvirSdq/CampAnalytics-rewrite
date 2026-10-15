@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 
 import {
   HealthEvaluationResult,
+  HistoricalEditionPoint,
+  PeerComparisonPoint,
   OverallCampaignReport,
   TimeSeriesPoint,
   CountrySeries,
@@ -25,6 +27,8 @@ import {
 
 export type {
   HealthEvaluationResult,
+  HistoricalEditionPoint,
+  PeerComparisonPoint,
   OverallCampaignReport,
   TimeSeriesPoint,
   CountrySeries,
@@ -1430,152 +1434,197 @@ export function generateHealthMetrics(
   targetUsers: Set<string>,
   baselineUsers: Set<string>,
   structuralMetrics: any,
-  benchmarks: any
+  benchmarks: any,
+  baselineStructural?: any
 ): Record<string, any> {
   const metrics: Record<string, any> = {};
   const isInaugural = !baselineUsers || baselineUsers.size === 0;
   const targetCount = targetUsers.size;
+  const baseCount = baselineUsers ? baselineUsers.size : 0;
   const totalUploads = structuralMetrics.total_uploads || Math.max(targetCount * 6, 85);
+  const baseUploads = baselineStructural?.total_uploads || (baseCount > 0 ? Math.max(baseCount * 6, 85) : 0);
 
-  // 1. Contributor Retention (20% established, 0% inaugural)
+  // 1. Community Scale (Active Uploaders Volume)
+  const scaleBm = benchmarks.scale || GLOBAL_MOVEMENT_BASELINES.scale;
+  const scaleDelta = !isInaugural ? targetCount - baseCount : null;
+  const scaleDeltaPct = !isInaugural && baseCount > 0 ? parseFloat((((targetCount - baseCount) / baseCount) * 100).toFixed(1)) : null;
+  let scaleDeltaFormatted = 'Inaugural';
+  if (!isInaugural && scaleDelta !== null && scaleDeltaPct !== null) {
+    scaleDeltaFormatted = scaleDelta >= 0 ? `▲ +${scaleDelta.toLocaleString()} (+${scaleDeltaPct}%)` : `▼ -${Math.abs(scaleDelta).toLocaleString()} (${scaleDeltaPct}%)`;
+  }
+  const scaleRegDelta = Math.round(targetCount - scaleBm);
+
+  metrics.Scale = {
+    raw: `${targetCount.toLocaleString()} uploaders`,
+    count: targetCount,
+    baseline_val: baseCount,
+    yoy_delta: scaleDelta,
+    yoy_delta_pct: scaleDeltaPct,
+    yoy_delta_formatted: scaleDeltaFormatted,
+    regional_median: Math.round(scaleBm),
+    regional_delta: scaleRegDelta,
+    is_positive: scaleDelta !== null ? scaleDelta >= 0 : true,
+    benchmark: Math.round(scaleBm),
+    is_inaugural: isInaugural
+  };
+
+  // 2. Contributor Retention
   const retBm = benchmarks.retention || GLOBAL_MOVEMENT_BASELINES.retention;
   if (isInaugural) {
     metrics.Retention = {
       raw: 'Inaugural Baseline',
-      score: null,
+      count: 0,
+      baseline_val: 0,
+      yoy_delta: null,
+      yoy_delta_pct: null,
+      yoy_delta_formatted: 'Inaugural',
+      regional_median: retBm,
+      regional_delta: null,
       benchmark: retBm,
-      weight: 0,
-      is_inaugural: true
+      is_inaugural: true,
+      is_positive: true
     };
   } else {
     let overlap = 0;
     for (const u of targetUsers) {
       if (baselineUsers.has(u)) overlap++;
     }
-    const rawRate = (overlap / baselineUsers.size) * 100.0;
-    // Empirical Bayesian shrinkage for small baseline cohorts
-    const effectiveRetention = baselineUsers.size < 20
-      ? ((overlap + 1.5) / (baselineUsers.size + 10.0)) * 100.0
-      : rawRate;
+    const rawRate = parseFloat(((overlap / baseCount) * 100.0).toFixed(1));
+    const regDelta = parseFloat((rawRate - retBm).toFixed(1));
+    const retFormatted = `${overlap.toLocaleString()} / ${baseCount.toLocaleString()} (${rawRate.toFixed(1)}%)`;
+    const retDeltaFormatted = regDelta >= 0 ? `▲ +${regDelta.toFixed(1)}% vs peer norm` : `▼ ${regDelta.toFixed(1)}% vs peer norm`;
+
     metrics.Retention = {
       raw: `${rawRate.toFixed(1)}%`,
-      score: calculateRelativeScore(effectiveRetention, retBm, true),
+      raw_formatted: retFormatted,
+      count: overlap,
+      baseline_val: baseCount,
+      yoy_delta: regDelta,
+      yoy_delta_pct: rawRate,
+      yoy_delta_formatted: retDeltaFormatted,
+      regional_median: retBm,
+      regional_delta: regDelta,
       benchmark: retBm,
-      weight: 20,
-      is_inaugural: false
+      is_inaugural: false,
+      is_positive: regDelta >= 0
     };
   }
 
-  // 2. Contributor Expansion (Volume-Normalized Newcomer Recruitment & Net Cohort Growth) (10% established, 15% inaugural)
+  // 3. Contributor Expansion (First-Time Newcomers)
   let newUsersCount = 0;
   for (const u of targetUsers) {
     if (!baselineUsers || !baselineUsers.has(u)) newUsersCount++;
   }
   const expBm = benchmarks.expansion || benchmarks.growth || GLOBAL_MOVEMENT_BASELINES.expansion;
-  const newVolScore = calculateRelativeScore(newUsersCount, expBm, true);
-  const yoyRatio = baselineUsers && baselineUsers.size > 0 ? targetUsers.size / baselineUsers.size : 1.0;
-  const yoyScore = calculateRelativeScore(yoyRatio * 100.0, 100.0, true);
-  const expansionScore = isInaugural
-    ? newVolScore
-    : parseFloat((0.60 * newVolScore + 0.40 * yoyScore).toFixed(1));
+  const newcomerShare = targetCount > 0 ? parseFloat(((newUsersCount / targetCount) * 100).toFixed(1)) : 0.0;
+  const expRegDelta = Math.round(newUsersCount - expBm);
+  const expFormatted = `${newUsersCount.toLocaleString()} newcomers (${newcomerShare.toFixed(1)}%)`;
+  const expDeltaFormatted = expRegDelta >= 0 ? `▲ +${expRegDelta.toLocaleString()} vs peer norm` : `▼ ${expRegDelta.toLocaleString()} vs peer norm`;
 
   metrics.Growth = {
     raw: `${newUsersCount.toLocaleString()} newcomers`,
-    score: expansionScore,
+    raw_formatted: expFormatted,
+    count: newUsersCount,
+    baseline_val: Math.round(expBm),
+    yoy_delta: expRegDelta,
+    yoy_delta_pct: newcomerShare,
+    yoy_delta_formatted: expDeltaFormatted,
+    regional_median: Math.round(expBm),
+    regional_delta: expRegDelta,
     benchmark: Math.round(expBm),
-    weight: isInaugural ? 15 : 10,
     newcomers_count: newUsersCount,
-    yoy_ratio: parseFloat((yoyRatio * 100).toFixed(1))
+    is_positive: expRegDelta >= 0,
+    is_inaugural: isInaugural
   };
   metrics.Expansion = metrics.Growth;
 
-  // 3. Community Scale (Active Uploaders Volume) (30% established, 35% inaugural)
-  const scaleBm = benchmarks.scale || GLOBAL_MOVEMENT_BASELINES.scale;
-  metrics.Scale = {
-    raw: `${targetCount.toLocaleString()} uploaders`,
-    count: targetCount,
-    score: calculateRelativeScore(targetCount, scaleBm, true, true),
-    benchmark: Math.round(scaleBm),
-    weight: isInaugural ? 35 : 30
-  };
-
-  // 4. Content Utility (Dual: 60% Article Usages Volume + 40% Utility Rate) (20% established, 25% inaugural)
+  // 4. Content Utility (Wikipedia Article Transclusions)
   const rawUsage = parseFloat(structuralMetrics.usage_share || 0.0);
   const rawUsageCount = Math.round((totalUploads * rawUsage) / 100);
   const useRateBm = benchmarks.usage || GLOBAL_MOVEMENT_BASELINES.usage;
   const useCountBm = benchmarks.usage_count || GLOBAL_MOVEMENT_BASELINES.usage_count || 60;
-  const useRateScore = calculateRelativeScore(rawUsage, useRateBm, true);
-  const useCountScore = calculateRelativeScore(rawUsageCount, useCountBm, true);
-  const combinedUsageScore = parseFloat((0.60 * useCountScore + 0.40 * useRateScore).toFixed(1));
+  const useRegDelta = parseFloat((rawUsage - useRateBm).toFixed(1));
+  const useDeltaFormatted = useRegDelta >= 0 ? `▲ +${useRegDelta.toFixed(1)}% vs peer norm` : `▼ ${useRegDelta.toFixed(1)}% vs peer norm`;
 
   metrics.Usage = {
     raw: rawUsage,
     count: rawUsageCount,
     raw_formatted: `${rawUsageCount.toLocaleString()} usages (${rawUsage.toFixed(1)}%)`,
-    score: combinedUsageScore,
+    baseline_val: useRateBm,
+    yoy_delta: useRegDelta,
+    yoy_delta_pct: rawUsage,
+    yoy_delta_formatted: useDeltaFormatted,
+    regional_median: useRateBm,
+    regional_delta: useRegDelta,
     benchmark: useRateBm,
     benchmark_count: Math.round(useCountBm),
-    weight: isInaugural ? 25 : 20
+    is_positive: useRegDelta >= 0,
+    is_inaugural: false
   };
 
-  // 5. Quality Recognition (Dual: 60% Recognized Works Volume + 40% QI Rate) (10% established, 15% inaugural)
+  // 5. Quality Recognition (Quality / Featured Images)
   const rawQuality = parseFloat(structuralMetrics.quality_image_share || 0.0);
   const rawQualityCount = Math.round((totalUploads * rawQuality) / 100);
   const qualRateBm = benchmarks.quality || GLOBAL_MOVEMENT_BASELINES.quality;
   const qualCountBm = benchmarks.quality_count || GLOBAL_MOVEMENT_BASELINES.quality_count || 25;
-  const qualRateScore = calculateRelativeScore(rawQuality, qualRateBm, true);
-  const qualCountScore = calculateRelativeScore(rawQualityCount, qualCountBm, true);
-  const combinedQualityScore = parseFloat((0.60 * qualCountScore + 0.40 * qualRateScore).toFixed(1));
+  const qualRegDelta = parseFloat((rawQuality - qualRateBm).toFixed(1));
+  const qualDeltaFormatted = qualRegDelta >= 0 ? `▲ +${qualRegDelta.toFixed(1)}% vs peer norm` : `▼ ${qualRegDelta.toFixed(1)}% vs peer norm`;
 
   metrics.Quality = {
     raw: rawQuality,
     count: rawQualityCount,
     raw_formatted: `${rawQualityCount.toLocaleString()} works (${rawQuality.toFixed(1)}%)`,
-    score: combinedQualityScore,
+    baseline_val: qualRateBm,
+    yoy_delta: qualRegDelta,
+    yoy_delta_pct: rawQuality,
+    yoy_delta_formatted: qualDeltaFormatted,
+    regional_median: qualRateBm,
+    regional_delta: qualRegDelta,
     benchmark: qualRateBm,
     benchmark_count: Math.round(qualCountBm),
-    weight: isInaugural ? 15 : 10
+    is_positive: qualRegDelta >= 0,
+    is_inaugural: false
   };
 
-  // 6. Contributor Diversity (10% established, 10% inaugural)
+  // 6. Contributor Diversity (Top 10% Upload Share)
   const rawDiversity = parseFloat(structuralMetrics.top10_uploader_share || 70.0);
   const divBm = benchmarks.diversity || GLOBAL_MOVEMENT_BASELINES.diversity;
+  const divRegDelta = parseFloat((rawDiversity - divBm).toFixed(1));
+  const divDeltaFormatted = divRegDelta <= 0 ? `▲ ${Math.abs(divRegDelta).toFixed(1)}% broader` : `▼ +${divRegDelta.toFixed(1)}% concentrated`;
+
   metrics.Diversity = {
     raw: rawDiversity,
-    score: calculateRelativeScore(rawDiversity, divBm, false),
+    raw_formatted: `${rawDiversity.toFixed(1)}% by top 10%`,
+    count: Math.max(1, Math.ceil(targetCount * 0.10)),
+    baseline_val: divBm,
+    yoy_delta: divRegDelta,
+    yoy_delta_pct: rawDiversity,
+    yoy_delta_formatted: divDeltaFormatted,
+    regional_median: divBm,
+    regional_delta: divRegDelta,
     benchmark: divBm,
-    weight: 10
+    is_positive: divRegDelta <= 0,
+    is_inaugural: false
   };
 
-  let overall = 0;
-  if (isInaugural) {
-    overall =
-      metrics.Scale.score * 0.35 +
-      metrics.Usage.score * 0.25 +
-      metrics.Growth.score * 0.15 +
-      metrics.Quality.score * 0.15 +
-      metrics.Diversity.score * 0.10;
-  } else {
-    overall =
-      metrics.Scale.score * 0.30 +
-      metrics.Retention.score * 0.20 +
-      metrics.Usage.score * 0.20 +
-      metrics.Growth.score * 0.10 +
-      metrics.Quality.score * 0.10 +
-      metrics.Diversity.score * 0.10;
+  // 7. Total Submissions Volume
+  const uploadsDelta = !isInaugural && baseUploads > 0 ? totalUploads - baseUploads : null;
+  const uploadsDeltaPct = !isInaugural && baseUploads > 0 ? parseFloat((((totalUploads - baseUploads) / baseUploads) * 100).toFixed(1)) : null;
+  let uploadsDeltaFormatted = 'Inaugural';
+  if (!isInaugural && uploadsDelta !== null && uploadsDeltaPct !== null) {
+    uploadsDeltaFormatted = uploadsDelta >= 0 ? `▲ +${uploadsDelta.toLocaleString()} (+${uploadsDeltaPct}%)` : `▼ -${Math.abs(uploadsDelta).toLocaleString()} (${uploadsDeltaPct}%)`;
   }
 
-  metrics.Overall = Math.round(overall);
-
-  for (const key of Object.keys(metrics)) {
-    if (key !== 'Overall') {
-      if (metrics[key].score !== null && metrics[key].score !== undefined) {
-        metrics[key].stars = calculateStars(metrics[key].score)[0];
-      } else {
-        metrics[key].stars = '—';
-      }
-    }
-  }
+  metrics.Uploads = {
+    raw: `${totalUploads.toLocaleString()} files`,
+    count: totalUploads,
+    baseline_val: baseUploads,
+    yoy_delta: uploadsDelta,
+    yoy_delta_pct: uploadsDeltaPct,
+    yoy_delta_formatted: uploadsDeltaFormatted,
+    is_positive: uploadsDelta !== null ? uploadsDelta >= 0 : true,
+    is_inaugural: isInaugural
+  };
 
   return metrics;
 }
@@ -2196,11 +2245,21 @@ export async function computeHealthEvaluation(
   const isAll = eventType === 'all';
   const baselines = getMovementBaselines(eventType, region);
 
+  // Collect chronological past 3-5 years for longitudinal trajectory
+  const pastYears: number[] = [];
+  for (let y = yearInt; y >= Math.max(yearInt - 4, 10); y--) {
+    pastYears.push(y);
+  }
+  pastYears.reverse();
+
   const regionalCountries = REGION_COUNTRY_MAPPING[region] || [];
   const scanPool = new Set<string>();
   for (const cc of regionalCountries) {
     scanPool.add(`${eventType}${cc}${yearStr}`);
     scanPool.add(`${eventType}${cc}${prevYearStr}`);
+  }
+  for (const y of pastYears) {
+    scanPool.add(`${eventType}${targetCc}${String(y % 100).padStart(2, '0')}`);
   }
   scanPool.add(baselineEvent.toLowerCase());
   scanPool.add(targetEvent.toLowerCase());
@@ -2215,13 +2274,17 @@ export async function computeHealthEvaluation(
 
   const heldPeers = regionalCountries
     .map((cc) => ({ cc, count: (allFetched[`${eventType}${cc}${yearStr}`] || new Set()).size }))
-    .filter((p) => p.count > 0);
+    .filter((p) => p.count > 0 && p.cc.toLowerCase() !== targetCc.toLowerCase());
   heldPeers.sort((a, b) => b.count - a.count);
   const top3 = heldPeers.slice(0, 3).map((p) => p.cc);
 
   const structuralCodes = top3.map((cc) => `${eventType}${cc}${yearStr}`);
   structuralCodes.push(targetEvent.toLowerCase());
-  const structuralMetrics = await fetchStructuralMetricsConcurrently(structuralCodes);
+  structuralCodes.push(baselineEvent.toLowerCase());
+  for (const y of pastYears) {
+    structuralCodes.push(`${eventType}${targetCc}${String(y % 100).padStart(2, '0')}`);
+  }
+  const structuralMetrics = await fetchStructuralMetricsConcurrently(Array.from(new Set(structuralCodes)));
 
   const repRetentions: number[] = [];
   const repGrowths: number[] = [];
@@ -2301,17 +2364,88 @@ export async function computeHealthEvaluation(
     usage_share: 0.0,
     total_uploads: 0
   };
+  const baseStructural = structuralMetrics[baselineEvent.toLowerCase()] || {};
 
-  const metrics = generateHealthMetrics(targetUsers, baseUsers, targetStructural, benchmarks);
+  const metrics = generateHealthMetrics(targetUsers, baseUsers, targetStructural, benchmarks, baseStructural);
   let overlap = 0;
   for (const u of targetUsers) if (baseUsers.has(u)) overlap++;
-  const counts = { target: targetUsers.size, base: baseUsers.size, overlap };
-  const insights = generateInsights(metrics, region.split(' (')[0], benchmarks, counts);
 
-  const compositeScore = metrics.Overall ?? 0;
-  const tier = compositeScore >= 80 ? 'Tier 1' : compositeScore >= 60 ? 'Tier 2' : 'Tier 3';
-  const stars = calculateStars(compositeScore);
-  const ratingLabel = compositeScore >= 85 ? 'Outstanding' : compositeScore >= 70 ? 'Strong' : compositeScore >= 50 ? 'Moderate' : compositeScore >= 30 ? 'Emerging' : 'Critical / Low';
+  // Build Multi-Year Longitudinal Historical Series
+  const historicalSeries: HistoricalEditionPoint[] = [];
+  let priorSet: Set<string> | null = null;
+  for (const y of pastYears) {
+    const cCode = `${eventType}${targetCc}${String(y % 100).padStart(2, '0')}`;
+    const uSet = allFetched[cCode] || new Set<string>();
+    if (uSet.size === 0) continue;
+    const struct = structuralMetrics[cCode] || {};
+    const uploads = struct.total_uploads || Math.max(uSet.size * 6, 85);
+    let retained = 0;
+    let newcomers = uSet.size;
+    let retPct: number | null = null;
+
+    if (priorSet && priorSet.size > 0) {
+      for (const u of uSet) {
+        if (priorSet.has(u)) retained++;
+      }
+      newcomers = Math.max(0, uSet.size - retained);
+      retPct = parseFloat(((retained / priorSet.size) * 100).toFixed(1));
+    }
+    const qCount = Math.round((uploads * (struct.quality_image_share || 0)) / 100);
+    const uCount = Math.round((uploads * (struct.usage_share || 0)) / 100);
+
+    historicalSeries.push({
+      year: 2000 + y,
+      code: cCode,
+      uploaders: uSet.size,
+      uploads,
+      newcomers,
+      retained,
+      retention_pct: retPct,
+      quality_count: qCount,
+      usage_count: uCount
+    });
+    priorSet = uSet;
+  }
+
+  // Build Regional Peer Comparisons
+  const peerComparisons: PeerComparisonPoint[] = [];
+  const targetUploads = targetStructural.total_uploads || Math.max(targetUsers.size * 6, 85);
+  const targetRetPct = baseUsers.size > 0 ? parseFloat(((overlap / baseUsers.size) * 100).toFixed(1)) : null;
+
+  peerComparisons.push({
+    country: countryDisplayName(targetCc),
+    country_code: targetCc.toUpperCase(),
+    code: targetEvent.toLowerCase(),
+    uploaders: targetUsers.size,
+    uploads: targetUploads,
+    retention_pct: targetRetPct,
+    quality_count: Math.round((targetUploads * (targetStructural.quality_image_share || 0)) / 100),
+    usage_count: Math.round((targetUploads * (targetStructural.usage_share || 0)) / 100)
+  });
+
+  for (const cc of top3) {
+    const pCode = `${eventType}${cc}${yearStr}`;
+    const pbCode = `${eventType}${cc}${prevYearStr}`;
+    const pUsers = allFetched[pCode] || new Set<string>();
+    const pbUsers = allFetched[pbCode] || new Set<string>();
+    if (pUsers.size === 0) continue;
+    const pStruct = structuralMetrics[pCode] || {};
+    const pUploads = pStruct.total_uploads || Math.max(pUsers.size * 6, 85);
+    let pOverlap = 0;
+    for (const u of pUsers) if (pbUsers.has(u)) pOverlap++;
+    const pRetPct = pbUsers.size > 0 ? parseFloat(((pOverlap / pbUsers.size) * 100).toFixed(1)) : null;
+
+    peerComparisons.push({
+      country: countryDisplayName(cc),
+      country_code: cc.toUpperCase(),
+      code: pCode,
+      uploaders: pUsers.size,
+      uploads: pUploads,
+      retention_pct: pRetPct,
+      quality_count: Math.round((pUploads * (pStruct.quality_image_share || 0)) / 100),
+      usage_count: Math.round((pUploads * (pStruct.usage_share || 0)) / 100)
+    });
+  }
 
   const newcomerCount = Math.max(0, targetUsers.size - overlap);
   const newcomerPct = targetUsers.size > 0 ? parseFloat(((newcomerCount / targetUsers.size) * 100).toFixed(1)) : 0;
@@ -2328,10 +2462,6 @@ export async function computeHealthEvaluation(
     edition_year: 2000 + yearInt,
     region,
     generated_date: new Date().toISOString().split('T')[0],
-    composite_score: compositeScore,
-    tier,
-    rating_label: ratingLabel,
-    stars,
     total_uploaders: targetUsers.size,
     newcomer_uploaders: newcomerCount,
     returning_uploaders: overlap,
@@ -2348,7 +2478,9 @@ export async function computeHealthEvaluation(
     top10_uploader_share_pct: targetStructural.top10_uploader_share || 60,
     dimensions: metrics,
     benchmarks,
-    insights
+    historical_series: historicalSeries,
+    peer_comparisons: peerComparisons,
+    insights: []
   };
 
   return {
@@ -2358,12 +2490,10 @@ export async function computeHealthEvaluation(
     target_users_count: targetUsers.size,
     baseline_users_count: baseUsers.size,
     overlap_users_count: overlap,
-    composite_score: compositeScore,
-    tier,
-    stars,
     dimensions: metrics,
     benchmarks,
-    insights,
+    historical_series: historicalSeries,
+    peer_comparisons: peerComparisons,
     overall_report: overallReport
   };
 }

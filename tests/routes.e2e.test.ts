@@ -623,16 +623,18 @@ describe('Tier 3: Cross-Feature Interactions & Parameter Combinations', () => {
     );
   });
 
-  test('GET /api/health returns 6-dimension evaluation including Community Scale', async () => {
+  test('GET /api/health returns empirical performance dynamics including Community Scale', async () => {
     const res = await makeRequest('/api/health?target_campaign=wlmbd23');
     assert.equal(res.status, 200, 'Expected status 200 for GET /api/health');
     const json = JSON.parse(res.text);
     assert.ok(json.dimensions, 'Expected dimensions object in API response');
     assert.ok(json.dimensions.Scale, 'Expected Scale dimension in API response');
-    assert.ok(typeof json.dimensions.Scale.score === 'number', 'Expected Scale score number');
+    assert.ok(typeof json.dimensions.Scale.count === 'number', 'Expected Scale count number');
     assert.ok(json.benchmarks, 'Expected benchmarks in API response');
     assert.ok(typeof json.benchmarks.scale === 'number', 'Expected scale benchmark number');
-    assert.ok(json.composite_score > 0, 'Expected positive composite score');
+    assert.ok(Array.isArray(json.historical_series), 'Expected historical series array');
+    assert.ok(Array.isArray(json.peer_comparisons), 'Expected peer comparisons array');
+    assert.equal(json.composite_score, undefined, 'Expected composite score to be undefined (subjective score cancelled)');
   });
 
   test('POST /retention form submission with target campaign codes', async () => {
