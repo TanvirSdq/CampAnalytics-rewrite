@@ -686,14 +686,16 @@
                     targetInput.value = evt + cc + yy;
                 }
 
-                // Automatically align regional standardization framework
-                const matchedRegion = getRegionForCountry(cc);
+                // Automatically align regional standardization framework if not customized by user
                 const regionSelect = document.getElementById('region');
-                if (matchedRegion && regionSelect) {
-                    for (let i = 0; i < regionSelect.options.length; i++) {
-                        if (regionSelect.options[i].value === matchedRegion || regionSelect.options[i].value.includes(matchedRegion.split(' (')[0])) {
-                            regionSelect.selectedIndex = i;
-                            break;
+                if (regionSelect && regionSelect.dataset.userModified !== 'true') {
+                    const matchedRegion = getRegionForCountry(cc);
+                    if (matchedRegion) {
+                        for (let i = 0; i < regionSelect.options.length; i++) {
+                            if (regionSelect.options[i].value === matchedRegion || regionSelect.options[i].value.includes(matchedRegion.split(' (')[0])) {
+                                regionSelect.selectedIndex = i;
+                                break;
+                            }
                         }
                     }
                 }
@@ -707,6 +709,37 @@
                         healthHint.innerText = 'Standard event code syntax: prefix (wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmbd24, wlede22, wlang23).';
                     }
                 }
+            }
+        }
+
+        function onHealthCountryChange() {
+            const regionSelect = document.getElementById('region');
+            if (regionSelect) {
+                // When country selection changes, reset userModified so new country's region auto-aligns
+                regionSelect.dataset.userModified = 'false';
+            }
+            syncHealthBuilderToCode();
+        }
+
+        function onRegionSelectChange(selectEl) {
+            if (!selectEl) return;
+            const countrySelect = document.getElementById('health_country');
+            const cc = countrySelect ? countrySelect.value.toLowerCase() : '';
+            const defaultReg = getRegionForCountry(cc);
+            if (selectEl.value === '') {
+                // User explicitly selected "-- Auto-Detect from Country --"
+                selectEl.dataset.userModified = 'false';
+                if (defaultReg) {
+                    for (let i = 0; i < selectEl.options.length; i++) {
+                        if (selectEl.options[i].value === defaultReg) {
+                            selectEl.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // User intentionally selected a custom geographic framework (e.g. Europe)
+                selectEl.dataset.userModified = 'true';
             }
         }
 
@@ -730,13 +763,15 @@
                 const yearInput = document.getElementById('health_year');
                 if (yearInput && !isNaN(yy)) yearInput.value = 2000 + yy;
 
-                const matchedRegion = getRegionForCountry(cc);
                 const regionSelect = document.getElementById('region');
-                if (matchedRegion && regionSelect) {
-                    for (let i = 0; i < regionSelect.options.length; i++) {
-                        if (regionSelect.options[i].value === matchedRegion || regionSelect.options[i].value.includes(matchedRegion.split(' (')[0])) {
-                            regionSelect.selectedIndex = i;
-                            break;
+                if (regionSelect && regionSelect.dataset.userModified !== 'true') {
+                    const matchedRegion = getRegionForCountry(cc);
+                    if (matchedRegion) {
+                        for (let i = 0; i < regionSelect.options.length; i++) {
+                            if (regionSelect.options[i].value === matchedRegion || regionSelect.options[i].value.includes(matchedRegion.split(' (')[0])) {
+                                regionSelect.selectedIndex = i;
+                                break;
+                            }
                         }
                     }
                 }
@@ -755,6 +790,7 @@
                 for (let i = 0; i < regionSelect.options.length; i++) {
                     if (regionSelect.options[i].value.includes(regName)) {
                         regionSelect.selectedIndex = i;
+                        regionSelect.dataset.userModified = 'true';
                         break;
                     }
                 }
@@ -1904,6 +1940,16 @@
                 parseCodeToRetentionBuilder();
             }
 
+            const regionSelect = document.getElementById('region');
+            if (regionSelect) {
+                const countrySelect = document.getElementById('health_country');
+                const cc = countrySelect ? countrySelect.value.toLowerCase() : '';
+                const defaultReg = getRegionForCountry(cc);
+                if (regionSelect.value && defaultReg && regionSelect.value !== defaultReg) {
+                    regionSelect.dataset.userModified = 'true';
+                }
+            }
+
             const healthTarget = document.getElementById('target_event');
             if (healthTarget && healthTarget.value) {
                 parseCodeToHealthBuilder();
@@ -1917,15 +1963,14 @@
             toggleCustomBaseline();
             toggleMetricSelector();
 
-            // Auto-bind region select when typing target campaign code
+            // Auto-bind region select when typing target campaign code (only if not customized by user)
             const targetEventInput = document.getElementById('target_event');
-            const regionSelect = document.getElementById('region');
             const countryToRegionMap = {{ COUNTRY_TO_REGION | tojson }};
             if (targetEventInput && regionSelect) {
                 targetEventInput.addEventListener('input', function() {
                     const val = this.value.trim().toLowerCase();
                     const match = val.match(/^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/);
-                    if (match && match[2] && countryToRegionMap[match[2]]) {
+                    if (match && match[2] && countryToRegionMap[match[2]] && regionSelect.dataset.userModified !== 'true') {
                         regionSelect.value = countryToRegionMap[match[2]];
                     }
                 });

@@ -572,6 +572,45 @@ describe('Tier 3: Cross-Feature Interactions & Parameter Combinations', () => {
     );
   });
 
+  test('POST /health with custom region (Northern & Western Europe) evaluates BD against Europe peer benchmarks', async () => {
+    const formBody = new URLSearchParams({
+      target_event: 'wlmbd23',
+      comp_mode: 'Previous Year Baseline',
+      region: 'Northern & Western Europe'
+    }).toString();
+
+    const res = await makeRequest('/health', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formBody
+    });
+
+    assert.equal(res.status, 200, 'Expected status 200 for POST /health');
+    assert.match(
+      res.text,
+      /calibrated against Northern &(?:amp;)? Western Europe regional peer benchmarks/,
+      'Expected evaluation to be calibrated against Northern & Western Europe'
+    );
+    assert.match(
+      res.text,
+      /<option value="Northern &(?:amp;)? Western Europe"\s+selected>/,
+      'Expected Northern & Western Europe option to be selected'
+    );
+  });
+
+  test('GET /health with shorthand region=Europe resolves cleanly to Northern & Western Europe', async () => {
+    const res = await makeRequest('/health?target_event=wlmbd23&region=Europe');
+
+    assert.equal(res.status, 200, 'Expected status 200 for GET /health');
+    assert.match(
+      res.text,
+      /calibrated against Northern &(?:amp;)? Western Europe regional peer benchmarks/,
+      'Expected shorthand Europe to resolve to Northern & Western Europe'
+    );
+  });
+
   test('POST /retention form submission with target campaign codes', async () => {
     const formBody = new URLSearchParams({
       target_campaigns: 'wlmbd22 wlmbd23',

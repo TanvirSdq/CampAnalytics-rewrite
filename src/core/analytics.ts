@@ -1692,6 +1692,27 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
   };
 }
 
+export function resolveRegionName(input?: string, fallbackCc?: string): string {
+  if (input) {
+    const trimmed = input.trim();
+    if (trimmed && REGION_COUNTRY_MAPPING[trimmed]) {
+      return trimmed;
+    }
+    const lower = trimmed.toLowerCase();
+    for (const reg of Object.keys(REGION_COUNTRY_MAPPING)) {
+      if (reg.toLowerCase() === lower) return reg;
+    }
+    // Substring match (e.g. "Europe" -> "Northern & Western Europe")
+    for (const reg of Object.keys(REGION_COUNTRY_MAPPING)) {
+      if (reg.toLowerCase().includes(lower)) return reg;
+    }
+  }
+  if (fallbackCc && COUNTRY_TO_REGION[fallbackCc.toLowerCase()]) {
+    return COUNTRY_TO_REGION[fallbackCc.toLowerCase()];
+  }
+  return 'Northern & Western Europe';
+}
+
 export async function computeHealthEvaluation(
   targetEvent: string,
   regionInput?: string
@@ -1701,7 +1722,7 @@ export async function computeHealthEvaluation(
   const [, eventType, targetCc, yearStr] = match;
   const yearInt = parseInt(yearStr, 10);
   const prevYearStr = String((yearInt - 1 + 100) % 100).padStart(2, '0');
-  const region = regionInput || COUNTRY_TO_REGION[targetCc] || 'Northern & Western Europe';
+  const region = resolveRegionName(regionInput, targetCc);
   const baselineEvent = `${eventType}${targetCc}${prevYearStr}`;
 
   const regionalCountries = REGION_COUNTRY_MAPPING[region] || [];
