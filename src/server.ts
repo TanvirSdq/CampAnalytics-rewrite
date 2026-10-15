@@ -11,6 +11,8 @@ import indexRouter from './routes/index.js';
 import healthRouter from './routes/health.js';
 import influxRouter from './routes/influx.js';
 import retentionRouter from './routes/retention.js';
+import mobilityRouter from './routes/mobility.js';
+import diversityRouter from './routes/diversity.js';
 import utilityRouter from './routes/utility.js';
 import qualityRouter from './routes/quality.js';
 import documentationRouter from './routes/documentation.js';
@@ -68,15 +70,24 @@ nunjucksEnv.addFilter('tojson', (obj: any) => {
 
 nunjucksEnv.addFilter('format', (fmt: any, val: any) => {
   if (val === undefined || val === null) {
-    if (typeof fmt === 'number') return fmt.toFixed(1);
-    return '0.0';
+    if (typeof fmt === 'number') {
+      return Number.isInteger(fmt) ? fmt.toLocaleString('en-US') : fmt.toFixed(1);
+    }
+    return '0';
   }
   const n = typeof val === 'number' ? val : parseFloat(val);
   if (isNaN(n)) return String(val);
   if (fmt === '%.1f' || fmt === '%.2f') {
     return n.toFixed(fmt === '%.2f' ? 2 : 1);
   }
-  return n.toLocaleString();
+  return n.toLocaleString('en-US');
+});
+
+nunjucksEnv.addFilter('commas', (val: any) => {
+  if (val === undefined || val === null) return '0';
+  const n = typeof val === 'number' ? val : parseFloat(val);
+  if (isNaN(n)) return String(val);
+  return Number.isInteger(n) ? n.toLocaleString('en-US') : n.toFixed(1);
 });
 
 // Global template locals
@@ -121,8 +132,10 @@ app.get('/favicon.ico', (req: Request, res: Response) => {
 // Mount Routes
 app.use(healthzRouter);
 app.use(healthRouter);
-app.use(influxRouter);
 app.use(retentionRouter);
+app.use(influxRouter);
+app.use(mobilityRouter);
+app.use(diversityRouter);
 app.use(utilityRouter);
 app.use(qualityRouter);
 app.use(documentationRouter);
@@ -130,9 +143,9 @@ app.use(documentationRouter);
 // Unified Comparative Analytics API
 app.get('/api/comparative', async (req: Request, res: Response) => {
   const moduleParam = ((req.query.module || 'influx') as string).trim().toLowerCase();
-  if (!['influx', 'retention', 'quality', 'utility'].includes(moduleParam)) {
+  if (!['influx', 'retention', 'quality', 'utility', 'diversity', 'mobility'].includes(moduleParam)) {
     res.status(400).json({
-      error: `Invalid module '${moduleParam}'. Supported modules: influx, retention, quality, utility.`
+      error: `Invalid module '${moduleParam}'. Supported modules: influx, retention, quality, utility, diversity, mobility.`
     });
     return;
   }
@@ -152,7 +165,7 @@ app.get('/api/comparative', async (req: Request, res: Response) => {
 
   try {
     const result = await computeComparativeAnalytics({
-      module: moduleParam as 'influx' | 'retention' | 'quality' | 'utility',
+      module: moduleParam as 'influx' | 'retention' | 'quality' | 'utility' | 'diversity' | 'mobility',
       eventType,
       countryCodes,
       startYear: yrStart,

@@ -267,7 +267,7 @@ describe('Quality Gate 2: Geometry & Gradients Verification', () => {
 });
 
 describe('Quality Gate 3: Header Hygiene Verification', () => {
-  const primaryToolTemplates = ['influx.html', 'quality.html', 'utility.html'];
+  const primaryToolTemplates = ['influx.html', 'mobility.html', 'diversity.html', 'quality.html', 'utility.html'];
 
   for (const tpl of primaryToolTemplates) {
     it(`verifies templates/${tpl} has 0 subtitle paragraphs directly under page title`, () => {

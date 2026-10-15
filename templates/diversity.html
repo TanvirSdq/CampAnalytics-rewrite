@@ -1,0 +1,555 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+    <div>
+        <h1 class="page-title" style="margin-bottom: 0;">Contributor Diversity</h1>
+    </div>
+</div>
+
+<form action="/diversity" method="GET" id="diversity-form">
+    <!-- Structured Parameter Panel -->
+    <div class="display-panel">
+        <div class="display-panel-header">
+            <span>Diversity Parameters</span>
+        </div>
+        <div class="display-panel-body">
+            <div class="preset-rail">
+                <span class="preset-rail-title">Quick Presets:</span>
+                <div class="preset-rail-chips">
+                    <button type="button" class="preset-chip" onclick="loadDiversityPreset('wlm', 'de', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">Germany (WLM)</button>
+                    <button type="button" class="preset-chip" onclick="loadDiversityPreset('wlf', 'it', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">Italy (WLF)</button>
+                    <button type="button" class="preset-chip" onclick="loadDiversityPreset('wle', 'in', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">India (WLE)</button>
+                    <button type="button" class="preset-chip" onclick="loadDiversityPreset('all', 'bd', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">All Bangladesh</button>
+                    <button type="button" class="preset-chip" onclick="loadDiversityPreset('wla', 'ng', {{ DEFAULT_START_YEAR }}, {{ CURRENT_YEAR }})">Nigeria (WLA)</button>
+                </div>
+            </div>
+
+            <div class="builder-layout single-column-builder">
+                <div>
+                    <!-- Campaign Type Selector -->
+                    <div class="form-group">
+                        <label class="form-label">Campaign Type</label>
+                        <div class="pill-group" id="diversity-event-group">
+                            <input type="radio" name="diversity_event_type" value="all" id="div-evt-all" class="pill-checkbox" {% if diversity_event_type == 'all' %}checked{% endif %}>
+                            <label for="div-evt-all" class="pill-label">All Campaigns</label>
+                            {% for event_key, event_val in EVENT_MAP.items() %}
+                                <input type="radio" name="diversity_event_type" value="{{ event_key }}" id="div-evt-{{ event_key }}" class="pill-checkbox" {% if diversity_event_type == event_key or (not diversity_event_type and event_key == 'wlm') %}checked{% endif %}>
+                                <label for="div-evt-{{ event_key }}" class="pill-label">{{ event_val }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Target Country & Year Range in Symmetrical 50/50 Grid -->
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label for="diversity_country" class="form-label">Target Country</label>
+                            <select id="diversity_country" name="diversity_country" class="form-control">
+                                <option value="">-- Select Country --</option>
+                                {% for c_code in COUNTRY_OPTIONS %}
+                                    <option value="{{ c_code }}" {% if diversity_country == c_code or (not diversity_country and c_code == 'de') %}selected{% endif %}>
+                                        {{ COUNTRY_MAP[c_code]|replace('_', ' ') }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; min-height: 24px;">
+                                <label class="form-label" style="margin-bottom: 0;">Year Range</label>
+                                <div class="date-preset-rail" style="margin-bottom: 0;">
+                                    <span class="date-preset-label">Span:</span>
+                                    <button type="button" class="date-preset-pill" onclick="applyYearSpan(3, 'diversity_yr_start', 'diversity_yr_end')">3 Years</button>
+                                    <button type="button" class="date-preset-pill active" onclick="applyYearSpan(5, 'diversity_yr_start', 'diversity_yr_end')">5 Years</button>
+                                    <button type="button" class="date-preset-pill" onclick="applyYearSpan(10, 'diversity_yr_start', 'diversity_yr_end')">10 Years</button>
+                                    <button type="button" class="date-preset-pill" onclick="applyYearSpan('all', 'diversity_yr_start', 'diversity_yr_end')">All Historic</button>
+                                </div>
+                            </div>
+                            <div class="year-range-row">
+                                <input type="number" id="diversity_yr_start" name="diversity_yr_start" class="form-control" value="{{ diversity_yr_start|default(DEFAULT_START_YEAR) }}" min="2010" max="2040">
+                                <span class="year-separator">to</span>
+                                <input type="number" id="diversity_yr_end" name="diversity_yr_end" class="form-control" value="{{ diversity_yr_end|default(CURRENT_YEAR) }}" min="2010" max="2040">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Action Bar -->
+            <div class="builder-action-bar">
+                <button type="submit" class="btn btn-primary builder-action-btn" onclick="setLoadingState(this, 'Evaluating Diversity…')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                    <span>Compute Contributor Diversity</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% if error %}
+    <div class="alert alert-danger" style="margin-top: 16px; border-radius: 0;">
+        <strong>Error:</strong> {{ error }}
+    </div>
+{% endif %}
+
+{% if not diversity_result and not error and not comparative_result %}
+    <div class="empty-state-panel" style="margin-top: 20px; padding: 32px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 0;">
+        <div class="empty-state-text">Configure campaign type, country, and year range above to evaluate contributor diversity and upload concentration</div>
+    </div>
+{% endif %}
+
+{% if diversity_result %}
+    <div class="display-panel camp-analytics-shell" id="diversity-analytics-shell">
+        <div class="camp-shell-header">
+            <div class="camp-shell-left">
+                <h2 class="camp-shell-title">{{ diversity_result.event_name }} · {{ diversity_result.country_name }} ({{ diversity_result.start_year }}–{{ diversity_result.end_year }})</h2>
+                <div class="camp-shell-subtitle">Contributor volume tier segmentation, Gini inequality coefficient, and top-decile upload concentration.</div>
+            </div>
+            <div class="camp-shell-right">
+                <span class="camp-telemetry-badge">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Average Gini · <strong>{{ diversity_result.summary.average_gini }}</strong></span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Telemetry Summary Row -->
+        <div class="scorecard-grid" style="margin: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <div class="scorecard-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 14px;">
+                <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Latest Gini Index</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--wiki-blue);">{{ diversity_result.summary.latest_gini }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">{{ diversity_result.end_year }} edition (0 = equal, 1 = monopoly)</div>
+            </div>
+
+            <div class="scorecard-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 14px;">
+                <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Multi-Year Average Gini</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-ink);">{{ diversity_result.summary.average_gini }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Mean across {{ diversity_result.records|length }} observed editions</div>
+            </div>
+
+            <div class="scorecard-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 14px;">
+                <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Top 10% Upload Share</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #e67300;">{{ diversity_result.summary.latest_top_10_share }}%</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Pareto share by top decile in {{ diversity_result.end_year }}</div>
+            </div>
+
+            <div class="scorecard-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 14px;">
+                <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Average Top 10% Share</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-ink);">{{ diversity_result.summary.average_top_10_share }}%</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Multi-year top decile mean share</div>
+            </div>
+        </div>
+
+        <!-- Toolbar with View Switcher -->
+        <div class="comparative-toolbar">
+            <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-ink);">
+                Participation Dynamics Breakdown
+            </div>
+
+            <div class="comparative-view-switch" role="tablist" aria-label="Diversity View Switcher">
+                <button type="button" class="comparative-tab-btn active" id="tab-diversity-tiers" onclick="switchDiversityView('tiers')" role="tab" aria-selected="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="0" ry="0"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+                    <span>Tiers</span>
+                </button>
+                <button type="button" class="comparative-tab-btn" id="tab-diversity-line" onclick="switchDiversityView('line')" role="tab" aria-selected="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    <span>Line</span>
+                </button>
+                <button type="button" class="comparative-tab-btn" id="tab-diversity-table" onclick="switchDiversityView('table')" role="tab" aria-selected="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    <span>Table</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- View 1: Tiers View (Normalized Stacked Horizontal Bars) -->
+        <div class="comparative-chart-card" id="diversity-view-tiers" style="padding: 20px;">
+            <div style="margin-bottom: 16px;">
+                <div style="font-weight: 600; font-size: 0.92rem; color: var(--text-ink); margin-bottom: 4px;">Normalized Contributor Tier Distribution</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Proportion of active photographers segmented by total contest upload volume across editions.</div>
+            </div>
+
+            {% for rec in diversity_result.records %}
+                <div class="tier-stacked-bar-row">
+                    <div class="tier-bar-header">
+                        <span>{{ rec.year }} ({{ rec.code }})</span>
+                        <span style="color: var(--text-muted); font-weight: normal;">
+                            {{ rec.total_users|format }} uploaders · {{ rec.total_uploads|format }} media submissions · Gini: <strong>{{ rec.gini_coefficient }}</strong>
+                        </span>
+                    </div>
+                    <div class="tier-bar-track">
+                        {% if rec.tiers.casual_share > 0 %}
+                            <div class="tier-bar-seg tier-casual" style="width: {{ rec.tiers.casual_share }}%;" title="Casual (1–4 uploads): {{ rec.tiers.casual_count }} users ({{ rec.tiers.casual_share }}%)">
+                                {% if rec.tiers.casual_share >= 10 %}{{ rec.tiers.casual_share }}%{% endif %}
+                            </div>
+                        {% endif %}
+                        {% if rec.tiers.regular_share > 0 %}
+                            <div class="tier-bar-seg tier-regular" style="width: {{ rec.tiers.regular_share }}%;" title="Regular (5–24 uploads): {{ rec.tiers.regular_count }} users ({{ rec.tiers.regular_share }}%)">
+                                {% if rec.tiers.regular_share >= 8 %}{{ rec.tiers.regular_share }}%{% endif %}
+                            </div>
+                        {% endif %}
+                        {% if rec.tiers.active_share > 0 %}
+                            <div class="tier-bar-seg tier-active" style="width: {{ rec.tiers.active_share }}%;" title="Active (25–99 uploads): {{ rec.tiers.active_count }} users ({{ rec.tiers.active_share }}%)">
+                                {% if rec.tiers.active_share >= 8 %}{{ rec.tiers.active_share }}%{% endif %}
+                            </div>
+                        {% endif %}
+                        {% if rec.tiers.power_share > 0 %}
+                            <div class="tier-bar-seg tier-power" style="width: {{ rec.tiers.power_share }}%;" title="Power (100+ uploads): {{ rec.tiers.power_count }} users ({{ rec.tiers.power_share }}%)">
+                                {% if rec.tiers.power_share >= 6 %}{{ rec.tiers.power_share }}%{% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+
+            <!-- Clean Tier Legend -->
+            <div class="tier-legend">
+                <div class="tier-legend-item">
+                    <div class="tier-legend-color tier-casual"></div>
+                    <span><strong>Casual</strong> (1–4 uploads)</span>
+                </div>
+                <div class="tier-legend-item">
+                    <div class="tier-legend-color tier-regular"></div>
+                    <span><strong>Regular</strong> (5–24 uploads)</span>
+                </div>
+                <div class="tier-legend-item">
+                    <div class="tier-legend-color tier-active"></div>
+                    <span><strong>Active</strong> (25–99 uploads)</span>
+                </div>
+                <div class="tier-legend-item">
+                    <div class="tier-legend-color tier-power"></div>
+                    <span><strong>Power</strong> (100+ uploads)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 2: Line View (Interactive Longitudinal Upload Concentration Line Chart) -->
+        <div class="comparative-chart-card" id="diversity-view-line" style="display: none; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <div style="font-weight: 600; font-size: 0.92rem; color: var(--text-ink); margin-bottom: 4px;">Longitudinal Upload Concentration Trajectory</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Share of total contest submissions uploaded by the top percentile cohort across editions.</div>
+                </div>
+                <div class="stat-kpi-badge badge-neutral" style="font-size: 0.84rem; padding: 4px 10px; border-radius: 0; background: #f8fafc; border: 1px solid var(--border-color);">
+                    In <strong>{{ diversity_result.end_year }}</strong>: Top <strong><span id="div-active-pct">10</span>%</strong> uploaders contributed <strong><span id="div-active-share">{{ diversity_result.summary.latest_top_10_share }}%</span></strong>
+                </div>
+            </div>
+
+            <!-- Plotly Line Chart Container -->
+            <div id="diversity-line-chart" style="width: 100%; min-height: 380px;"></div>
+
+            <!-- Interactive Timeline / Percentile Scrubber (Matching Influx Scrubber Ergonomics) -->
+            <div class="camp-timeline-scrubber-card" id="diversity-percentile-scrubber" style="margin-top: 14px;">
+                <button type="button" class="scrubber-play-btn" id="div-play-btn" onclick="toggleDiversityPlayback()" aria-label="Toggle playback of percentile animation" style="border-radius: 0;">
+                    <svg class="scrubber-play-icon icon-play" id="div-icon-play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <svg class="scrubber-play-icon icon-pause" id="div-icon-pause" style="display:none;" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="0" ry="0"></rect><rect x="14" y="4" width="4" height="16" rx="0" ry="0"></rect></svg>
+                    <span class="scrubber-play-text" id="div-play-text">Play</span>
+                </button>
+
+                <div class="scrubber-slider-wrap">
+                    <span class="scrubber-year-label">Top 1%</span>
+                    <input type="range" class="camp-scrubber-range" id="diversity-percentile-slider" min="1" max="100" step="1" value="10" oninput="updateDiversityPercentile(parseInt(this.value, 10))" aria-label="Top Contributor Percentile Slider">
+                    <span class="scrubber-year-label">Top 100%</span>
+                </div>
+
+                <div class="scrubber-active-badge">
+                    <span class="scrubber-badge-label">Cohort:</span>
+                    <span class="scrubber-badge-year" id="div-slider-label">Top 10%</span>
+                </div>
+            </div>
+
+            <!-- Preset Quick-Jump Chips -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Presets:</span>
+                <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(1)">Top 1%</button>
+                <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(5)">Top 5%</button>
+                <button type="button" class="preset-chip div-pct-chip active" id="chip-pct-10" onclick="setDiversityPercentile(10)">Top 10% (Pareto)</button>
+                <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(20)">Top 20%</button>
+                <button type="button" class="preset-chip div-pct-chip" onclick="setDiversityPercentile(50)">Top 50%</button>
+            </div>
+        </div>
+
+        <!-- View 3: Table View -->
+        <div class="comparative-chart-card" id="diversity-view-table" style="display: none; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <div style="font-weight: 600; font-size: 0.92rem; color: var(--text-ink);">Longitudinal Contributor Diversity Table</div>
+                <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('diversity-data-table', 'csv', 'contributor_diversity_{{ diversity_result.event_type }}_{{ diversity_result.country_code }}')" title="Export as CSV">
+                        <span>Export CSV</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('diversity-data-table', 'wikitext', 'contributor_diversity_{{ diversity_result.event_type }}_{{ diversity_result.country_code }}')" title="Export as Wikitext">
+                        <span>Export Wikitext</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="camp-data-table" id="diversity-data-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Campaign Code</th>
+                            <th style="text-align: right;">Total Uploaders</th>
+                            <th style="text-align: right;">Total Media</th>
+                            <th style="text-align: right;">Gini Coefficient</th>
+                            <th style="text-align: right;">Top 10% Share</th>
+                            <th style="text-align: right;">Top 20% Share</th>
+                            <th style="text-align: right;">Casual (1–4)</th>
+                            <th style="text-align: right;">Regular (5–24)</th>
+                            <th style="text-align: right;">Active (25–99)</th>
+                            <th style="text-align: right;">Power (100+)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in diversity_result.records %}
+                            <tr>
+                                <td><strong>{{ rec.year }}</strong></td>
+                                <td><code>{{ rec.code }}</code></td>
+                                <td style="text-align: right;">{{ rec.total_users|commas }}</td>
+                                <td style="text-align: right;">{{ rec.total_uploads|commas }}</td>
+                                <td style="text-align: right; color: var(--wiki-blue); font-weight: 700;">{{ rec.gini_coefficient }}</td>
+                                <td style="text-align: right; color: #e67300; font-weight: 600;">{{ rec.top_10_percent_share }}%</td>
+                                <td style="text-align: right;">{{ rec.top_20_percent_share }}%</td>
+                                <td style="text-align: right;">{{ rec.tiers.casual_count|commas }} ({{ rec.tiers.casual_share }}%)</td>
+                                <td style="text-align: right;">{{ rec.tiers.regular_count|commas }} ({{ rec.tiers.regular_share }}%)</td>
+                                <td style="text-align: right;">{{ rec.tiers.active_count|commas }} ({{ rec.tiers.active_share }}%)</td>
+                                <td style="text-align: right;">{{ rec.tiers.power_count|commas }} ({{ rec.tiers.power_share }}%)</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Indicator Metadata Card -->
+        {% if diversity_result.metadata_card %}
+            <div class="indicator-meta-card" style="margin: 16px; border: 1px solid var(--border-color); background: #ffffff; padding: 18px; border-radius: 0;">
+                <div class="indicator-meta-header" style="margin-bottom: 12px;">
+                    <div class="indicator-meta-kicker" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Indicator Metadata</div>
+                    <h3 class="indicator-meta-title" style="margin: 4px 0 0; font-size: 1.15rem; font-weight: 700; color: var(--text-ink);">{{ diversity_result.metadata_card.title }}</h3>
+                </div>
+                <div class="indicator-meta-body">
+                    <p class="indicator-meta-definition" style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">{{ diversity_result.metadata_card.definition }}</p>
+
+                    <div class="indicator-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                        <div class="indicator-meta-cell">
+                            <span class="meta-label" style="display: block; font-size: 0.75rem; color: var(--text-muted);">Data Source</span>
+                            <span class="meta-value" style="font-weight: 600; font-size: 0.85rem; color: var(--text-ink);">{{ diversity_result.metadata_card.data_source }}</span>
+                        </div>
+                        <div class="indicator-meta-cell">
+                            <span class="meta-label" style="display: block; font-size: 0.75rem; color: var(--text-muted);">Metric Unit</span>
+                            <span class="meta-value" style="font-weight: 600; font-size: 0.85rem; color: var(--text-ink);">{{ diversity_result.metadata_card.metric_unit }}</span>
+                        </div>
+                        <div class="indicator-meta-cell">
+                            <span class="meta-label" style="display: block; font-size: 0.75rem; color: var(--text-muted);">Coverage</span>
+                            <span class="meta-value" style="font-weight: 600; font-size: 0.85rem; color: var(--text-ink);">{{ diversity_result.metadata_card.coverage }}</span>
+                        </div>
+                        <div class="indicator-meta-cell">
+                            <span class="meta-label" style="display: block; font-size: 0.75rem; color: var(--text-muted);">License</span>
+                            <span class="meta-value" style="font-weight: 600; font-size: 0.85rem;">
+                                <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">{{ diversity_result.metadata_card.license }}</a>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="indicator-notes-footer" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-subtle); font-size: 0.82rem; color: var(--text-muted);">
+                        For full empirical specifications and peer frameworks, consult the <a href="/documentation">Documentation</a>.
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
+
+<script>
+var diversityRecords = {{ (diversity_result.records | tojson) if diversity_result else '[]' }};
+var diversityPlayTimer = null;
+var currentPercentile = 10;
+
+function getDiversitySharesForPercentile(pct) {
+    if (!diversityRecords || diversityRecords.length === 0) return [];
+    return diversityRecords.map(function(r) {
+        if (r.percentile_shares && r.percentile_shares.length > pct) {
+            return r.percentile_shares[pct];
+        }
+        if (pct === 10) return r.top_10_percent_share;
+        if (pct === 20) return r.top_20_percent_share;
+        return pct;
+    });
+}
+
+function renderDiversityLineChart(pct) {
+    var chartEl = document.getElementById('diversity-line-chart');
+    if (!chartEl || !diversityRecords || diversityRecords.length === 0) return;
+    if (typeof Plotly === 'undefined') return;
+
+    var years = diversityRecords.map(function(r) { return r.year; });
+    var shares = getDiversitySharesForPercentile(pct);
+    var textLabels = shares.map(function(s) { return s + '%'; });
+
+    var trace = {
+        x: years,
+        y: shares,
+        type: 'scatter',
+        mode: 'lines+markers+text',
+        text: textLabels,
+        textposition: 'top center',
+        textfont: {
+            family: 'system-ui, -apple-system, sans-serif',
+            size: 11,
+            color: '#202122'
+        },
+        line: {
+            color: '#3366cc',
+            width: 3,
+            shape: 'linear'
+        },
+        marker: {
+            color: '#3366cc',
+            size: 8,
+            symbol: 'square'
+        },
+        name: 'Top ' + pct + '% Share'
+    };
+
+    var layout = {
+        margin: { t: 24, r: 24, b: 40, l: 48 },
+        xaxis: {
+            tickmode: 'array',
+            tickvals: years,
+            ticktext: years.map(String),
+            showgrid: true,
+            gridcolor: '#e2e8f0',
+            zeroline: false
+        },
+        yaxis: {
+            title: 'Upload Share (%)',
+            range: [0, 108],
+            showgrid: true,
+            gridcolor: '#e2e8f0',
+            zeroline: false
+        },
+        hovermode: 'x unified',
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        showlegend: false
+    };
+
+    var config = {
+        responsive: true,
+        displayModeBar: false
+    };
+
+    Plotly.react('diversity-line-chart', [trace], layout, config);
+
+    // Update readouts
+    var activePctEl = document.getElementById('div-active-pct');
+    var activeShareEl = document.getElementById('div-active-share');
+    var sliderLabelEl = document.getElementById('div-slider-label');
+    if (activePctEl) activePctEl.textContent = pct;
+    if (activeShareEl && shares.length > 0) activeShareEl.textContent = shares[shares.length - 1] + '%';
+    if (sliderLabelEl) sliderLabelEl.textContent = 'Top ' + pct + '%';
+}
+
+function updateDiversityPercentile(pct) {
+    currentPercentile = Math.max(1, Math.min(100, pct));
+    var slider = document.getElementById('diversity-percentile-slider');
+    if (slider && parseInt(slider.value, 10) !== currentPercentile) {
+        slider.value = currentPercentile;
+    }
+
+    var chips = document.querySelectorAll('.div-pct-chip');
+    chips.forEach(function(chip) {
+        var label = chip.textContent.trim();
+        var matches = (label === 'Top ' + currentPercentile + '%') || (currentPercentile === 10 && label.includes('Pareto'));
+        chip.classList.toggle('active', matches);
+    });
+
+    renderDiversityLineChart(currentPercentile);
+}
+
+function setDiversityPercentile(pct) {
+    if (diversityPlayTimer) toggleDiversityPlayback();
+    updateDiversityPercentile(pct);
+}
+
+function toggleDiversityPlayback() {
+    var iconPlay = document.getElementById('div-icon-play');
+    var iconPause = document.getElementById('div-icon-pause');
+    var playText = document.getElementById('div-play-text');
+
+    if (diversityPlayTimer) {
+        clearInterval(diversityPlayTimer);
+        diversityPlayTimer = null;
+        if (iconPlay) iconPlay.style.display = 'block';
+        if (iconPause) iconPause.style.display = 'none';
+        if (playText) playText.textContent = 'Play';
+    } else {
+        if (iconPlay) iconPlay.style.display = 'none';
+        if (iconPause) iconPause.style.display = 'block';
+        if (playText) playText.textContent = 'Pause';
+
+        diversityPlayTimer = setInterval(function() {
+            var next = currentPercentile + 1;
+            if (next > 50) next = 1;
+            updateDiversityPercentile(next);
+        }, 120);
+    }
+}
+
+function loadDiversityPreset(event, country, y1, y2) {
+    var radios = document.getElementsByName('diversity_event_type');
+    for (var i = 0; i < radios.length; i++) {
+        radios[i].checked = (radios[i].value === event);
+    }
+    document.getElementById('diversity_country').value = country;
+    document.getElementById('diversity_yr_start').value = y1;
+    document.getElementById('diversity_yr_end').value = y2;
+    document.getElementById('diversity-form').submit();
+}
+
+function switchDiversityView(view) {
+    var tiersEl = document.getElementById('diversity-view-tiers');
+    var lineEl = document.getElementById('diversity-view-line');
+    var tableEl = document.getElementById('diversity-view-table');
+
+    var tabTiers = document.getElementById('tab-diversity-tiers');
+    var tabLine = document.getElementById('tab-diversity-line');
+    var tabTable = document.getElementById('tab-diversity-table');
+
+    if (!tiersEl || !tableEl || !lineEl) return;
+
+    tiersEl.style.display = 'none';
+    lineEl.style.display = 'none';
+    tableEl.style.display = 'none';
+
+    tabTiers.classList.remove('active');
+    tabTiers.setAttribute('aria-selected', 'false');
+    tabLine.classList.remove('active');
+    tabLine.setAttribute('aria-selected', 'false');
+    tabTable.classList.remove('active');
+    tabTable.setAttribute('aria-selected', 'false');
+
+    if (view === 'table') {
+        tableEl.style.display = 'block';
+        tabTable.classList.add('active');
+        tabTable.setAttribute('aria-selected', 'true');
+    } else if (view === 'line') {
+        lineEl.style.display = 'block';
+        tabLine.classList.add('active');
+        tabLine.setAttribute('aria-selected', 'true');
+        renderDiversityLineChart(currentPercentile);
+        if (typeof Plotly !== 'undefined') {
+            Plotly.Plots.resize('diversity-line-chart');
+        }
+    } else {
+        tiersEl.style.display = 'block';
+        tabTiers.classList.add('active');
+        tabTiers.setAttribute('aria-selected', 'true');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderDiversityLineChart(10);
+});
+</script>
+{% endblock %}

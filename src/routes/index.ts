@@ -3,6 +3,8 @@ import { getGlobalContext } from '../core/context.js';
 import { handleHealth } from './health.js';
 import { handleInflux } from './influx.js';
 import { handleRetention } from './retention.js';
+import { handleMobility } from './mobility.js';
+import { handleDiversity } from './diversity.js';
 import { handleUtility } from './utility.js';
 import { handleQuality } from './quality.js';
 import { handleDocumentation } from './documentation.js';
@@ -13,10 +15,14 @@ export function handleHome(req: Request, res: Response): void | Promise<void> {
   const mode = (req.query.mode as string) || 'Tools';
   if (mode === 'Retention Analytics' || mode === 'Retention') {
     return handleRetention(req, res);
-  } else if (mode === 'Health Evaluation' || mode === 'Health') {
+  } else if (mode === 'Health Evaluation' || mode === 'Health' || mode === 'Evaluation') {
     return handleHealth(req, res);
   } else if (mode === 'New User Influx' || mode === 'Influx' || mode === 'New Users') {
     return handleInflux(req, res);
+  } else if (mode === 'Mobility' || mode === 'Contributor Mobility') {
+    return handleMobility(req, res);
+  } else if (mode === 'Diversity' || mode === 'Contributor Diversity') {
+    return handleDiversity(req, res);
   } else if (mode === 'Content Utility' || mode === 'Utility') {
     return handleUtility(req, res);
   } else if (mode === 'Quality Recognition' || mode === 'Quality') {

@@ -186,12 +186,130 @@
         </div>
 
         <!-- ================================================================== -->
-        <!-- 4. CONTENT UTILITY SECTION                                         -->
+        <!-- 4. CONTRIBUTOR MOBILITY SECTION                                    -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="mobility-guide">
+            <div class="display-panel-header">
+                <div>
+                    <span class="tool-card-badge" style="background-color: #e6fffa; color: #008080; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 04</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Contributor Mobility</span>
+                </div>
+                <a href="/mobility" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
+                    Go To Tool →
+                </a>
+            </div>
+            <div class="display-panel-body">
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    The Contributor Mobility module analyzes inter-competition participant fluidity, cross-campaign retention, and community overlap across active photography contests within the same national or regional ecosystem:
+                </p>
+                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
+                    <li><strong>Country &amp; Year Selection:</strong> Select a target nation and campaign year. The tool identifies all active competitions configured for that country (e.g. WLM, WLE, WLF, WLA, WLB) respecting regional scopes.</li>
+                    <li><strong>Directional Conversion Matrix:</strong> An \(N \times N\) matrix displaying the percentage of contributors from each source campaign who transitioned into participating in a target campaign.</li>
+                    <li><strong>Community Similarity (Jaccard Index):</strong> Calculates bidirectional community cohesion, measuring the shared contributor core relative to the joint participant union.</li>
+                    <li><strong>Deduplicated Ecosystem Pool:</strong> Measures the true net distinct volunteer photographers mobilized across all campaigns in that country during the year.</li>
+                </ol>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Directional Conversion Rate Formulation</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        Directional conversion from source campaign cohort \(A\) to target campaign cohort \(B\) measures the proportion of contributors in \(A\) who also submitted media in \(B\):
+                    </p>
+                    <div class="math-formula">
+                        \[ \text{Mobility}(A \to B) = \left(\frac{|U_A \cap U_B|}{|U_A|}\right) \times 100\% \]
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
+                        Because cohort sizes typically differ (\(|U_A| \neq |U_B|\)), directional conversion is non-symmetric: \(\text{Mobility}(A \to B) \neq \text{Mobility}(B \to A)\).
+                    </p>
+                </div>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Jaccard Community Similarity</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        Symmetrical community overlap between two campaigns is quantified using the Jaccard similarity coefficient:
+                    </p>
+                    <div class="math-formula">
+                        \[ J(A, B) = \left(\frac{|U_A \cap U_B|}{|U_A \cup U_B|}\right) \times 100\% \]
+                    </div>
+                </div>
+
+                <div class="math-panel" style="margin-bottom: 0;">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Deduplicated Ecosystem Union</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        Total distinct volunteer photographers active across any contest within the evaluated country is given by:
+                    </p>
+                    <div class="math-formula">
+                        \[ U_{\text{ecosystem}} = \left| \bigcup_{e \in E_{\text{scoped}}} U_e \right| \]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 5. CONTRIBUTOR DIVERSITY SECTION                                   -->
+        <!-- ================================================================== -->
+        <div class="display-panel" id="diversity-guide">
+            <div class="display-panel-header">
+                <div>
+                    <span class="tool-card-badge" style="background-color: #fff7ed; color: #c2410c; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 05</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Contributor Diversity</span>
+                </div>
+                <a href="/diversity" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
+                    Go To Tool →
+                </a>
+            </div>
+            <div class="display-panel-body">
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    The Contributor Diversity module evaluates upload volume distribution, contribution inequality, and power-law concentration across contest participants without arbitrary normative baselines:
+                </p>
+                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
+                    <li><strong>Campaign &amp; Year Range:</strong> Select campaign type (or All Campaigns), target country, and chronological year range.</li>
+                    <li><strong>Normalized Tier Segmentation:</strong> Groups participants into four empirical volume tiers: Casual (1–4 uploads), Regular (5–24 uploads), Active (25–99 uploads), and Power (100+ uploads).</li>
+                    <li><strong>Interactive Concentration Trajectory:</strong> An interactive line chart plotting the multi-year upload share for any selected top contributor percentile (1%–100%) with automated playback.</li>
+                    <li><strong>Empirical Equality Metrics:</strong> Computes the discrete Gini coefficient (\(G \in [0, 1]\)) and Pareto decile shares (\(P_{10}\), \(P_{20}\)).</li>
+                </ol>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Discrete Gini Inequality Formulation</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        For \(n\) active contributors whose individual upload counts \(x_1 \le x_2 \le \dots \le x_n\) are ordered ascendingly, the discrete Gini coefficient is computed as:
+                    </p>
+                    <div class="math-formula">
+                        \[ G = \frac{2 \sum_{i=1}^n i x_i}{n \sum_{i=1}^n x_i} - \frac{n + 1}{n} \]
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
+                        \(G = 0\) indicates perfect equality (all participants uploaded identical photo counts), whereas \(G \to 1\) signifies extreme upload concentration among a small cluster of power users.
+                    </p>
+                </div>
+
+                <div class="math-panel">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Pareto Top-Decile Upload Share</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        The top-decile concentration metric \(P_{10}\) quantifies the percentage of total media submissions uploaded by the top 10% most prolific participants:
+                    </p>
+                    <div class="math-formula">
+                        \[ P_{10} = \left(\frac{\sum_{i = n - k_{10} + 1}^n x_i}{\sum_{i=1}^n x_i}\right) \times 100\%, \quad k_{10} = \max(1, \text{round}(0.10 n)) \]
+                    </div>
+                </div>
+
+                <div class="math-panel" style="margin-bottom: 0;">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Longitudinal Percentile Concentration</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                        For any percentile threshold \(p \in [1, 100]\), the cumulative upload share \(S_p\) contributed by the top \(p\%\) of uploaders in edition year \(t\) is given by:
+                    </p>
+                    <div class="math-formula">
+                        \[ S_p(t) = \left(\frac{\sum_{i = n - k_p + 1}^n x_i}{\sum_{i=1}^n x_i}\right) \times 100\%, \quad k_p = \max(1, \text{round}(p \cdot n / 100)) \]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- 6. CONTENT UTILITY SECTION                                         -->
         <!-- ================================================================== -->
         <div class="display-panel" id="utility-guide">
             <div class="display-panel-header">
                 <div>
-                    <span class="tool-card-badge" style="background-color: #ede9fe; color: #6d28d9; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 04</span>
+                    <span class="tool-card-badge" style="background-color: #ede9fe; color: #6d28d9; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 06</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Content Utility</span>
                 </div>
                 <a href="/utility" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
@@ -231,12 +349,12 @@
         </div>
 
         <!-- ================================================================== -->
-        <!-- 5. QUALITY RECOGNITION SECTION                                     -->
+        <!-- 7. QUALITY RECOGNITION SECTION                                     -->
         <!-- ================================================================== -->
         <div class="display-panel" id="quality-guide">
             <div class="display-panel-header">
                 <div>
-                    <span class="tool-card-badge" style="background-color: #fef9c3; color: #a16207; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 05</span>
+                    <span class="tool-card-badge" style="background-color: #fef9c3; color: #a16207; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 07</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Quality Recognition</span>
                 </div>
                 <a href="/quality" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
@@ -273,11 +391,14 @@
         </div>
 
         <!-- ================================================================== -->
-        <!-- 6. ACADEMIC REFERENCES & GLOSSARY                                  -->
+        <!-- 8. ACADEMIC REFERENCES & GLOSSARY                                  -->
         <!-- ================================================================== -->
         <div class="display-panel" id="glossary-guide">
             <div class="display-panel-header">
-                <span style="font-weight: 700; font-size: 1.05rem;">Academic Literature &amp; Metric Glossary</span>
+                <div>
+                    <span class="tool-card-badge" style="background-color: #f1f5f9; color: #475569; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Section 08</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Academic Literature &amp; Metric Glossary</span>
+                </div>
             </div>
             <div class="display-panel-body">
                 <div class="math-panel">
@@ -291,7 +412,7 @@
 
                 <div class="math-panel" style="margin-bottom: 0;">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Metric Glossary &amp; Data Dictionary</h4>
-                    <table class="data-table" style="font-size: 0.82rem; margin-top: 8px;">
+                    <table class="camp-data-table" style="font-size: 0.82rem; margin-top: 8px;">
                         <thead>
                             <tr>
                                 <th style="width: 24%;">Metric / Symbol</th>
@@ -311,17 +432,37 @@
                                 <td>Percentage of distinct uploaders from cohort \(A\) who returned to submit at least one file in subsequent edition \(B\).</td>
                             </tr>
                             <tr>
+                                <td><strong>Directional Mobility (\(M_{A \to B}\))</strong></td>
+                                <td>\(\frac{|U_A \cap U_B|}{|U_A|} \times 100\%\)</td>
+                                <td>Percentage of contributors from a source contest \(A\) who also participated in a target contest \(B\) in the same country.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Jaccard Similarity (\(J\))</strong></td>
+                                <td>\(\frac{|U_A \cap U_B|}{|U_A \cup U_B|} \times 100\%\)</td>
+                                <td>Bidirectional community overlap measuring shared participants relative to the joint participant pool.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Discrete Gini Index (\(G\))</strong></td>
+                                <td>\(\frac{2 \sum i x_i}{n \sum x_i} - \frac{n + 1}{n}\)</td>
+                                <td>Distribution inequality of media contributions across active photographers on a 0 (equal) to 1 (monopoly) scale.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Top-10% Share (\(P_{10}\))</strong></td>
+                                <td>\(\frac{\sum_{\text{Top } 10\%} x_i}{\sum x_i} \times 100\%\)</td>
+                                <td>Share of total submissions uploaded by the most prolific decile of participants (Pareto concentration).</td>
+                            </tr>
+                            <tr>
                                 <td><strong>Growth Capacity (\(S_{\text{grow}}\))</strong></td>
                                 <td>\(\frac{|U_{\text{target}} \setminus U_{\text{base}}|}{|U_{\text{target}}|} \times 100\%\)</td>
                                 <td>Proportion of target edition uploaders who are first-time entrants relative to the baseline edition.</td>
                             </tr>
                             <tr>
-                                <td><strong>Content Utility (\(S_{\text{util}}\) / \(U_r\))</strong></td>
+                                <td><strong>Content Utility (\(U_r\))</strong></td>
                                 <td>\(\frac{|F_{\text{in-use}}|}{|F_{\text{total}}|} \times 100\%\)</td>
-                                <td>Proportion of campaign uploads embedded across Wikipedia articles, Wikidata, Wikivoyage, or sister projects via <code>prop=globalusage</code>.</td>
+                                <td>Proportion of campaign uploads embedded across Wikipedia articles, Wikidata, Wikivoyage, or sister projects.</td>
                             </tr>
                             <tr>
-                                <td><strong>Quality Recognition (\(S_{\text{qual}}\) / \(Q_r\))</strong></td>
+                                <td><strong>Quality Recognition (\(Q_r\))</strong></td>
                                 <td>\(\frac{|F_{\text{honored}}|}{|F_{\text{total}}|} \times 100\%\)</td>
                                 <td>Proportion of submissions receiving formal Commons designations (Quality Images, Featured Pictures, Valued Images).</td>
                             </tr>
@@ -335,21 +476,11 @@
                                 <td>\(\left|\bigcup_{j \le t} U_j\right|\)</td>
                                 <td>Total unique contributors ever mobilized by the campaign series through edition year \(t\).</td>
                             </tr>
-                            <tr>
-                                <td><strong>Top-10% Concentration (\(S_{\text{div}}\))</strong></td>
-                                <td>\(\frac{\sum_{i=1}^{\lfloor 0.1 N \rfloor} u_i}{\sum_{i=1}^N u_i} \times 100\%\)</td>
-                                <td>Share of total submissions uploaded by the most active 10% of participants; measures structural reliance on power users.</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Regional 75th Percentile</strong></td>
-                                <td>\(P_{75}(X_{\text{region}})\)</td>
-                                <td>Upper-quartile performance threshold computed across peer campaigns in the same geographic sub-region (e.g. South Asia, Western Europe).</td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
         </div>
-    </div>
 
     {# ====================================================================== #}
     {# CLIENT-SIDE LOGIC & BUILDER AUTO-SYNC                                  #}

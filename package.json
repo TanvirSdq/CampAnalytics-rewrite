@@ -8,7 +8,7 @@
     "start": "node dist/server.js",
     "start:ts": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/routes.e2e.test.ts tests/comparative.unit.test.ts tests/quality_gates.test.ts",
+    "test": "tsx --test tests/routes.e2e.test.ts tests/comparative.unit.test.ts tests/mobility.unit.test.ts tests/diversity.unit.test.ts tests/quality_gates.test.ts",
     "test:curl": "bash tests/verify_routes.sh"
   },
   "dependencies": {

@@ -294,6 +294,52 @@ describe('Tier 1: Feature Coverage & Route Routing Integrity', () => {
     );
   });
 
+  test('GET /mobility - returns Mobility-specific HTML and NOT home page', async () => {
+    const res = await makeRequest('/mobility');
+    assert.equal(res.status, 200, 'Expected status 200 for /mobility');
+    assert.match(
+      res.headers.get('content-type') || '',
+      /text\/html/,
+      'Expected text/html content-type'
+    );
+
+    assert.ok(
+      res.text.includes('id="mobility-form"') || res.text.includes('#mobility-form'),
+      'Expected /mobility to contain #mobility-form'
+    );
+    assert.ok(
+      res.text.includes('Contributor Mobility'),
+      'Expected /mobility to contain "Contributor Mobility"'
+    );
+    assert.ok(
+      !res.text.includes('Welcome to CampTools'),
+      'Expected /mobility not to serve home.html ("Welcome to CampTools")'
+    );
+  });
+
+  test('GET /diversity - returns Diversity-specific HTML and NOT home page', async () => {
+    const res = await makeRequest('/diversity');
+    assert.equal(res.status, 200, 'Expected status 200 for /diversity');
+    assert.match(
+      res.headers.get('content-type') || '',
+      /text\/html/,
+      'Expected text/html content-type'
+    );
+
+    assert.ok(
+      res.text.includes('id="diversity-form"') || res.text.includes('#diversity-form'),
+      'Expected /diversity to contain #diversity-form'
+    );
+    assert.ok(
+      res.text.includes('Contributor Diversity'),
+      'Expected /diversity to contain "Contributor Diversity"'
+    );
+    assert.ok(
+      !res.text.includes('Welcome to CampTools'),
+      'Expected /diversity not to serve home.html ("Welcome to CampTools")'
+    );
+  });
+
   test('GET /documentation - returns Documentation page', async () => {
     const res = await makeRequest('/documentation');
     assert.equal(res.status, 200, 'Expected status 200 for /documentation');
@@ -391,6 +437,24 @@ describe('Tier 2: Boundary & Corner Cases', () => {
     assert.ok(
       res.text.includes('Retention Analysis'),
       'Expected mode=Retention to render Retention content'
+    );
+  });
+
+  test('GET /?mode=Mobility routes to Mobility view', async () => {
+    const res = await makeRequest('/?mode=Mobility');
+    assert.equal(res.status, 200, 'Expected status 200 for /?mode=Mobility');
+    assert.ok(
+      res.text.includes('Contributor Mobility'),
+      'Expected mode=Mobility to render Mobility content'
+    );
+  });
+
+  test('GET /?mode=Diversity routes to Diversity view', async () => {
+    const res = await makeRequest('/?mode=Diversity');
+    assert.equal(res.status, 200, 'Expected status 200 for /?mode=Diversity');
+    assert.ok(
+      res.text.includes('Contributor Diversity'),
+      'Expected mode=Diversity to render Diversity content'
     );
   });
 
@@ -581,6 +645,60 @@ describe('Tier 3: Cross-Feature Interactions & Parameter Combinations', () => {
     assert.ok(
       !res.text.includes('Welcome to CampTools'),
       'POST /quality must NOT return home.html'
+    );
+  });
+
+  test('POST /mobility form submission with target country and year', async () => {
+    const formBody = new URLSearchParams({
+      mobility_country: 'de',
+      mobility_year: '2023'
+    }).toString();
+
+    const res = await makeRequest('/mobility', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formBody
+    });
+
+    assert.equal(res.status, 200, 'Expected status 200 for POST /mobility');
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    assert.ok(
+      res.text.includes('id="mobility-form"') || res.text.includes('#mobility-form'),
+      'Expected /mobility response to contain #mobility-form'
+    );
+    assert.ok(
+      !res.text.includes('Welcome to CampTools'),
+      'POST /mobility must NOT return home.html'
+    );
+  });
+
+  test('POST /diversity form submission with target country and event', async () => {
+    const formBody = new URLSearchParams({
+      diversity_country: 'de',
+      diversity_event_type: 'wlm',
+      diversity_yr_start: '2022',
+      diversity_yr_end: '2023'
+    }).toString();
+
+    const res = await makeRequest('/diversity', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formBody
+    });
+
+    assert.equal(res.status, 200, 'Expected status 200 for POST /diversity');
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    assert.ok(
+      res.text.includes('id="diversity-form"') || res.text.includes('#diversity-form'),
+      'Expected /diversity response to contain #diversity-form'
+    );
+    assert.ok(
+      !res.text.includes('Welcome to CampTools'),
+      'POST /diversity must NOT return home.html'
     );
   });
 
