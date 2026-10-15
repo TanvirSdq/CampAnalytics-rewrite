@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ PAGE_TITLE }}</title>
+    <title>CampTools</title>
     <meta name="description" content="Longitudinal contributor retention, participant influx dynamics, and encyclopedic content utility for Wikimedia campaigns.">
     <meta name="application-name" content="CampTools">
     <meta name="apple-mobile-web-app-title" content="CampTools">
@@ -31,9 +31,10 @@
     <meta name="twitter:image:alt" content="CampTools">
     <link rel="manifest" href="/manifest.json">
     <link rel="preconnect" href="https://upload.wikimedia.org">
-    <link rel="icon" type="image/svg+xml" href="/images/camptools-icon.svg">
-    <link rel="alternate icon" type="image/png" href="/images/camptools-icon.png">
-    <link rel="apple-touch-icon" href="/images/camptools-icon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v={{ ASSET_VERSION | default('20261026_v12') }}">
+    <link rel="icon" type="image/svg+xml" href="/images/camptools-icon.svg?v={{ ASSET_VERSION | default('20261026_v12') }}">
+    <link rel="alternate icon" type="image/png" href="/images/camptools-icon.png?v={{ ASSET_VERSION | default('20261026_v12') }}">
+    <link rel="apple-touch-icon" href="/images/camptools-icon.png?v={{ ASSET_VERSION | default('20261026_v12') }}">
     <!-- KaTeX Mathematical Typesetting -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
@@ -247,7 +248,8 @@
             <div>
                 Hosted on <a href="https://toolforge.org" target="_blank" rel="noopener noreferrer">Wikimedia Toolforge</a> ·
                 Released under the <a href="https://www.gnu.org/licenses/gpl-2.0.html" target="_blank" rel="noopener noreferrer">GPL-2.0+</a> ·
-                Made by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">TanvirSdq</a> &amp; <a href="https://commons.wikimedia.org/wiki/User:Kaim_Amin" target="_blank" rel="noopener noreferrer">Kaim Amin</a> ·
+                Built with ❤️ by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">Tanvir Siddique</a> and <a href="https://commons.wikimedia.org/wiki/User:Kaim_Amin" target="_blank" rel="noopener noreferrer">Kaim Amin</a> ·
+                Rewrite and Expansion by <a href="https://commons.wikimedia.org/wiki/User:TanvirSdq" target="_blank" rel="noopener noreferrer">Tanvir Siddique</a> ·
                 <span class="camp-execution-timer" style="display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -1px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     Executed in <strong>{{ execution_time_sec or '0.001' }}</strong> sec

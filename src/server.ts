@@ -113,6 +113,11 @@ app.get('/og-preview.png', (req: Request, res: Response) => {
   res.sendFile(path.join(PROJECT_ROOT, 'public/images/og-preview.png'));
 });
 
+app.get('/favicon.ico', (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+  res.sendFile(path.join(PROJECT_ROOT, 'public/favicon.ico'));
+});
+
 // Mount Routes
 app.use(healthzRouter);
 app.use(healthRouter);

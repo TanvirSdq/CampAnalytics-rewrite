@@ -3,31 +3,31 @@
 {% block extra_head %}
 <style>
 .camp-directory-container {
-    max-width: 1140px;
-    margin: 40px auto 60px;
-    padding: 0 24px;
+    max-width: 680px;
+    margin: 32px auto 44px;
+    padding: 0 20px;
     box-sizing: border-box;
     display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 48px;
+    flex-direction: column;
+    align-items: center;
+    border-bottom: none !important;
 }
 .camp-brand-hero {
-    flex: 0 0 320px;
+    width: 100%;
     text-align: center;
-    padding-top: 12px;
+    margin-bottom: 24px;
+    padding-top: 0;
 }
 .camp-brand-logo {
     display: inline-block;
-    width: 120px;
-    height: 120px;
-    margin-bottom: 14px;
+    width: 88px;
+    height: 88px;
+    margin-bottom: 12px;
 }
 .camp-brand-title {
-    margin: 0 0 4px;
+    margin: 0 0 6px;
     font-family: var(--font-sans);
-    font-size: clamp(2.4rem, 4.5vw, 3.2rem);
+    font-size: clamp(2.2rem, 4vw, 2.8rem);
     letter-spacing: -0.03em;
     line-height: 1.15;
 }
@@ -41,17 +41,16 @@
 }
 .camp-brand-tagline {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 1rem;
     color: var(--text-muted);
     font-weight: 400;
 }
 .camp-tool-list {
-    flex: 1;
-    max-width: 720px;
+    width: 100%;
+    max-width: 680px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 100%;
 }
 .camp-tool-row {
     display: block;
@@ -90,42 +89,26 @@
     color: var(--text-muted);
     font-size: 0.88rem;
 }
-@media (max-width: 860px) {
+@media (max-width: 640px) {
     .camp-directory-container {
-        flex-direction: column;
-        align-items: center;
-        max-width: 600px;
-        margin: 16px auto 32px;
+        margin: 20px auto 32px;
         padding: 0 16px;
-        gap: 20px;
-    }
-    .camp-brand-hero {
-        flex: none;
-        width: 100%;
-        text-align: center;
-        padding-top: 0;
-        margin-bottom: 4px;
     }
     .camp-brand-logo {
-        width: 68px;
-        height: 68px;
+        width: 72px;
+        height: 72px;
         margin-bottom: 8px;
     }
     .camp-brand-title {
-        font-size: 2.15rem;
+        font-size: 2.1rem;
     }
-    .camp-brand-tagline {
-        font-size: 0.92rem;
-    }
-    .camp-tool-list {
-        max-width: 100%;
-        gap: 8px;
+    .camp-brand-hero {
+        margin-bottom: 18px;
     }
     .camp-tool-row {
         padding: 11px 14px;
     }
     .camp-tool-name {
-        display: inline;
         font-size: 0.92rem;
     }
     .camp-tool-desc {
@@ -138,7 +121,7 @@
 {% block content %}
 <div class="camp-directory-container">
     <div class="camp-brand-hero">
-        <img src="/images/camptools-icon.svg" alt="CampTools" class="camp-brand-logo" width="80" height="80">
+        <img src="/images/camptools-icon.svg" alt="CampTools" class="camp-brand-logo" width="88" height="88">
         <h1 class="camp-brand-title"><span class="brand-bold">Camp</span><span class="brand-accent">Tools</span></h1>
         <p class="camp-brand-tagline">Evaluating Wikimedia campaigns</p>
     </div>
