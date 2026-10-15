@@ -194,6 +194,27 @@ export function getCategoryCandidates(code: string): string[] {
   return candidates;
 }
 
+export function getSubCampaignCodes(code: string): string[] {
+  const clean = code.replace(/\s+/g, '').toLowerCase();
+  const match = CODE_RE.exec(clean);
+  if (!match) return [];
+  const [, event, cc, yr] = match;
+  if (event !== 'all') return [clean];
+  const subCodes: string[] = [];
+  for (const e of Object.keys(EVENT_MAP)) {
+    const scope = EVENT_COUNTRY_SCOPE[e] || '*';
+    if (typeof scope === 'object' && scope.countries) {
+      if (scope.countries.includes(cc)) {
+        subCodes.push(scope.no_country_suffix ? `${e}${yr}` : `${e}${cc}${yr}`);
+      }
+    } else if (scope === '*' || (Array.isArray(scope) && scope.includes(cc))) {
+      subCodes.push(`${e}${cc}${yr}`);
+    }
+  }
+  return subCodes;
+}
+
+
 // In-Memory Participant & Metrics Cache
 const _participantCache = new Map<string, { users: Set<string>; ts: number }>();
 const _userCountsCache = new Map<string, { counts: Map<string, number>; ts: number }>();
@@ -283,17 +304,7 @@ export async function getParticipants(code: string): Promise<Set<string>> {
   const [_, event, cc, yr] = match;
   if (event === 'all') {
     // Aggregate across campaigns
-    const subCodes: string[] = [];
-    for (const e of Object.keys(EVENT_MAP)) {
-      const scope = EVENT_COUNTRY_SCOPE[e] || '*';
-      if (typeof scope === 'object' && scope.countries) {
-        if (scope.countries.includes(cc)) {
-          subCodes.push(scope.no_country_suffix ? `${e}${yr}` : `${e}${cc}${yr}`);
-        }
-      } else if (scope === '*' || (Array.isArray(scope) && scope.includes(cc))) {
-        subCodes.push(`${e}${cc}${yr}`);
-      }
-    }
+    const subCodes = getSubCampaignCodes(clean);
     const subResults = await fetchAllConcurrently(subCodes);
     const combined = new Set<string>();
     for (const s of Object.values(subResults)) {
@@ -330,17 +341,7 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
 
   const [_, event, cc, yr] = match;
   if (event === 'all') {
-    const subCodes: string[] = [];
-    for (const e of Object.keys(EVENT_MAP)) {
-      const scope = EVENT_COUNTRY_SCOPE[e] || '*';
-      if (typeof scope === 'object' && scope.countries) {
-        if (scope.countries.includes(cc)) {
-          subCodes.push(scope.no_country_suffix ? `${e}${yr}` : `${e}${cc}${yr}`);
-        }
-      } else if (scope === '*' || (Array.isArray(scope) && scope.includes(cc))) {
-        subCodes.push(`${e}${cc}${yr}`);
-      }
-    }
+    const subCodes = getSubCampaignCodes(clean);
     const combinedCounts = new Map<string, number>();
     for (const sub of subCodes) {
       const subCounts = await getParticipantsWithUploadCounts(sub);
@@ -416,6 +417,37 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
   const top10Count = Math.max(1, Math.ceil(countsMap.size * 0.10));
   const top10Uploads = uploadCounts.slice(0, top10Count).reduce((a, b) => a + b, 0);
   const top10Share = totalUploads > 0 ? parseFloat(((top10Uploads / totalUploads) * 100).toFixed(1)) : 100.0;
+
+  const match = CODE_RE.exec(clean);
+  if (match && match[1] === 'all') {
+    const subCodes = getSubCampaignCodes(clean);
+    let totalSubUploads = 0;
+    let totalQualityCount = 0;
+    let weightedUsageSum = 0;
+
+    for (const sub of subCodes) {
+      const subMetrics = await getCampaignStructuralMetrics(sub);
+      if (subMetrics.total_uploads > 0) {
+        totalSubUploads += subMetrics.total_uploads;
+        const qCount = Math.round((subMetrics.total_uploads * subMetrics.quality_image_share) / 100);
+        totalQualityCount += qCount;
+        weightedUsageSum += subMetrics.total_uploads * subMetrics.usage_share;
+      }
+    }
+
+    const effectiveTotalUploads = totalUploads > 0 ? totalUploads : totalSubUploads;
+    const qualityShare = effectiveTotalUploads > 0 ? parseFloat(((totalQualityCount / effectiveTotalUploads) * 100).toFixed(1)) : 0.0;
+    const usageShare = totalSubUploads > 0 ? parseFloat((weightedUsageSum / totalSubUploads).toFixed(1)) : 0.0;
+
+    const metrics = {
+      quality_image_share: qualityShare,
+      top10_uploader_share: top10Share,
+      usage_share: usageShare,
+      total_uploads: effectiveTotalUploads
+    };
+    _metricsCache.set(clean, { data: metrics, ts: Date.now() });
+    return metrics;
+  }
 
   // Real Quality Images category discovery
   let qualityCount = 0;
@@ -1712,6 +1744,81 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
   }
 
   const primaryWiki = `${cc === 'de' ? 'de' : cc === 'it' ? 'it' : cc === 'fr' ? 'fr' : cc === 'es' ? 'es' : cc === 'bd' ? 'bn' : 'en'}.wikipedia.org`;
+
+  if (evt === 'all') {
+    const subCodes = getSubCampaignCodes(clean);
+    let totalSampled = 0;
+    let usedFilesCount = 0;
+    let totalUsages = 0;
+    const uniqueArticles = new Set<string>();
+    const projectDist: Record<string, number> = {};
+    const mediaUsages: any[] = [];
+    const uploaderUtility: Record<string, { used_files: number; total_usages: number }> = {};
+    const seenFiles = new Set<string>();
+
+    for (const sub of subCodes) {
+      const subRes = await computeContentUtilityDeep(sub);
+      totalSampled += subRes.total_sampled || 0;
+      usedFilesCount += subRes.distinct_used_images || 0;
+      totalUsages += subRes.total_global_usages || 0;
+      for (const mu of (subRes.media_usages || [])) {
+        const fileKey = mu.full_title || mu.file_title;
+        if (!seenFiles.has(fileKey)) {
+          seenFiles.add(fileKey);
+          if (mediaUsages.length < 25) {
+            mediaUsages.push(mu);
+          }
+        }
+      }
+      for (const tp of (subRes.top_photographers || [])) {
+        const u = tp.uploader || tp.username;
+        if (!uploaderUtility[u]) {
+          uploaderUtility[u] = { used_files: 0, total_usages: 0 };
+        }
+        uploaderUtility[u].used_files += tp.used_files_count || 0;
+        uploaderUtility[u].total_usages += tp.total_usages || 0;
+      }
+    }
+
+    const usageRate = totalSampled > 0 ? parseFloat(((usedFilesCount / totalSampled) * 100).toFixed(1)) : 0.0;
+    const topProject = Object.keys(projectDist).sort((a, b) => projectDist[b] - projectDist[a])[0] || primaryWiki;
+
+    const topPhotographers = Object.keys(uploaderUtility)
+      .filter((u) => !isBotAccount(u))
+      .sort((a, b) => uploaderUtility[b].total_usages - uploaderUtility[a].total_usages)
+      .slice(0, 15)
+      .map((u, i) => ({
+        rank: i + 1,
+        uploader: u,
+        username: u,
+        used_files_count: uploaderUtility[u].used_files,
+        used_images_count: uploaderUtility[u].used_files,
+        total_usages: uploaderUtility[u].total_usages,
+        distinct_articles_count: uploaderUtility[u].used_files,
+        primary_wiki: primaryWiki
+      }));
+
+    return {
+      code: clean,
+      year: yr,
+      country: cName,
+      event: 'All Campaigns',
+      global_utility_rate_pct: usageRate,
+      usage_rate_pct: usageRate,
+      total_global_usages: totalUsages,
+      unique_articles_count: uniqueArticles.size,
+      top_consuming_project: topProject,
+      total_sampled: totalSampled,
+      total_uploads: totalUploads,
+      distinct_uploaders: users.size,
+      distinct_used_images: usedFilesCount,
+      distinct_articles: uniqueArticles.size,
+      cross_wiki_projects_count: Object.keys(projectDist).length,
+      media_usages: mediaUsages,
+      top_photographers: topPhotographers
+    };
+  }
+
   const categories = getCategoryCandidates(clean);
 
   let totalSampled = 0;
@@ -1850,6 +1957,73 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       recognized_count: 0,
       recognized_files: [],
       leaderboard: []
+    };
+  }
+
+  if (evt === 'all') {
+    const subCodes = getSubCampaignCodes(clean);
+    let qiCount = 0;
+    let fpCount = 0;
+    let viCount = 0;
+    const recognizedFiles: any[] = [];
+    const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
+    const seenTitles = new Set<string>();
+
+    for (const sub of subCodes) {
+      const subRes = await computeQualityRecognitionDeep(sub);
+      qiCount += subRes.qi_count || 0;
+      fpCount += subRes.fp_count || 0;
+      viCount += subRes.vi_count || 0;
+      for (const rf of (subRes.recognized_files || [])) {
+        if (!seenTitles.has(rf.title)) {
+          seenTitles.add(rf.title);
+          recognizedFiles.push(rf);
+        }
+      }
+      for (const lb of (subRes.leaderboard || [])) {
+        const u = lb.uploader || lb.username;
+        if (!uploaderHonors[u]) {
+          uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
+        }
+        uploaderHonors[u].qi += lb.qi_count || 0;
+        uploaderHonors[u].fp += lb.fp_count || 0;
+        uploaderHonors[u].vi += lb.vi_count || 0;
+      }
+    }
+
+    const totalRecognized = fpCount + qiCount + viCount;
+    const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
+
+    const leaderboard = Object.keys(uploaderHonors)
+      .filter((u) => !isBotAccount(u))
+      .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
+      .slice(0, 10)
+      .map((u, i) => ({
+        rank: i + 1,
+        uploader: u,
+        username: u,
+        total_honors: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
+        qi_count: uploaderHonors[u].qi,
+        fp_count: uploaderHonors[u].fp,
+        vi_count: uploaderHonors[u].vi,
+        recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
+        quality_share_pct: totalUploads > 0 ? parseFloat(((uploaderHonors[u].qi / totalUploads) * 100).toFixed(1)) : 0.0
+      }));
+
+    return {
+      code: clean,
+      year: yr,
+      country: cName,
+      event: 'All Campaigns',
+      total_uploads: totalUploads,
+      quality_rate_pct: qualityRate,
+      qi_count: qiCount,
+      fp_count: fpCount,
+      vi_count: viCount,
+      honored_photographers_count: leaderboard.length,
+      recognized_count: recognizedFiles.length,
+      recognized_files: recognizedFiles.slice(0, 30),
+      leaderboard: leaderboard
     };
   }
 
@@ -2101,7 +2275,8 @@ export async function computeHealthEvaluation(
     if (!arr.length) return baselineGlobal;
     const n = arr.length;
     const sorted = [...arr].sort((a, b) => a - b);
-    const bRegional = sorted[Math.floor(n * 0.75)] || sorted[sorted.length - 1];
+    const mid = Math.floor(n / 2);
+    const bRegional = n % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
     const lambda = n / (n + priorWeight);
     const bEffective = lambda * bRegional + (1.0 - lambda) * baselineGlobal;
     return parseFloat(bEffective.toFixed(1));

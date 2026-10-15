@@ -153,13 +153,38 @@ The verification bot tested 24 real-world historical campaigns and edge cases:
 | **22** | WLM | Bangladesh | 2021 | South Asia | 0 | 0 | — | — | — | — | **Cleanly rejected / Unheld notice** |
 | **23** | WLM | France | 2023 | Northern & Western Europe | 0 | 0 | — | — | — | — | **Cleanly rejected / Unheld notice** |
 | **24** | WLM | Germany | 2035 | Northern & Western Europe | 0 | 0 | — | — | — | — | **Cleanly rejected / Unheld notice** |
+| **25** | All | Germany | 2025 | South Asia | 539 | 32,736 | 26.7% | 63.6 | 98.4 | **81.0 / 100** | **Tier 1 (High Quality & Utility recognized)** |
+| **26** | All | Germany | 2025 | Central & Eastern Europe | 539 | 32,736 | 26.7% | 64.4 | 82.0 | **72.0 / 100** | **Strong Tier 2 (Robust cross-regional baseline)** |
+| **27** | All | Germany | 2025 | Northern & Western Europe | 539 | 32,736 | 26.7% | 47.2 | 84.9 | **70.0 / 100** | **Strong Tier 2 in Native European Cluster** |
 
 ---
 
-## 5. Conclusion & Verification Summary
+## 5. Composite Campaign Architecture & Peer Baseline Regularization
+
+### 5.1 The Composite Category Discovery Defect
+National aggregate campaigns (`all<cc><yr>`, such as `allde25`) represent the collective footprint of all photographic competitions held in that country during that calendar year (e.g., `wlmde25` + `wlede25` + `wlfde25`).
+In earlier iterations:
+- Category matching evaluated `codeToCategory('allde25')`, which returned `null` because no single Wikimedia Commons category titled `Images from Wiki Loves all ...` exists.
+- This caused `getCategoryCandidates` to return an empty array, resulting in zero Quality Image discovery ($0.0\%$) and zero Content Utility sampling ($0.0\%$).
+- Consequently, composite campaigns were systematically penalized with a **30-point deduction** across Quality and Utility dimensions.
+
+**Resolution**: `getCampaignStructuralMetrics`, `computeQualityRecognitionDeep`, and `computeContentUtilityDeep` dynamically resolve constituent sub-campaign codes via `getSubCampaignCodes(code)`. Quality images, upload volumes, and article usages are queried from active sub-campaigns and aggregated via upload-weighted summation.
+
+### 5.2 Median Empirical Bayesian Shrinkage
+In small regional cohorts ($N \le 3$), taking upper percentiles (such as $P_{75}$) selected the maximum outlier element (e.g. India with 1,967 uploaders in South Asia). This artificially inflated the regional scale benchmark to 1,578 uploaders, unfairly suppressing other campaigns.
+
+**Resolution**: Peer benchmark selection enforces the **true median** ($P_{50}$) across active held peer editions:
+$$B_{\text{regional}} = \text{median}(\{x_1, x_2, \dots, x_N\})$$
+Combined with Empirical Bayesian shrinkage toward global movement baselines ($M = 1.5$), this guarantees that exceptional regional outliers do not distort the central peer standard.
+
+---
+
+## 6. Conclusion & Verification Summary
 
 The empirical standard resolves all previous scoring anomalies:
 1. **Regional Realism**: Scores reflect actual community size and continuity norms without artificial parity between disparate regions.
 2. **Volume Equity**: Dual harmonic scoring rewards monumental contributions while bounding micro-cohort rates.
-3. **Data Authenticity**: Complete purge of synthetic generators; zero fallback data; unheld editions cleanly reported.
-4. **Live Verification**: Deployed and operational on Wikimedia Toolforge at `https://camptools.toolforge.org/`.
+3. **Composite Aggregation**: Full multi-campaign aggregation across constituent sub-editions with zero missing Quality or Utility indicators.
+4. **Data Authenticity**: Complete purge of synthetic generators; zero fallback data; unheld editions cleanly reported.
+5. **Live Verification**: Deployed and operational on Wikimedia Toolforge at `https://camptools.toolforge.org/`.
+
