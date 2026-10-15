@@ -98,6 +98,10 @@ app.get('/plotly.min.js', (req: Request, res: Response) => {
   res.sendFile(path.join(PROJECT_ROOT, 'node_modules/plotly.js-dist-min/plotly.min.js'));
 });
 
+app.get('/og-preview.png', (req: Request, res: Response) => {
+  res.sendFile(path.join(PROJECT_ROOT, 'public/images/og-preview.png'));
+});
+
 // Mount Routes
 app.use(healthzRouter);
 app.use(healthRouter);
