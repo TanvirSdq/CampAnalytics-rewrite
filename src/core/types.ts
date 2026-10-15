@@ -26,9 +26,15 @@ export interface GlobalContext {
 export interface HealthBenchmarks {
   retention: number;
   growth: number;
+  expansion?: number;
+  newcomers?: number;
   quality: number;
+  quality_count?: number;
+  quality_rate?: number;
   diversity: number;
   usage: number;
+  usage_count?: number;
+  usage_rate?: number;
   scale: number;
 }
 
@@ -48,6 +54,7 @@ export interface HealthMetrics {
   dimensions: {
     retention: HealthMetricDimension;
     growth: HealthMetricDimension;
+    expansion?: HealthMetricDimension;
     quality: HealthMetricDimension;
     diversity: HealthMetricDimension;
     usage: HealthMetricDimension;

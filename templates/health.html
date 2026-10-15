@@ -142,7 +142,7 @@
                                 <div class="camp-data-notes-grid">
                                     <div class="camp-data-notes-col">
                                         <span class="camp-data-notes-heading">Evaluation Formulation</span>
-                                        <p class="camp-data-notes-text">The composite score (0–100) aggregates 6 core dimensions: Contributor Retention (20%), Influx &amp; Growth (20%), Community Scale (15%), Content Utility (15%), Photographic Quality (15%), and Community Diversity (15%).</p>
+                                        <p class="camp-data-notes-text">The composite score (0–100) aggregates 6 core dimensions: Community Scale (30%), Contributor Retention (20%), Content Utility (20%), Photographic Quality (10%), Contributor Expansion (10%), and Contributor Diversity (10%).</p>
                                     </div>
                                     <div class="camp-data-notes-col">
                                         <span class="camp-data-notes-heading">Regional Benchmarking</span>
@@ -210,7 +210,7 @@
                         </div>
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
-                                <span>Growth Capacity</span>
+                                <span>Contributor Expansion</span>
                                 <span class="stat-kpi-badge badge-positive">{{ metrics['Growth']['stars'] }}</span>
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Growth']['raw'] }}</div>
@@ -229,7 +229,7 @@
                                 <span>Content Utility</span>
                                 <span class="stat-kpi-badge badge-neutral">{{ metrics['Usage']['stars'] }}</span>
                             </div>
-                            <div class="stat-kpi-value">{{ "%.1f"|format(metrics['Usage']['raw']) }}%</div>
+                            <div class="stat-kpi-value">{{ metrics['Usage']['raw_formatted'] if metrics['Usage']['raw_formatted'] else ("%.1f"|format(metrics['Usage']['raw']) ~ '%') }}</div>
                             <div class="stat-kpi-subtext">Score: {{ "%.1f"|format(metrics['Usage']['score']) }} / 100</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -237,7 +237,7 @@
                                 <span>Quality Recognition</span>
                                 <span class="stat-kpi-badge badge-neutral">{{ metrics['Quality']['stars'] }}</span>
                             </div>
-                            <div class="stat-kpi-value">{{ "%.1f"|format(metrics['Quality']['raw']) }}% QI</div>
+                            <div class="stat-kpi-value">{{ metrics['Quality']['raw_formatted'] if metrics['Quality']['raw_formatted'] else ("%.1f"|format(metrics['Quality']['raw']) ~ '% QI') }}</div>
                             <div class="stat-kpi-subtext">Score: {{ "%.1f"|format(metrics['Quality']['score']) }} / 100</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -388,16 +388,16 @@
                                             <td>{{ metrics['Retention']['stars'] if metrics['Retention']['stars'] else '—' }}</td>
                                         </tr>
                                         <tr>
-                                            <td style="font-weight: 600;">Growth Capacity</td>
+                                            <td style="font-weight: 600;">Contributor Expansion</td>
                                             <td>{{ metrics['Growth']['weight'] }}%</td>
                                             <td>{{ metrics['Growth']['raw'] }}</td>
-                                            <td>{{ "%.1f"|format(metrics['Growth']['benchmark']) }}%</td>
+                                            <td>{{ metrics['Growth']['benchmark'] }} newcomers</td>
                                             <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Growth']['score']) }} / 100</td>
                                             <td>{{ metrics['Growth']['stars'] }}</td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Community Scale</td>
-                                            <td>{{ metrics['Scale']['weight'] if metrics['Scale'] else 15 }}%</td>
+                                            <td>{{ metrics['Scale']['weight'] if metrics['Scale'] else 30 }}%</td>
                                             <td>{{ metrics['Scale']['raw'] if metrics['Scale'] else target_users_count ~ ' uploaders' }}</td>
                                             <td>{{ metrics['Scale']['benchmark'] if metrics['Scale'] else '—' }} uploaders</td>
                                             <td style="font-weight: 600; color: var(--wiki-blue);">{% if metrics['Scale'] and metrics['Scale']['score'] is not none %}{{ "%.1f"|format(metrics['Scale']['score']) }} / 100{% else %}—{% endif %}</td>
@@ -405,23 +405,23 @@
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Content Utility</td>
-                                            <td>{{ metrics['Usage']['weight'] }}%</td>
-                                            <td>{{ "%.1f"|format(metrics['Usage']['raw']) }}%</td>
-                                            <td>{{ "%.1f"|format(metrics['Usage']['benchmark']) }}%</td>
+                                            <td>{{ metrics['Usage']['weight'] if metrics['Usage'] else 20 }}%</td>
+                                            <td>{{ metrics['Usage']['raw_formatted'] if metrics['Usage']['raw_formatted'] else ("%.1f"|format(metrics['Usage']['raw']) ~ '%') }}</td>
+                                            <td>{% if metrics['Usage']['benchmark_count'] %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['benchmark']) }}%){% else %}{{ "%.1f"|format(metrics['Usage']['benchmark']) }}%{% endif %}</td>
                                             <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Usage']['score']) }} / 100</td>
                                             <td>{{ metrics['Usage']['stars'] }}</td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Quality Recognition</td>
-                                            <td>{{ metrics['Quality']['weight'] }}%</td>
-                                            <td>{{ "%.1f"|format(metrics['Quality']['raw']) }}%</td>
-                                            <td>{{ "%.1f"|format(metrics['Quality']['benchmark']) }}%</td>
+                                            <td>{{ metrics['Quality']['weight'] if metrics['Quality'] else 10 }}%</td>
+                                            <td>{{ metrics['Quality']['raw_formatted'] if metrics['Quality']['raw_formatted'] else ("%.1f"|format(metrics['Quality']['raw']) ~ '%') }}</td>
+                                            <td>{% if metrics['Quality']['benchmark_count'] %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['benchmark']) }}%){% else %}{{ "%.1f"|format(metrics['Quality']['benchmark']) }}%{% endif %}</td>
                                             <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Quality']['score']) }} / 100</td>
                                             <td>{{ metrics['Quality']['stars'] }}</td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Contributor Diversity</td>
-                                            <td>{{ metrics['Diversity']['weight'] }}%</td>
+                                            <td>{{ metrics['Diversity']['weight'] if metrics['Diversity'] else 10 }}%</td>
                                             <td>{{ "%.1f"|format(metrics['Diversity']['raw']) }}%</td>
                                             <td>{{ "%.1f"|format(metrics['Diversity']['benchmark']) }}%</td>
                                             <td style="font-weight: 600; color: var(--wiki-blue);">{{ "%.1f"|format(metrics['Diversity']['score']) }} / 100</td>

@@ -94,13 +94,19 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     const retIsNaN = isNaN(retRaw);
     const retDelta = retIsNaN ? null : parseFloat((retRaw - b.retention).toFixed(1));
 
-    const groRaw = parseNum(d.Growth?.raw);
-    const groDelta = isNaN(groRaw) ? null : parseFloat((groRaw - b.growth).toFixed(1));
+    const groCount = typeof d.Growth?.newcomers_count === 'number'
+      ? d.Growth.newcomers_count
+      : (parseNum(d.Growth?.raw) || 0);
+    const groBm = b.expansion || b.growth || 180;
+    const groDelta = Math.round(groCount - groBm);
+    const groScoreNorm = d.Growth?.score !== null && !isNaN(d.Growth?.score) ? Math.min(100, Math.max(0, d.Growth.score)) : 70;
 
     const useRaw = parseNum(d.Usage?.raw);
+    const useCount = typeof d.Usage?.count === 'number' ? d.Usage.count : null;
     const useDelta = isNaN(useRaw) ? null : parseFloat((useRaw - b.usage).toFixed(1));
 
     const qualRaw = parseNum(d.Quality?.raw);
+    const qualCount = typeof d.Quality?.count === 'number' ? d.Quality.count : null;
     const qualDelta = isNaN(qualRaw) ? null : parseFloat((qualRaw - b.quality).toFixed(1));
 
     const divRaw = parseNum(d.Diversity?.raw);
@@ -112,6 +118,19 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     const scaleNormObserved = b.scale > 0 ? Math.min(100, Math.round(70 * (scaleObserved / b.scale))) : 70;
 
     benchmarkComparisons = [
+      {
+        id: 'scale',
+        name: 'Community Scale',
+        weight: d.Scale?.weight || 30,
+        observedStr: `${scaleObserved.toLocaleString()} uploaders`,
+        observedVal: scaleNormObserved,
+        benchmarkStr: `${Math.round(b.scale).toLocaleString()} uploaders`,
+        benchmarkVal: 70,
+        deltaFormatted: scaleDelta !== null ? (scaleDelta >= 0 ? `▲ +${scaleDelta.toLocaleString()}` : `▼ ${scaleDelta.toLocaleString()}`) : '—',
+        isPositive: scaleDelta !== null ? scaleDelta >= 0 : true,
+        isInaugural: false,
+        score: d.Scale?.score
+      },
       {
         id: 'retention',
         name: 'Retention Index',
@@ -126,52 +145,39 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         score: d.Retention?.score
       },
       {
-        id: 'growth',
-        name: 'Growth Capacity',
-        weight: d.Growth?.weight || 20,
-        observedStr: isNaN(groRaw) ? '—' : `${groRaw.toFixed(1)}%`,
-        observedVal: isNaN(groRaw) ? 0 : Math.min(100, Math.max(0, groRaw)),
-        benchmarkStr: `${b.growth.toFixed(1)}%`,
-        benchmarkVal: Math.min(100, Math.max(0, b.growth)),
-        deltaFormatted: groDelta !== null ? (groDelta >= 0 ? `▲ +${groDelta.toFixed(1)}%` : `▼ ${groDelta.toFixed(1)}%`) : '—',
-        isPositive: groDelta !== null ? groDelta >= 0 : true,
-        isInaugural: false,
-        score: d.Growth?.score
-      },
-      {
-        id: 'scale',
-        name: 'Community Scale',
-        weight: d.Scale?.weight || 15,
-        observedStr: `${scaleObserved.toLocaleString()} uploaders`,
-        observedVal: scaleNormObserved,
-        benchmarkStr: `${Math.round(b.scale).toLocaleString()} uploaders`,
-        benchmarkVal: 70,
-        deltaFormatted: scaleDelta !== null ? (scaleDelta >= 0 ? `▲ +${scaleDelta.toLocaleString()}` : `▼ ${scaleDelta.toLocaleString()}`) : '—',
-        isPositive: scaleDelta !== null ? scaleDelta >= 0 : true,
-        isInaugural: false,
-        score: d.Scale?.score
-      },
-      {
         id: 'usage',
         name: 'Content Utility',
-        weight: d.Usage?.weight || 15,
-        observedStr: isNaN(useRaw) ? '—' : `${useRaw.toFixed(1)}%`,
-        observedVal: isNaN(useRaw) ? 0 : Math.min(100, Math.max(0, useRaw)),
-        benchmarkStr: `${b.usage.toFixed(1)}%`,
-        benchmarkVal: Math.min(100, Math.max(0, b.usage)),
+        weight: d.Usage?.weight || 20,
+        observedStr: d.Usage?.raw_formatted || (useCount !== null ? `${useCount.toLocaleString()} usages (${useRaw.toFixed(1)}%)` : (isNaN(useRaw) ? '—' : `${useRaw.toFixed(1)}%`)),
+        observedVal: d.Usage?.score !== null && !isNaN(d.Usage?.score) ? Math.min(100, Math.max(0, d.Usage.score)) : 70,
+        benchmarkStr: b.usage_count ? `${Math.round(b.usage_count).toLocaleString()} usages (${b.usage.toFixed(1)}%)` : `${b.usage.toFixed(1)}%`,
+        benchmarkVal: 70,
         deltaFormatted: useDelta !== null ? (useDelta >= 0 ? `▲ +${useDelta.toFixed(1)}%` : `▼ ${useDelta.toFixed(1)}%`) : '—',
         isPositive: useDelta !== null ? useDelta >= 0 : true,
         isInaugural: false,
         score: d.Usage?.score
       },
       {
+        id: 'growth',
+        name: 'Contributor Expansion',
+        weight: d.Growth?.weight || 10,
+        observedStr: `${groCount.toLocaleString()} newcomers`,
+        observedVal: groScoreNorm,
+        benchmarkStr: `${Math.round(groBm).toLocaleString()} newcomers`,
+        benchmarkVal: 70,
+        deltaFormatted: groDelta !== null ? (groDelta >= 0 ? `▲ +${groDelta.toLocaleString()}` : `▼ ${groDelta.toLocaleString()}`) : '—',
+        isPositive: groDelta !== null ? groDelta >= 0 : true,
+        isInaugural: false,
+        score: d.Growth?.score
+      },
+      {
         id: 'quality',
         name: 'Quality Recognition',
-        weight: d.Quality?.weight || 15,
-        observedStr: isNaN(qualRaw) ? '—' : `${qualRaw.toFixed(1)}%`,
-        observedVal: isNaN(qualRaw) ? 0 : Math.min(100, Math.max(0, qualRaw)),
-        benchmarkStr: `${b.quality.toFixed(1)}%`,
-        benchmarkVal: Math.min(100, Math.max(0, b.quality)),
+        weight: d.Quality?.weight || 10,
+        observedStr: d.Quality?.raw_formatted || (qualCount !== null ? `${qualCount.toLocaleString()} works (${qualRaw.toFixed(1)}%)` : (isNaN(qualRaw) ? '—' : `${qualRaw.toFixed(1)}%`)),
+        observedVal: d.Quality?.score !== null && !isNaN(d.Quality?.score) ? Math.min(100, Math.max(0, d.Quality.score)) : 70,
+        benchmarkStr: b.quality_count ? `${Math.round(b.quality_count).toLocaleString()} works (${b.quality.toFixed(1)}%)` : `${b.quality.toFixed(1)}%`,
+        benchmarkVal: 70,
         deltaFormatted: qualDelta !== null ? (qualDelta >= 0 ? `▲ +${qualDelta.toFixed(1)}%` : `▼ ${qualDelta.toFixed(1)}%`) : '—',
         isPositive: qualDelta !== null ? qualDelta >= 0 : true,
         isInaugural: false,
@@ -180,7 +186,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
       {
         id: 'diversity',
         name: 'Contributor Diversity',
-        weight: d.Diversity?.weight || 15,
+        weight: d.Diversity?.weight || 10,
         observedStr: isNaN(divRaw) ? '—' : `${divRaw.toFixed(1)}%`,
         observedVal: isNaN(divRaw) ? 0 : Math.min(100, Math.max(0, divRaw)),
         benchmarkStr: `${b.diversity.toFixed(1)}%`,

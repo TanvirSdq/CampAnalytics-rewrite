@@ -1416,7 +1416,7 @@
                     ['Vitality Index', 'Performance Tier', rep.tier, 'Tier', '—', 'Movement Classification', '—'],
                     ['Vitality Index', 'Performance Rating', rep.rating_label, 'Rating', '—', 'Executive Assessment', '—'],
                     ['Performance Dimensions', 'Retention Index', rep.dimensions.Retention ? rep.dimensions.Retention.raw : '—', '%', rep.benchmarks.retention + '%', 'Volunteer Continuity', rep.dimensions.Retention ? rep.dimensions.Retention.score : '—'],
-                    ['Performance Dimensions', 'Growth Capacity', rep.dimensions.Growth ? rep.dimensions.Growth.raw : '—', '%', rep.benchmarks.growth + '%', 'Newcomer Recruitment', rep.dimensions.Growth ? rep.dimensions.Growth.score : '—'],
+                    ['Performance Dimensions', 'Contributor Expansion', rep.dimensions.Growth ? rep.dimensions.Growth.raw : '—', 'Newcomers', (rep.benchmarks.expansion || rep.benchmarks.growth) + ' newcomers', 'Volunteer Expansion', rep.dimensions.Growth ? rep.dimensions.Growth.score : '—'],
                     ['Performance Dimensions', 'Community Scale', rep.dimensions.Scale ? rep.dimensions.Scale.raw : rep.total_uploaders + ' uploaders', 'Uploaders', rep.benchmarks.scale ? Math.round(rep.benchmarks.scale) + ' uploaders' : '—', 'Movement Footprint', rep.dimensions.Scale ? rep.dimensions.Scale.score : '—'],
                     ['Performance Dimensions', 'Content Utility', rep.dimensions.Usage ? rep.dimensions.Usage.raw + '%' : '—', '%', rep.benchmarks.usage + '%', 'Article Image Use', rep.dimensions.Usage ? rep.dimensions.Usage.score : '—'],
                     ['Performance Dimensions', 'Quality Recognition', rep.dimensions.Quality ? rep.dimensions.Quality.raw + '%' : '—', '%', rep.benchmarks.quality + '%', 'Featured / QI Recognition', rep.dimensions.Quality ? rep.dimensions.Quality.score : '—'],
@@ -1468,11 +1468,11 @@
                         w += `! Dimension !! Focus Area !! Observed !! Regional Norm !! Score !! Rating\n`;
                         const dims = rep.dimensions || {};
                         const b = rep.benchmarks || {};
-                        w += `|-\n| Contributor Retention || Volunteer Continuity || ${dims.Retention ? dims.Retention.raw : '—'} || ${b.retention || '—'}% || ${dims.Retention ? dims.Retention.score : '—'} / 100 || ${dims.Retention ? dims.Retention.stars : '—'}\n`;
-                        w += `|-\n| Influx & Growth || Newcomer Recruitment || ${dims.Growth ? dims.Growth.raw : '—'} || ${b.growth || '—'}% || ${dims.Growth ? dims.Growth.score : '—'} / 100 || ${dims.Growth ? dims.Growth.stars : '—'}\n`;
                         w += `|-\n| Community Scale || Movement Footprint || ${dims.Scale ? dims.Scale.raw : rep.total_uploaders + ' uploaders'} || ${b.scale ? Math.round(b.scale) + ' uploaders' : '—'} || ${dims.Scale ? dims.Scale.score : '—'} / 100 || ${dims.Scale ? dims.Scale.stars : '—'}\n`;
-                        w += `|-\n| Content Utility || Article Image Use || ${dims.Usage ? dims.Usage.raw + '%' : '—'} || ${b.usage || '—'}% || ${dims.Usage ? dims.Usage.score : '—'} / 100 || ${dims.Usage ? dims.Usage.stars : '—'}\n`;
-                        w += `|-\n| Quality Recognition || Featured / QI Recognition || ${dims.Quality ? dims.Quality.raw + '%' : '—'} || ${b.quality || '—'}% || ${dims.Quality ? dims.Quality.score : '—'} / 100 || ${dims.Quality ? dims.Quality.stars : '—'}\n`;
+                        w += `|-\n| Contributor Retention || Volunteer Continuity || ${dims.Retention ? dims.Retention.raw : '—'} || ${b.retention || '—'}% || ${dims.Retention ? dims.Retention.score : '—'} / 100 || ${dims.Retention ? dims.Retention.stars : '—'}\n`;
+                        w += `|-\n| Content Utility || Article Image Use || ${dims.Usage ? (dims.Usage.raw_formatted || dims.Usage.raw + '%') : '—'} || ${b.usage_count ? Math.round(b.usage_count) + ' usages (' + b.usage + '%)' : b.usage + '%'} || ${dims.Usage ? dims.Usage.score : '—'} / 100 || ${dims.Usage ? dims.Usage.stars : '—'}\n`;
+                        w += `|-\n| Contributor Expansion || Volunteer Expansion || ${dims.Growth ? dims.Growth.raw : '—'} || ${b.expansion || b.growth || '—'} newcomers || ${dims.Growth ? dims.Growth.score : '—'} / 100 || ${dims.Growth ? dims.Growth.stars : '—'}\n`;
+                        w += `|-\n| Quality Recognition || Featured / QI Recognition || ${dims.Quality ? (dims.Quality.raw_formatted || dims.Quality.raw + '%') : '—'} || ${b.quality_count ? Math.round(b.quality_count) + ' works (' + b.quality + '%)' : b.quality + '%'} || ${dims.Quality ? dims.Quality.score : '—'} / 100 || ${dims.Quality ? dims.Quality.stars : '—'}\n`;
                         w += `|-\n| Contributor Diversity || Participation Equity || ${dims.Diversity ? dims.Diversity.raw + '%' : '—'} || ${b.diversity || '—'}% || ${dims.Diversity ? dims.Diversity.score : '—'} / 100 || ${dims.Diversity ? dims.Diversity.stars : '—'}\n`;
                         w += `|-\n! Composite Overall !! Full Evaluation !! — !! — !! ${rep.composite_score} / 100 !! ${rep.rating_label}\n`;
                         w += `|}\n\n`;
@@ -1522,11 +1522,11 @@
                         m += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`;
                         const dims = rep.dimensions || {};
                         const b = rep.benchmarks || {};
-                        m += `| Contributor Retention | Volunteer Continuity | ${dims.Retention ? dims.Retention.raw : '—'} | ${b.retention || '—'}% | ${dims.Retention ? dims.Retention.score : '—'} / 100 | ${dims.Retention ? dims.Retention.stars : '—'} |\n`;
-                        m += `| Influx & Growth | Newcomer Recruitment | ${dims.Growth ? dims.Growth.raw : '—'} | ${b.growth || '—'}% | ${dims.Growth ? dims.Growth.score : '—'} / 100 | ${dims.Growth ? dims.Growth.stars : '—'} |\n`;
                         m += `| Community Scale | Movement Footprint | ${dims.Scale ? dims.Scale.raw : rep.total_uploaders + ' uploaders'} | ${b.scale ? Math.round(b.scale) + ' uploaders' : '—'} | ${dims.Scale ? dims.Scale.score : '—'} / 100 | ${dims.Scale ? dims.Scale.stars : '—'} |\n`;
-                        m += `| Content Utility | Article Image Use | ${dims.Usage ? dims.Usage.raw + '%' : '—'} | ${b.usage || '—'}% | ${dims.Usage ? dims.Usage.score : '—'} / 100 | ${dims.Usage ? dims.Usage.stars : '—'} |\n`;
-                        m += `| Quality Recognition | Featured / QI Recognition | ${dims.Quality ? dims.Quality.raw + '%' : '—'} | ${b.quality || '—'}% | ${dims.Quality ? dims.Quality.score : '—'} / 100 | ${dims.Quality ? dims.Quality.stars : '—'} |\n`;
+                        m += `| Contributor Retention | Volunteer Continuity | ${dims.Retention ? dims.Retention.raw : '—'} | ${b.retention || '—'}% | ${dims.Retention ? dims.Retention.score : '—'} / 100 | ${dims.Retention ? dims.Retention.stars : '—'} |\n`;
+                        m += `| Content Utility | Article Image Use | ${dims.Usage ? (dims.Usage.raw_formatted || dims.Usage.raw + '%') : '—'} | ${b.usage_count ? Math.round(b.usage_count) + ' usages (' + b.usage + '%)' : b.usage + '%'} | ${dims.Usage ? dims.Usage.score : '—'} / 100 | ${dims.Usage ? dims.Usage.stars : '—'} |\n`;
+                        m += `| Contributor Expansion | Volunteer Expansion | ${dims.Growth ? dims.Growth.raw : '—'} | ${b.expansion || b.growth || '—'} newcomers | ${dims.Growth ? dims.Growth.score : '—'} / 100 | ${dims.Growth ? dims.Growth.stars : '—'} |\n`;
+                        m += `| Quality Recognition | Featured / QI Recognition | ${dims.Quality ? (dims.Quality.raw_formatted || dims.Quality.raw + '%') : '—'} | ${b.quality_count ? Math.round(b.quality_count) + ' works (' + b.quality + '%)' : b.quality + '%'} | ${dims.Quality ? dims.Quality.score : '—'} / 100 | ${dims.Quality ? dims.Quality.stars : '—'} |\n`;
                         m += `| Contributor Diversity | Participation Equity | ${dims.Diversity ? dims.Diversity.raw + '%' : '—'} | ${b.diversity || '—'}% | ${dims.Diversity ? dims.Diversity.score : '—'} / 100 | ${dims.Diversity ? dims.Diversity.stars : '—'} |\n`;
                         m += `| **Composite Overall** | **Full Evaluation** | — | — | **${rep.composite_score} / 100** | **${rep.rating_label}** |\n\n`;
 
@@ -1587,11 +1587,12 @@
                     w += `=== Performance Dimensions ===\n`;
                     w += `{| class="wikitable sortable"\n`;
                     w += `! Dimension !! Focus Area !! Weight !! Observed !! Regional Norm !! Score !! Rating\n`;
-                    w += `|-\n| Retention Index || Volunteer Continuity || ${d.metrics.retention.weight} || ${d.metrics.retention.raw} || ${d.metrics.retention.benchmark}% || ${d.metrics.retention.score} / 100 || ${d.metrics.retention.stars}\n`;
-                    w += `|-\n| Growth Capacity || Newcomer Recruitment || ${d.metrics.growth.weight} || ${d.metrics.growth.raw} || ${d.metrics.growth.benchmark}% || ${d.metrics.growth.score} / 100 || ${d.metrics.growth.stars}\n`;
-                    w += `|-\n| Content Utility || Article Image Use || ${d.metrics.usage.weight} || ${d.metrics.usage.raw} || ${d.metrics.usage.benchmark} || ${d.metrics.usage.score} / 100 || ${d.metrics.usage.stars}\n`;
-                    w += `|-\n| Quality Recognition || Featured / QI Recognition || ${d.metrics.quality.weight} || ${d.metrics.quality.raw} || ${d.metrics.quality.benchmark} || ${d.metrics.quality.score} / 100 || ${d.metrics.quality.stars}\n`;
-                    w += `|-\n| Contributor Diversity || Participation Equity || ${d.metrics.diversity.weight} || ${d.metrics.diversity.raw} || ${d.metrics.diversity.benchmark} || ${d.metrics.diversity.score} / 100 || ${d.metrics.diversity.stars}\n`;
+                    w += `|-\n| Retention Index || Volunteer Continuity || ${d.metrics.retention.weight}% || ${d.metrics.retention.raw} || ${d.metrics.retention.benchmark}% || ${d.metrics.retention.score} / 100 || ${d.metrics.retention.stars}\n`;
+                    w += `|-\n| Contributor Expansion || Volunteer Expansion || ${d.metrics.growth.weight}% || ${d.metrics.growth.raw} || ${d.metrics.growth.benchmark} newcomers || ${d.metrics.growth.score} / 100 || ${d.metrics.growth.stars}\n`;
+                    w += `|-\n| Community Scale || Movement Footprint || ${d.metrics.scale ? d.metrics.scale.weight : 25}% || ${d.metrics.scale ? d.metrics.scale.raw : d.total_uploaders + ' uploaders'} || ${d.benchmarks.scale ? Math.round(d.benchmarks.scale) + ' uploaders' : '—'} || ${d.metrics.scale ? d.metrics.scale.score : '—'} / 100 || ${d.metrics.scale ? d.metrics.scale.stars : '—'}\n`;
+                    w += `|-\n| Content Utility || Article Image Use || ${d.metrics.usage.weight}% || ${d.metrics.usage.raw} || ${d.metrics.usage.benchmark}% || ${d.metrics.usage.score} / 100 || ${d.metrics.usage.stars}\n`;
+                    w += `|-\n| Quality Recognition || Featured / QI Recognition || ${d.metrics.quality.weight}% || ${d.metrics.quality.raw} || ${d.metrics.quality.benchmark}% || ${d.metrics.quality.score} / 100 || ${d.metrics.quality.stars}\n`;
+                    w += `|-\n| Contributor Diversity || Participation Equity || ${d.metrics.diversity.weight}% || ${d.metrics.diversity.raw} || ${d.metrics.diversity.benchmark}% || ${d.metrics.diversity.score} / 100 || ${d.metrics.diversity.stars}\n`;
                     w += `|-\n! Composite Overall !! Full Evaluation !! 100% !! — !! — !! ${score} / 100 !! ${ratingLabel}\n`;
                     w += `|}\n\n`;
 
