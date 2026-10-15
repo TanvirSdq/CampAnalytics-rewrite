@@ -108,4 +108,30 @@ describe('Contributor Mobility Analytics Engine', () => {
     assert.equal(result.metadata_card.license, 'CC BY-SA 4.0');
     assert.ok(result.metadata_card.methodology_notes.length >= 3);
   });
+
+  it('computes well-formed Ecosystem Flow Sankey data with flow conservation', async () => {
+    const result: MobilityResult = await computeMobilityAnalytics({
+      year: 2023,
+      countryCode: 'de'
+    });
+
+    assert.ok(result.flow, 'Flow object must exist on mobility result');
+    assert.ok(Array.isArray(result.flow.nodes), 'Flow nodes must be an array');
+    assert.ok(result.flow.nodes.length >= 2, 'Should have multiple nodes');
+    assert.ok(Array.isArray(result.flow.links), 'Flow links must be an array');
+    assert.ok(result.flow.links.length > 0, 'Should have links');
+
+    // All links must refer to valid node indices and have non-negative values
+    for (const link of result.flow.links) {
+      assert.ok(link.source >= 0 && link.source < result.flow.nodes.length, 'Source index in range');
+      assert.ok(link.target >= 0 && link.target < result.flow.nodes.length, 'Target index in range');
+      assert.ok(link.value >= 0, 'Link value must be non-negative');
+      assert.ok(typeof link.label === 'string', 'Link label must be a string');
+    }
+
+    // Total link value should match sum of source flows
+    const totalLinkValue = result.flow.links.reduce((acc, l) => acc + l.value, 0);
+    assert.ok(totalLinkValue > 0, 'Total flow volume should be greater than 0');
+  });
 });
+

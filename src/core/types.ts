@@ -52,6 +52,37 @@ export interface HealthMetrics {
   };
 }
 
+export interface OverallCampaignReport {
+  campaign_code: string;
+  campaign_name: string;
+  country_name: string;
+  country_code: string;
+  edition_year: number;
+  region: string;
+  generated_date: string;
+  composite_score: number;
+  tier: string;
+  rating_label: string;
+  stars: [string, number];
+  total_uploaders: number;
+  newcomer_uploaders: number;
+  returning_uploaders: number;
+  newcomer_share_pct: number;
+  baseline_code: string;
+  baseline_uploaders: number;
+  retained_uploaders: number;
+  retention_rate_pct: number;
+  total_uploads: number;
+  usage_share_pct: number;
+  articles_illustrated_estimate: number;
+  quality_image_share_pct: number;
+  quality_images_estimate: number;
+  top10_uploader_share_pct: number;
+  dimensions: any;
+  benchmarks: HealthBenchmarks;
+  insights: string[];
+}
+
 export interface HealthEvaluationResult {
   target_campaign: string;
   baseline_campaign: string;
@@ -65,6 +96,7 @@ export interface HealthEvaluationResult {
   dimensions: any;
   benchmarks: HealthBenchmarks;
   insights: string[];
+  overall_report?: OverallCampaignReport;
 }
 
 export interface InfluxRecord {
@@ -201,6 +233,24 @@ export interface MobilityMatrixRow {
   cells: MobilityMatrixCell[];
 }
 
+export interface SankeyNode {
+  name: string;
+  color: string;
+}
+
+export interface SankeyLink {
+  source: number;
+  target: number;
+  value: number;
+  label?: string;
+  color?: string;
+}
+
+export interface EcosystemFlowData {
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+}
+
 export interface MobilityResult {
   year: number;
   country_code: string;
@@ -216,6 +266,7 @@ export interface MobilityResult {
     average_conversion: number;
   };
   metadata_card: IndicatorMetadata;
+  flow?: EcosystemFlowData;
 }
 
 // =========================================================================

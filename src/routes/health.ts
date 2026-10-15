@@ -189,7 +189,8 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     insights: result ? result.insights : null,
     target_users_count: result ? result.target_users_count : 0,
     base_users_count: result ? result.baseline_users_count : 0,
-    intersect_users_count: result ? result.overlap_users_count : 0
+    intersect_users_count: result ? result.overlap_users_count : 0,
+    overall_report: result ? result.overall_report : null
   });
 }
 

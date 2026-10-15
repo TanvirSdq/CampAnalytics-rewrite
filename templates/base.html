@@ -1366,12 +1366,165 @@
                 this.renderExportReport();
             },
 
+            printReport() {
+                window.print();
+            },
+
+            downloadReportCsv() {
+                const rep = window.OVERALL_REPORT_DATA;
+                if (!rep) return;
+                const today = new Date().toISOString().split('T')[0];
+                const rows = [
+                    ['Report Section', 'Indicator / Metric', 'Observed Value', 'Unit', 'Regional Benchmark', 'Focus Area', 'Score'],
+                    ['Vitality Index', 'Composite Vitality Score', rep.composite_score, 'Score (0-100)', '—', 'Overall Vitality', rep.composite_score],
+                    ['Vitality Index', 'Performance Tier', rep.tier, 'Tier', '—', 'Movement Classification', '—'],
+                    ['Vitality Index', 'Performance Rating', rep.rating_label, 'Rating', '—', 'Executive Assessment', '—'],
+                    ['Performance Dimensions', 'Retention Index', rep.dimensions.Retention ? rep.dimensions.Retention.raw : '—', '%', rep.benchmarks.retention + '%', 'Volunteer Continuity', rep.dimensions.Retention ? rep.dimensions.Retention.score : '—'],
+                    ['Performance Dimensions', 'Growth Capacity', rep.dimensions.Growth ? rep.dimensions.Growth.raw : '—', '%', rep.benchmarks.growth + '%', 'Newcomer Recruitment', rep.dimensions.Growth ? rep.dimensions.Growth.score : '—'],
+                    ['Performance Dimensions', 'Content Utility', rep.dimensions.Usage ? rep.dimensions.Usage.raw + '%' : '—', '%', rep.benchmarks.usage + '%', 'Article Image Use', rep.dimensions.Usage ? rep.dimensions.Usage.score : '—'],
+                    ['Performance Dimensions', 'Quality Recognition', rep.dimensions.Quality ? rep.dimensions.Quality.raw + '%' : '—', '%', rep.benchmarks.quality + '%', 'Featured / QI Recognition', rep.dimensions.Quality ? rep.dimensions.Quality.score : '—'],
+                    ['Performance Dimensions', 'Contributor Diversity', rep.dimensions.Diversity ? rep.dimensions.Diversity.raw + '%' : '—', '%', rep.benchmarks.diversity + '%', 'Participation Equity', rep.dimensions.Diversity ? rep.dimensions.Diversity.score : '—'],
+                    ['Participation & Influx', 'Total Evaluated Uploaders', rep.total_uploaders, 'Photographers', '—', 'Contributor Influx', '—'],
+                    ['Participation & Influx', 'First-Time Newcomers', rep.newcomer_uploaders, 'Photographers', '—', 'Contributor Influx', '—'],
+                    ['Participation & Influx', 'Returning Contributors', rep.returning_uploaders, 'Photographers', '—', 'Contributor Retention', '—'],
+                    ['Participation & Influx', 'Newcomer Share', rep.newcomer_share_pct, '%', rep.benchmarks.growth + '%', 'Contributor Influx', '—'],
+                    ['Retention Dynamics', 'Prior Baseline Uploaders', rep.baseline_uploaders, 'Photographers', '—', 'Contributor Retention', '—'],
+                    ['Retention Dynamics', 'Retained Uploaders', rep.retained_uploaders, 'Photographers', '—', 'Contributor Retention', '—'],
+                    ['Retention Dynamics', '1-Year Retention Rate', rep.retention_rate_pct, '%', rep.benchmarks.retention + '%', 'Contributor Retention', '—'],
+                    ['Content Utility & Quality', 'Total Submissions (Est.)', rep.total_uploads, 'Media Files', '—', 'Content Utility', '—'],
+                    ['Content Utility & Quality', 'Wikipedia Article Usage Rate', rep.usage_share_pct, '%', rep.benchmarks.usage + '%', 'Content Utility', '—'],
+                    ['Content Utility & Quality', 'Articles Illustrated (Est.)', rep.articles_illustrated_estimate, 'Articles', '—', 'Content Utility', '—'],
+                    ['Content Utility & Quality', 'Quality Images Share', rep.quality_image_share_pct, '%', rep.benchmarks.quality + '%', 'Quality Recognition', '—'],
+                    ['Content Utility & Quality', 'Curated Quality Assets (Est.)', rep.quality_images_estimate, 'Files', '—', 'Quality Recognition', '—'],
+                    ['Contributor Diversity', 'Top 10% Upload Share', rep.top10_uploader_share_pct, '%', rep.benchmarks.diversity + '%', 'Contributor Diversity', '—']
+                ];
+
+                const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+                this.downloadBlob(csvContent, 'text/csv;charset=utf-8;', `camptools_full_report_${rep.campaign_code}_${today}.csv`);
+            },
+
             renderExportReport() {
                 const ta = document.getElementById('export-report-textarea');
-                if (!ta || !window.EVALUATION_REPORT_DATA) return;
+                const rep = window.OVERALL_REPORT_DATA;
                 const d = window.EVALUATION_REPORT_DATA;
+                if (!ta || (!rep && !d)) return;
+
                 const today = new Date().toISOString().split('T')[0];
 
+                if (rep) {
+                    const codeUpper = rep.campaign_code.toUpperCase();
+                    const baseCodeUpper = rep.baseline_code.toUpperCase();
+
+                    if (this.currentReportFormat === 'wikitext') {
+                        let w = `== CampTools Detailed Campaign Report: ${codeUpper} ==\n\n`;
+                        w += `'''Executive Summary:'''\n`;
+                        w += `* '''Target Campaign:''' ${rep.campaign_name} (${codeUpper})\n`;
+                        w += `* '''Country / Territory:''' ${rep.country_name} (${rep.country_code})\n`;
+                        w += `* '''Edition Year:''' ${rep.edition_year}\n`;
+                        w += `* '''Baseline Reference:''' ${baseCodeUpper}\n`;
+                        w += `* '''Regional Benchmark Framework:''' ${rep.region}\n`;
+                        w += `* '''Overall Vitality Score:''' '''${rep.composite_score} / 100''' (${rep.rating_label} · ${rep.tier})\n`;
+                        w += `* '''Report Date:''' ${today}\n\n`;
+
+                        w += `=== 1. Multi-Dimensional Performance Scorecard ===\n`;
+                        w += `{| class="wikitable sortable"\n`;
+                        w += `! Dimension !! Focus Area !! Observed !! Regional Norm !! Score !! Rating\n`;
+                        const dims = rep.dimensions || {};
+                        const b = rep.benchmarks || {};
+                        w += `|-\n| Contributor Retention || Volunteer Continuity || ${dims.Retention ? dims.Retention.raw : '—'} || ${b.retention || '—'}% || ${dims.Retention ? dims.Retention.score : '—'} / 100 || ${dims.Retention ? dims.Retention.stars : '—'}\n`;
+                        w += `|-\n| Influx & Growth || Newcomer Recruitment || ${dims.Growth ? dims.Growth.raw : '—'} || ${b.growth || '—'}% || ${dims.Growth ? dims.Growth.score : '—'} / 100 || ${dims.Growth ? dims.Growth.stars : '—'}\n`;
+                        w += `|-\n| Content Utility || Article Image Use || ${dims.Usage ? dims.Usage.raw + '%' : '—'} || ${b.usage || '—'}% || ${dims.Usage ? dims.Usage.score : '—'} / 100 || ${dims.Usage ? dims.Usage.stars : '—'}\n`;
+                        w += `|-\n| Quality Recognition || Featured / QI Recognition || ${dims.Quality ? dims.Quality.raw + '%' : '—'} || ${b.quality || '—'}% || ${dims.Quality ? dims.Quality.score : '—'} / 100 || ${dims.Quality ? dims.Quality.stars : '—'}\n`;
+                        w += `|-\n| Contributor Diversity || Participation Equity || ${dims.Diversity ? dims.Diversity.raw + '%' : '—'} || ${b.diversity || '—'}% || ${dims.Diversity ? dims.Diversity.score : '—'} / 100 || ${dims.Diversity ? dims.Diversity.stars : '—'}\n`;
+                        w += `|-\n! Composite Overall !! Full Evaluation !! — !! — !! ${rep.composite_score} / 100 !! ${rep.rating_label}\n`;
+                        w += `|}\n\n`;
+
+                        w += `=== 2. Participant Influx & Demographic Continuity ===\n`;
+                        w += `* '''Total Evaluated Uploaders:''' ${rep.total_uploaders.toLocaleString()}\n`;
+                        w += `* '''First-Time Newcomers:''' ${rep.newcomer_uploaders.toLocaleString()} (${rep.newcomer_share_pct}% of cohort)\n`;
+                        w += `* '''Returning Contributors:''' ${rep.returning_uploaders.toLocaleString()}\n`;
+                        w += `* '''Prior Baseline Cohort (${baseCodeUpper}):''' ${rep.baseline_uploaders.toLocaleString()} uploaders\n`;
+                        w += `* '''1-Year Contributor Retention Rate:''' '''${rep.retention_rate_pct}%''' (Regional Benchmark: ${b.retention || '—'}%)\n\n`;
+
+                        w += `=== 3. Content Utility & Photographic Quality Footprint ===\n`;
+                        w += `* '''Total Campaign Media Submissions:''' ~${rep.total_uploads.toLocaleString()} files\n`;
+                        w += `* '''Wikipedia Article Usage Rate:''' '''${rep.usage_share_pct}%''' (Regional Benchmark: ${b.usage || '—'}%)\n`;
+                        w += `* '''Estimated Wikipedia Articles Illustrated:''' ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
+                        w += `* '''Quality Images (QI) Share:''' '''${rep.quality_image_share_pct}%''' (Regional Benchmark: ${b.quality || '—'}%)\n`;
+                        w += `* '''Estimated Curated Quality Assets:''' ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
+
+                        w += `=== 4. Contributor Diversity & Production Equity ===\n`;
+                        w += `* '''Top 10% Uploader Share:''' '''${rep.top10_uploader_share_pct}%''' of total volume (Regional Benchmark: ${b.diversity || '—'}%)\n`;
+                        w += `* '''Production Concentration:''' ${rep.top10_uploader_share_pct > 75 ? 'Highly Concentrated' : rep.top10_uploader_share_pct > 50 ? 'Moderately Concentrated' : 'Equitably Distributed'}\n\n`;
+
+                        if (rep.insights && rep.insights.length > 0) {
+                            w += `=== 5. Actionable Diagnostic Recommendations ===\n`;
+                            rep.insights.forEach(ins => {
+                                w += `* ${ins}\n`;
+                            });
+                            w += `\n`;
+                        }
+
+                        w += `----\n`;
+                        w += `''Compiled with [https://camptools.toolforge.org CampTools] · Evaluation Framework & Process Documentation available on Wikimedia Toolforge.''`;
+                        ta.value = w;
+                    } else {
+                        let m = `# CampTools Detailed Campaign Report: ${codeUpper}\n\n`;
+                        m += `### Executive Summary\n\n`;
+                        m += `- **Target Campaign:** ${rep.campaign_name} (${codeUpper})\n`;
+                        m += `- **Country / Territory:** ${rep.country_name} (${rep.country_code})\n`;
+                        m += `- **Edition Year:** ${rep.edition_year}\n`;
+                        m += `- **Baseline Reference:** ${baseCodeUpper}\n`;
+                        m += `- **Regional Benchmark Framework:** ${rep.region}\n`;
+                        m += `- **Overall Vitality Score:** **${rep.composite_score} / 100** (${rep.rating_label} · ${rep.tier})\n`;
+                        m += `- **Report Date:** ${today}\n\n`;
+
+                        m += `### 1. Multi-Dimensional Performance Scorecard\n\n`;
+                        m += `| Dimension | Focus Area | Observed | Regional Norm | Score | Rating |\n`;
+                        m += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+                        const dims = rep.dimensions || {};
+                        const b = rep.benchmarks || {};
+                        m += `| Contributor Retention | Volunteer Continuity | ${dims.Retention ? dims.Retention.raw : '—'} | ${b.retention || '—'}% | ${dims.Retention ? dims.Retention.score : '—'} / 100 | ${dims.Retention ? dims.Retention.stars : '—'} |\n`;
+                        m += `| Influx & Growth | Newcomer Recruitment | ${dims.Growth ? dims.Growth.raw : '—'} | ${b.growth || '—'}% | ${dims.Growth ? dims.Growth.score : '—'} / 100 | ${dims.Growth ? dims.Growth.stars : '—'} |\n`;
+                        m += `| Content Utility | Article Image Use | ${dims.Usage ? dims.Usage.raw + '%' : '—'} | ${b.usage || '—'}% | ${dims.Usage ? dims.Usage.score : '—'} / 100 | ${dims.Usage ? dims.Usage.stars : '—'} |\n`;
+                        m += `| Quality Recognition | Featured / QI Recognition | ${dims.Quality ? dims.Quality.raw + '%' : '—'} | ${b.quality || '—'}% | ${dims.Quality ? dims.Quality.score : '—'} / 100 | ${dims.Quality ? dims.Quality.stars : '—'} |\n`;
+                        m += `| Contributor Diversity | Participation Equity | ${dims.Diversity ? dims.Diversity.raw + '%' : '—'} | ${b.diversity || '—'}% | ${dims.Diversity ? dims.Diversity.score : '—'} / 100 | ${dims.Diversity ? dims.Diversity.stars : '—'} |\n`;
+                        m += `| **Composite Overall** | **Full Evaluation** | — | — | **${rep.composite_score} / 100** | **${rep.rating_label}** |\n\n`;
+
+                        m += `### 2. Participant Influx & Demographic Continuity\n\n`;
+                        m += `- **Total Evaluated Uploaders:** ${rep.total_uploaders.toLocaleString()}\n`;
+                        m += `- **First-Time Newcomers:** ${rep.newcomer_uploaders.toLocaleString()} (${rep.newcomer_share_pct}% of cohort)\n`;
+                        m += `- **Returning Contributors:** ${rep.returning_uploaders.toLocaleString()}\n`;
+                        m += `- **Prior Baseline Cohort (${baseCodeUpper}):** ${rep.baseline_uploaders.toLocaleString()} uploaders\n`;
+                        m += `- **1-Year Contributor Retention Rate:** **${rep.retention_rate_pct}%** (Regional Benchmark: ${b.retention || '—'}%)\n\n`;
+
+                        m += `### 3. Content Utility & Photographic Quality Footprint\n\n`;
+                        m += `- **Total Campaign Media Submissions:** ~${rep.total_uploads.toLocaleString()} files\n`;
+                        m += `- **Wikipedia Article Usage Rate:** **${rep.usage_share_pct}%** (Regional Benchmark: ${b.usage || '—'}%)\n`;
+                        m += `- **Estimated Wikipedia Articles Illustrated:** ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
+                        m += `- **Quality Images (QI) Share:** **${rep.quality_image_share_pct}%** (Regional Benchmark: ${b.quality || '—'}%)\n`;
+                        m += `- **Estimated Curated Quality Assets:** ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
+
+                        m += `### 4. Contributor Diversity & Production Equity\n\n`;
+                        m += `- **Top 10% Uploader Share:** **${rep.top10_uploader_share_pct}%** of total volume (Regional Benchmark: ${b.diversity || '—'}%)\n`;
+                        m += `- **Production Concentration:** ${rep.top10_uploader_share_pct > 75 ? 'Highly Concentrated' : rep.top10_uploader_share_pct > 50 ? 'Moderately Concentrated' : 'Equitably Distributed'}\n\n`;
+
+                        if (rep.insights && rep.insights.length > 0) {
+                            m += `### 5. Actionable Diagnostic Recommendations\n\n`;
+                            rep.insights.forEach(ins => {
+                                m += `- ${ins}\n`;
+                            });
+                            m += `\n`;
+                        }
+
+                        m += `---\n`;
+                        m += `*Compiled with [CampTools](https://camptools.toolforge.org) · Evaluation Framework & Process Documentation available on Wikimedia Toolforge.*`;
+                        ta.value = m;
+                    }
+                    return;
+                }
+
+                // Fallback to minimal evaluation report data
                 const score = d.overallScore;
                 let ratingLabel = 'Moderate';
                 if (score >= 85) ratingLabel = 'Outstanding';
@@ -1384,11 +1537,11 @@
                 const baseStr = d.baselineEvent ? d.baselineEvent.toUpperCase() : 'Prior Year Baseline';
 
                 if (this.currentReportFormat === 'wikitext') {
-                    let w = `== CampTools Campaign Evaluation Report: ${targetUpper} ==\n\n`;
+                    let w = `== CampTools Detailed Campaign Report: ${targetUpper} ==\n\n`;
                     w += `'''Executive Summary:'''\n`;
                     w += `* '''Target Campaign:''' ${targetUpper}\n`;
                     w += `* '''Baseline Reference:''' ${baseStr}\n`;
-                    w += `* '''Regional Calibration Framework:''' ${d.region}\n`;
+                    w += `* '''Regional Framework:''' ${d.region}\n`;
                     w += `* '''Overall Evaluation Score:''' '''${score} / 100''' (${ratingLabel})\n`;
                     w += `* '''Generated On:''' ${today}\n\n`;
 
@@ -1403,25 +1556,11 @@
                     w += `|-\n! Composite Overall !! Full Evaluation !! 100% !! — !! — !! ${score} / 100 !! ${ratingLabel}\n`;
                     w += `|}\n\n`;
 
-                    w += `=== Contributor Participation ===\n`;
-                    w += `* '''Total Evaluated Uploaders:''' ${d.counts.target.toLocaleString()}\n`;
-                    w += `* '''Baseline Reference Uploaders:''' ${d.counts.base.toLocaleString()}\n`;
-                    w += `* '''Retained Prior Contributors:''' ${d.counts.overlap.toLocaleString()}\n`;
-                    w += `* '''First-Time Newcomer Uploaders:''' ${Math.max(0, d.counts.target - d.counts.overlap).toLocaleString()}\n\n`;
-
-                    if (d.insights && d.insights.length > 0) {
-                        w += `=== Organizer Diagnostic Insights ===\n`;
-                        d.insights.forEach(ins => {
-                            w += `* ${ins}\n`;
-                        });
-                        w += `\n`;
-                    }
-
                     w += `----\n`;
-                    w += `''Compiled with [https://meta.wikimedia.org/wiki/Project_Korikath CampTools] · Tool Usage & Process Guide available on Wikimedia Toolforge.''`;
+                    w += `''Compiled with [https://camptools.toolforge.org CampTools] · Evaluation Framework & Process Documentation available on Wikimedia Toolforge.''`;
                     ta.value = w;
                 } else {
-                    let m = `# CampTools Campaign Evaluation Report: ${targetUpper}\n\n`;
+                    let m = `# CampTools Detailed Campaign Report: ${targetUpper}\n\n`;
                     m += `### Executive Summary\n\n`;
                     m += `- **Target Campaign:** ${targetUpper}\n`;
                     m += `- **Baseline Reference:** ${baseStr}\n`;
@@ -1429,32 +1568,8 @@
                     m += `- **Overall Evaluation Score:** **${score} / 100** (${ratingLabel})\n`;
                     m += `- **Generated On:** ${today}\n\n`;
 
-                    m += `### Performance Dimensions\n\n`;
-                    m += `| Dimension | Focus Area | Weight | Observed | Regional Norm | Score | Rating |\n`;
-                    m += `| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n`;
-                    m += `| Retention Index | Volunteer Continuity | ${d.metrics.retention.weight} | ${d.metrics.retention.raw} | ${d.metrics.retention.benchmark}% | ${d.metrics.retention.score} / 100 | ${d.metrics.retention.stars} |\n`;
-                    m += `| Growth Capacity | Newcomer Recruitment | ${d.metrics.growth.weight} | ${d.metrics.growth.raw} | ${d.metrics.growth.benchmark}% | ${d.metrics.growth.score} / 100 | ${d.metrics.growth.stars} |\n`;
-                    m += `| Content Utility | Article Image Use | ${d.metrics.usage.weight} | ${d.metrics.usage.raw} | ${d.metrics.usage.benchmark} | ${d.metrics.usage.score} / 100 | ${d.metrics.usage.stars} |\n`;
-                    m += `| Quality Recognition | Featured / QI Recognition | ${d.metrics.quality.weight} | ${d.metrics.quality.raw} | ${d.metrics.quality.benchmark} | ${d.metrics.quality.score} / 100 | ${d.metrics.quality.stars} |\n`;
-                    m += `| Contributor Diversity | Participation Equity | ${d.metrics.diversity.weight} | ${d.metrics.diversity.raw} | ${d.metrics.diversity.benchmark} | ${d.metrics.diversity.score} / 100 | ${d.metrics.diversity.stars} |\n`;
-                    m += `| **Composite Overall** | **Full Evaluation** | **100%** | — | — | **${score} / 100** | **${ratingLabel}** |\n\n`;
-
-                    m += `### Contributor Participation\n\n`;
-                    m += `- **Total Evaluated Uploaders:** ${d.counts.target.toLocaleString()}\n`;
-                    m += `- **Baseline Reference Uploaders:** ${d.counts.base.toLocaleString()}\n`;
-                    m += `- **Retained Prior Contributors:** ${d.counts.overlap.toLocaleString()}\n`;
-                    m += `- **First-Time Newcomer Uploaders:** ${Math.max(0, d.counts.target - d.counts.overlap).toLocaleString()}\n\n`;
-
-                    if (d.insights && d.insights.length > 0) {
-                        m += `### Organizer Diagnostic Insights\n\n`;
-                        d.insights.forEach(ins => {
-                            m += `- ${ins}\n`;
-                        });
-                        m += `\n`;
-                    }
-
                     m += `---\n`;
-                    m += `*Compiled with [CampTools](https://meta.wikimedia.org/wiki/Project_Korikath) · Tool Usage & Process Guide available on Wikimedia Toolforge.*`;
+                    m += `*Compiled with [CampTools](https://camptools.toolforge.org) · Evaluation Framework & Process Documentation available on Wikimedia Toolforge.*`;
                     ta.value = m;
                 }
             },
@@ -1921,7 +2036,7 @@
                         <line x1="16" y1="13" x2="8" y2="13"></line>
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                     </svg>
-                    <span>Export Evaluation Report</span>
+                    <span>Detailed Campaign Report</span>
                 </div>
                 <button type="button" class="wikitext-modal-close" onclick="CampTableSuite.closeExportReportModal()" aria-label="Close dialog">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1933,11 +2048,13 @@
             <div class="wikitext-modal-body">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                     <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
-                        Structured campaign evaluation report ready for Wikimedia project talk pages, community dashboards, or documentation.
+                        Synthesized multi-module analytics and diagnostic evaluation across the CampTools suite.
                     </p>
-                    <div class="export-format-toggle">
+                    <div class="export-format-toggle" style="display: flex; gap: 4px; flex-wrap: wrap;">
                         <button type="button" id="format-btn-wikitext" class="export-format-btn active" onclick="CampTableSuite.setReportFormat('wikitext')">Wikitext</button>
                         <button type="button" id="format-btn-markdown" class="export-format-btn" onclick="CampTableSuite.setReportFormat('markdown')">Markdown</button>
+                        <button type="button" class="export-format-btn" onclick="CampTableSuite.downloadReportCsv()" title="Download report dataset as CSV">CSV</button>
+                        <button type="button" class="export-format-btn" onclick="CampTableSuite.printReport()" title="Print or save as PDF dossier">Print / Save PDF</button>
                     </div>
                 </div>
                 <textarea id="export-report-textarea" class="wikitext-textarea" readonly spellcheck="false" style="min-height: 340px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem;"></textarea>

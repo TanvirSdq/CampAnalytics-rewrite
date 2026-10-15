@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 
 import {
   HealthEvaluationResult,
+  OverallCampaignReport,
   TimeSeriesPoint,
   CountrySeries,
   ComparativeTableRow,
@@ -14,12 +15,17 @@ import {
   MobilityMatrixCell,
   MobilityMatrixRow,
   MobilityResult,
+  SankeyNode,
+  SankeyLink,
+  EcosystemFlowData,
   ContributorTierBreakdown,
   DiversityRecord,
   DiversityResult
 } from './types.js';
 
 export type {
+  HealthEvaluationResult,
+  OverallCampaignReport,
   TimeSeriesPoint,
   CountrySeries,
   ComparativeTableRow,
@@ -30,6 +36,9 @@ export type {
   MobilityMatrixCell,
   MobilityMatrixRow,
   MobilityResult,
+  SankeyNode,
+  SankeyLink,
+  EcosystemFlowData,
   ContributorTierBreakdown,
   DiversityRecord,
   DiversityResult
@@ -1781,25 +1790,65 @@ export async function computeHealthEvaluation(
   const counts = { target: targetUsers.size, base: baseUsers.size, overlap };
   const insights = generateInsights(metrics, region.split(' (')[0], benchmarks, counts);
 
-    const compositeScore = metrics.Overall ?? 0;
-    const tier = compositeScore >= 80 ? 'Tier 1' : compositeScore >= 60 ? 'Tier 2' : 'Tier 3';
-    const stars = calculateStars(compositeScore);
+  const compositeScore = metrics.Overall ?? 0;
+  const tier = compositeScore >= 80 ? 'Tier 1' : compositeScore >= 60 ? 'Tier 2' : 'Tier 3';
+  const stars = calculateStars(compositeScore);
+  const ratingLabel = compositeScore >= 85 ? 'Outstanding' : compositeScore >= 70 ? 'Strong' : compositeScore >= 50 ? 'Moderate' : compositeScore >= 30 ? 'Emerging' : 'Critical / Low';
 
-    return {
-      target_campaign: targetEvent.toLowerCase(),
-      baseline_campaign: baselineEvent.toLowerCase(),
-      region,
-      target_users_count: targetUsers.size,
-      baseline_users_count: baseUsers.size,
-      overlap_users_count: overlap,
-      composite_score: compositeScore,
-      tier,
-      stars,
-      dimensions: metrics,
-      benchmarks,
-      insights
-    };
-  }
+  const newcomerCount = Math.max(0, targetUsers.size - overlap);
+  const newcomerPct = targetUsers.size > 0 ? parseFloat(((newcomerCount / targetUsers.size) * 100).toFixed(1)) : 0;
+  const retentionPct = baseUsers.size > 0 ? parseFloat(((overlap / baseUsers.size) * 100).toFixed(1)) : 0;
+  const totalUploadsEst = targetStructural.total_uploads || Math.max(targetUsers.size * 5, 20);
+  const usageShare = targetStructural.usage_share || 0;
+  const qualityShare = targetStructural.quality_image_share || 0;
+
+  const overallReport: OverallCampaignReport = {
+    campaign_code: targetEvent.toLowerCase(),
+    campaign_name: EVENT_MAP[eventType] ? `Wiki Loves ${EVENT_MAP[eventType]}` : eventType.toUpperCase(),
+    country_name: countryDisplayName(targetCc),
+    country_code: targetCc.toUpperCase(),
+    edition_year: 2000 + yearInt,
+    region,
+    generated_date: new Date().toISOString().split('T')[0],
+    composite_score: compositeScore,
+    tier,
+    rating_label: ratingLabel,
+    stars,
+    total_uploaders: targetUsers.size,
+    newcomer_uploaders: newcomerCount,
+    returning_uploaders: overlap,
+    newcomer_share_pct: newcomerPct,
+    baseline_code: baselineEvent.toLowerCase(),
+    baseline_uploaders: baseUsers.size,
+    retained_uploaders: overlap,
+    retention_rate_pct: retentionPct,
+    total_uploads: totalUploadsEst,
+    usage_share_pct: usageShare,
+    articles_illustrated_estimate: Math.round((totalUploadsEst * usageShare) / 100),
+    quality_image_share_pct: qualityShare,
+    quality_images_estimate: Math.round((totalUploadsEst * qualityShare) / 100),
+    top10_uploader_share_pct: targetStructural.top10_uploader_share || 60,
+    dimensions: metrics,
+    benchmarks,
+    insights
+  };
+
+  return {
+    target_campaign: targetEvent.toLowerCase(),
+    baseline_campaign: baselineEvent.toLowerCase(),
+    region,
+    target_users_count: targetUsers.size,
+    baseline_users_count: baseUsers.size,
+    overlap_users_count: overlap,
+    composite_score: compositeScore,
+    tier,
+    stars,
+    dimensions: metrics,
+    benchmarks,
+    insights,
+    overall_report: overallReport
+  };
+}
 
 // =========================================================================
 // MULTI-COUNTRY COMPARATIVE ANALYTICS ENGINE
@@ -2725,6 +2774,8 @@ export async function computeMobilityAnalytics(params: {
     ? parseFloat((sumConversion / offDiagonalCount).toFixed(1))
     : 0;
 
+  const flow = computeEcosystemFlow(eventsToUse, eventNames, cohorts, eventCodes);
+
   return {
     year,
     country_code: cc,
@@ -2739,6 +2790,7 @@ export async function computeMobilityAnalytics(params: {
       highest_overlap: maxOverlap,
       average_conversion: avgConversion
     },
+    flow,
     metadata_card: {
       indicator_id: 'mobility_overlap',
       title: 'Cross-Campaign Contributor Mobility & Community Overlap',
@@ -2759,5 +2811,98 @@ export async function computeMobilityAnalytics(params: {
       ]
     }
   };
+}
+
+export function computeEcosystemFlow(
+  events: string[],
+  eventNames: Record<string, string>,
+  cohorts: Record<string, Set<string>>,
+  eventCodes: Record<string, string>
+): EcosystemFlowData {
+  const nodes: SankeyNode[] = [];
+  const links: SankeyLink[] = [];
+  const nodeIndexMap = new Map<string, number>();
+
+  function getOrAddNode(name: string, color: string): number {
+    if (nodeIndexMap.has(name)) {
+      return nodeIndexMap.get(name)!;
+    }
+    const idx = nodes.length;
+    nodes.push({ name, color });
+    nodeIndexMap.set(name, idx);
+    return idx;
+  }
+
+  // 1. Create Source Nodes (one for each campaign)
+  const sourceNodeIndices: number[] = [];
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    const code = eventCodes[e];
+    const users = cohorts[code.toLowerCase()] || new Set<string>();
+    const color = CODEX_COLOR_PALETTE[i % CODEX_COLOR_PALETTE.length];
+    const label = `${eventNames[e]} (${users.size.toLocaleString()})`;
+    const sIdx = getOrAddNode(label, color);
+    sourceNodeIndices.push(sIdx);
+  }
+
+  // 2. Classify each user by exact subset of campaigns they participated in
+  const userSubsetCounts = new Map<string, number>();
+  const allUsers = new Set<string>();
+  for (const e of events) {
+    const code = eventCodes[e];
+    const set = cohorts[code.toLowerCase()] || new Set<string>();
+    for (const u of set) allUsers.add(u);
+  }
+
+  for (const u of allUsers) {
+    const activeIndices: number[] = [];
+    for (let i = 0; i < events.length; i++) {
+      const code = eventCodes[events[i]];
+      const set = cohorts[code.toLowerCase()] || new Set<string>();
+      if (set.has(u)) activeIndices.push(i);
+    }
+    const key = activeIndices.join(',');
+    userSubsetCounts.set(key, (userSubsetCounts.get(key) || 0) + 1);
+  }
+
+  // 3. Build target nodes & links for each subset
+  for (const [key, count] of userSubsetCounts.entries()) {
+    if (!key || count <= 0) continue;
+    const indices = key.split(',').map((x) => parseInt(x, 10));
+
+    if (indices.length === 1) {
+      // Single campaign exclusive
+      const srcIdx = indices[0];
+      const e = events[srcIdx];
+      const targetLabel = `${eventNames[e]} Exclusive (${count.toLocaleString()})`;
+      const targetColor = '#54595d'; // Muted slate for exclusive
+      const tNodeIdx = getOrAddNode(targetLabel, targetColor);
+      links.push({
+        source: sourceNodeIndices[srcIdx],
+        target: tNodeIdx,
+        value: count,
+        label: `${count.toLocaleString()} participants active exclusively in ${eventNames[e]}`
+      });
+    } else {
+      // Multi-campaign shared subset
+      const sharedNames = indices.map((idx) => eventNames[events[idx]].replace('Wiki Loves ', '')).join(' + ');
+      const targetLabel = indices.length === events.length
+        ? `All ${events.length} Campaigns (${count.toLocaleString()})`
+        : `Shared: ${sharedNames} (${count.toLocaleString()})`;
+      const targetColor = '#008080'; // Deep Teal for cross-campaign bridge
+      const tNodeIdx = getOrAddNode(targetLabel, targetColor);
+
+      for (const srcIdx of indices) {
+        links.push({
+          source: sourceNodeIndices[srcIdx],
+          target: tNodeIdx,
+          value: count,
+          label: `${count.toLocaleString()} participants shared with ${targetLabel}`
+        });
+      }
+    }
+  }
+
+  return { nodes, links };
 }
 

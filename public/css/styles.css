@@ -6913,6 +6913,189 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     flex-shrink: 0;
 }
 
+/* ==========================================================================
+   Publication-Grade Executive Print Stylesheet (@media print)
+   ========================================================================== */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 15mm 12mm 15mm 12mm;
+    }
+
+    *, *::before, *::after {
+        background: transparent !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        font-size: 10pt !important;
+        line-height: 1.4 !important;
+        background: #ffffff !important;
+        color: #101418 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .camp-header,
+    .camp-header-nav,
+    .mobile-nav-drawer,
+    .preset-rail,
+    .preset-strip,
+    .builder-action-bar,
+    .display-panel-header,
+    .comparative-view-switch,
+    .table-toolbar,
+    .timeline-scrubber,
+    .country-selector-drawer,
+    .country-drawer-overlay,
+    .wikitext-modal-overlay,
+    .camp-footer,
+    .btn,
+    .btn-export,
+    .export-format-btn,
+    form,
+    #health-form,
+    #mobility-form,
+    #influx-form,
+    #retention-form,
+    #quality-form,
+    #usage-form,
+    #diversity-form,
+    #impact-form,
+    .no-print {
+        display: none !important;
+    }
+
+    .camp-main-content::before {
+        content: "CampTools Campaign Analytics & Vitality Dossier · Wikimedia Toolforge";
+        display: block;
+        font-size: 8.5pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #54595d !important;
+        border-bottom: 2pt solid #202122;
+        padding-bottom: 4pt;
+        margin-bottom: 14pt;
+    }
+
+    .container,
+    .camp-main-content {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .analysis-card,
+    .stat-kpi-card,
+    .scorecard-item,
+    .card,
+    .metadata-card {
+        border: 1pt solid #72777d !important;
+        background: #ffffff !important;
+        padding: 8pt 10pt !important;
+        margin-bottom: 10pt !important;
+        border-radius: 0 !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .stat-kpi-grid,
+    .scorecard-grid,
+    .dimensions-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(140pt, 1fr)) !important;
+        gap: 8pt !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    h1, .tool-page-title {
+        font-size: 18pt !important;
+        font-weight: 700 !important;
+        margin-bottom: 4pt !important;
+        color: #000000 !important;
+        page-break-after: avoid;
+        break-after: avoid;
+    }
+
+    h2, .section-title {
+        font-size: 13pt !important;
+        font-weight: 700 !important;
+        margin-top: 12pt !important;
+        margin-bottom: 6pt !important;
+        border-bottom: 1pt solid #a2a9b1;
+        padding-bottom: 3pt;
+        page-break-after: avoid;
+        break-after: avoid;
+    }
+
+    h3 {
+        font-size: 11pt !important;
+        font-weight: 600 !important;
+        margin-top: 8pt !important;
+        margin-bottom: 4pt !important;
+        page-break-after: avoid;
+        break-after: avoid;
+    }
+
+    table, .camp-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 10pt !important;
+        font-size: 8.5pt !important;
+        page-break-inside: auto;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    th, td {
+        border: 1pt solid #a2a9b1 !important;
+        padding: 4pt 6pt !important;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f8f9fa !important;
+        font-weight: 700 !important;
+    }
+
+    .chart-container,
+    .plotly-graph-div,
+    svg {
+        max-width: 100% !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    a, a:visited {
+        text-decoration: none !important;
+        color: #000000 !important;
+    }
+
+    .badge,
+    .tier-badge,
+    .status-badge {
+        border: 1pt solid #202122 !important;
+        padding: 2pt 5pt !important;
+        font-weight: 700 !important;
+        font-size: 8pt !important;
+        border-radius: 0 !important;
+    }
+}
+
+
 
 
 
