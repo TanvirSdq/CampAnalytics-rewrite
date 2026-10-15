@@ -570,6 +570,10 @@ describe('Tier 3: Cross-Feature Interactions & Parameter Combinations', () => {
       !res.text.includes('Welcome to CampTools'),
       'POST /health must NOT return home.html'
     );
+    assert.ok(
+      res.text.includes('Community Scale'),
+      'Expected /health evaluation to render Community Scale dimension'
+    );
   });
 
   test('POST /health with custom region (Northern & Western Europe) evaluates BD against Europe peer benchmarks', async () => {
@@ -598,6 +602,10 @@ describe('Tier 3: Cross-Feature Interactions & Parameter Combinations', () => {
       /<option value="Northern &(?:amp;)? Western Europe"\s+selected>/,
       'Expected Northern & Western Europe option to be selected'
     );
+    assert.ok(
+      res.text.includes('Community Scale'),
+      'Expected /health evaluation to render Community Scale'
+    );
   });
 
   test('GET /health with shorthand region=Europe resolves cleanly to Northern & Western Europe', async () => {
@@ -609,6 +617,22 @@ describe('Tier 3: Cross-Feature Interactions & Parameter Combinations', () => {
       /calibrated against Northern &(?:amp;)? Western Europe regional peer benchmarks/,
       'Expected shorthand Europe to resolve to Northern & Western Europe'
     );
+    assert.ok(
+      res.text.includes('Community Scale'),
+      'Expected /health evaluation to render Community Scale'
+    );
+  });
+
+  test('GET /api/health returns 6-dimension evaluation including Community Scale', async () => {
+    const res = await makeRequest('/api/health?target_campaign=wlmbd23');
+    assert.equal(res.status, 200, 'Expected status 200 for GET /api/health');
+    const json = JSON.parse(res.text);
+    assert.ok(json.dimensions, 'Expected dimensions object in API response');
+    assert.ok(json.dimensions.Scale, 'Expected Scale dimension in API response');
+    assert.ok(typeof json.dimensions.Scale.score === 'number', 'Expected Scale score number');
+    assert.ok(json.benchmarks, 'Expected benchmarks in API response');
+    assert.ok(typeof json.benchmarks.scale === 'number', 'Expected scale benchmark number');
+    assert.ok(json.composite_score > 0, 'Expected positive composite score');
   });
 
   test('POST /retention form submission with target campaign codes', async () => {

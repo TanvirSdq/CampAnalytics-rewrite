@@ -1218,7 +1218,8 @@ export const GLOBAL_MOVEMENT_BASELINES = {
   usage: 2.5,
   growth: 65.0,
   diversity: 70.0,
-  quality: 1.5
+  quality: 1.5,
+  scale: 150.0
 };
 
 export function calculateStars(score: number): [string, number] {
@@ -1282,7 +1283,7 @@ export function generateHealthMetrics(
       raw: `${retentionRate.toFixed(1)}%`,
       score: calculateRelativeScore(retentionRate, retBm, true),
       benchmark: retBm,
-      weight: 25,
+      weight: 20,
       is_inaugural: false
     };
   }
@@ -1298,7 +1299,18 @@ export function generateHealthMetrics(
     raw: `${growthRate.toFixed(1)}%`,
     score: calculateRelativeScore(growthRate, groBm, true),
     benchmark: groBm,
-    weight: 25
+    weight: 20
+  };
+
+  // Community Scale (Active Uploaders Volume)
+  const targetCount = targetUsers.size;
+  const scaleBm = benchmarks.scale || GLOBAL_MOVEMENT_BASELINES.scale;
+  metrics.Scale = {
+    raw: `${targetCount.toLocaleString()} uploaders`,
+    count: targetCount,
+    score: calculateRelativeScore(targetCount, scaleBm, true),
+    benchmark: Math.round(scaleBm),
+    weight: 15
   };
 
   // Content Utility
@@ -1308,7 +1320,7 @@ export function generateHealthMetrics(
     raw: rawUsage,
     score: calculateRelativeScore(rawUsage, useBm, true),
     benchmark: useBm,
-    weight: 20
+    weight: 15
   };
 
   // Contributor Diversity
@@ -1334,21 +1346,30 @@ export function generateHealthMetrics(
   let overall = 0;
   if (isInaugural) {
     overall =
-      metrics.Growth.score * (25.0 / 75.0) +
-      metrics.Usage.score * (20.0 / 75.0) +
-      metrics.Quality.score * (15.0 / 75.0) +
-      metrics.Diversity.score * (15.0 / 75.0);
-    metrics.Growth.weight = 33;
-    metrics.Usage.weight = 27;
+      metrics.Growth.score * 0.25 +
+      metrics.Scale.score * 0.20 +
+      metrics.Usage.score * 0.20 +
+      metrics.Quality.score * 0.20 +
+      metrics.Diversity.score * 0.15;
+    metrics.Growth.weight = 25;
+    metrics.Scale.weight = 20;
+    metrics.Usage.weight = 20;
     metrics.Quality.weight = 20;
-    metrics.Diversity.weight = 20;
+    metrics.Diversity.weight = 15;
   } else {
     overall =
-      metrics.Retention.score * 0.25 +
-      metrics.Growth.score * 0.25 +
-      metrics.Usage.score * 0.20 +
+      metrics.Retention.score * 0.20 +
+      metrics.Growth.score * 0.20 +
+      metrics.Scale.score * 0.15 +
+      metrics.Usage.score * 0.15 +
       metrics.Quality.score * 0.15 +
       metrics.Diversity.score * 0.15;
+    metrics.Retention.weight = 20;
+    metrics.Growth.weight = 20;
+    metrics.Scale.weight = 15;
+    metrics.Usage.weight = 15;
+    metrics.Quality.weight = 15;
+    metrics.Diversity.weight = 15;
   }
 
   metrics.Overall = Math.round(overall);
@@ -1464,9 +1485,25 @@ export function generateInsights(
     insights.push(
       `Quality Recognition is present (${rawQual.toFixed(1)}%): recognized Commons quality files have been logged (benchmark: ${qualBm.toFixed(1)}%).`
     );
-  } else {
     insights.push(
       'Quality Recognition is unindexed (0.0%): no files have formal Commons Quality Image designations. (Note: Commons QI requires manual jury/volunteer nominations).'
+    );
+  }
+
+  // 6. Community Scale Insight
+  const rawScale = metrics.Scale?.count ?? targetCount;
+  const scaleBm = benchmarks.scale || GLOBAL_MOVEMENT_BASELINES.scale;
+  if (rawScale >= scaleBm) {
+    insights.push(
+      `Community Scale is substantial (${rawScale.toLocaleString()} uploaders): cohort volume matches or exceeds the ${regionLabel} (${Math.round(scaleBm).toLocaleString()} uploaders), demonstrating major mobilization reach.`
+    );
+  } else if (rawScale >= scaleBm * 0.6) {
+    insights.push(
+      `Community Scale is healthy (${rawScale.toLocaleString()} uploaders): participant cohort represents solid community mobilization within typical peer parameters (benchmark: ${Math.round(scaleBm).toLocaleString()} uploaders).`
+    );
+  } else {
+    insights.push(
+      `Community Scale reflects an emerging cohort (${rawScale.toLocaleString()} uploaders): active participant volume is below the ${regionLabel} (${Math.round(scaleBm).toLocaleString()} uploaders), indicating scale disparity relative to established regional chapters.`
     );
   }
 
@@ -1751,6 +1788,7 @@ export async function computeHealthEvaluation(
 
   const repRetentions: number[] = [];
   const repGrowths: number[] = [];
+  const repScales: number[] = [];
   const repQualityRates: number[] = [];
   const repDiversities: number[] = [];
   const repUsages: number[] = [];
@@ -1761,6 +1799,10 @@ export async function computeHealthEvaluation(
     const tU = allFetched[tCode] || new Set<string>();
     const bU = allFetched[bCode] || new Set<string>();
     const struct = structuralMetrics[tCode] || {};
+
+    if (tU.size > 0) {
+      repScales.push(tU.size);
+    }
 
     if (bU.size > 0) {
       let o = 0;
@@ -1795,7 +1837,8 @@ export async function computeHealthEvaluation(
     growth: computeBayesianBenchmark(repGrowths, GLOBAL_MOVEMENT_BASELINES.growth),
     quality: computeBayesianBenchmark(repQualityRates, GLOBAL_MOVEMENT_BASELINES.quality),
     diversity: computeBayesianBenchmark(repDiversities, GLOBAL_MOVEMENT_BASELINES.diversity),
-    usage: computeBayesianBenchmark(repUsages, GLOBAL_MOVEMENT_BASELINES.usage)
+    usage: computeBayesianBenchmark(repUsages, GLOBAL_MOVEMENT_BASELINES.usage),
+    scale: computeBayesianBenchmark(repScales, GLOBAL_MOVEMENT_BASELINES.scale)
   };
 
   const targetStructural = structuralMetrics[targetEvent.toLowerCase()] || {

@@ -106,11 +106,16 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     const divRaw = parseNum(d.Diversity?.raw);
     const divDelta = isNaN(divRaw) ? null : parseFloat((divRaw - b.diversity).toFixed(1));
 
+    const scaleRaw = typeof d.Scale?.count === 'number' ? d.Scale.count : (typeof d.Scale?.raw === 'number' ? d.Scale.raw : parseNum(d.Scale?.raw));
+    const scaleObserved = !isNaN(scaleRaw) ? scaleRaw : (result.target_users_count || 0);
+    const scaleDelta = !isNaN(scaleObserved) && b.scale ? Math.round(scaleObserved - b.scale) : null;
+    const scaleNormObserved = b.scale > 0 ? Math.min(100, Math.round(70 * (scaleObserved / b.scale))) : 70;
+
     benchmarkComparisons = [
       {
         id: 'retention',
         name: 'Retention Index',
-        weight: d.Retention?.weight || 25,
+        weight: d.Retention?.weight || 20,
         observedStr: retIsNaN ? 'Inaugural' : `${retRaw.toFixed(1)}%`,
         observedVal: retIsNaN ? 0 : Math.min(100, Math.max(0, retRaw)),
         benchmarkStr: `${b.retention.toFixed(1)}%`,
@@ -123,7 +128,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
       {
         id: 'growth',
         name: 'Growth Capacity',
-        weight: d.Growth?.weight || 25,
+        weight: d.Growth?.weight || 20,
         observedStr: isNaN(groRaw) ? '—' : `${groRaw.toFixed(1)}%`,
         observedVal: isNaN(groRaw) ? 0 : Math.min(100, Math.max(0, groRaw)),
         benchmarkStr: `${b.growth.toFixed(1)}%`,
@@ -134,9 +139,22 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         score: d.Growth?.score
       },
       {
+        id: 'scale',
+        name: 'Community Scale',
+        weight: d.Scale?.weight || 15,
+        observedStr: `${scaleObserved.toLocaleString()} uploaders`,
+        observedVal: scaleNormObserved,
+        benchmarkStr: `${Math.round(b.scale).toLocaleString()} uploaders`,
+        benchmarkVal: 70,
+        deltaFormatted: scaleDelta !== null ? (scaleDelta >= 0 ? `▲ +${scaleDelta.toLocaleString()}` : `▼ ${scaleDelta.toLocaleString()}`) : '—',
+        isPositive: scaleDelta !== null ? scaleDelta >= 0 : true,
+        isInaugural: false,
+        score: d.Scale?.score
+      },
+      {
         id: 'usage',
         name: 'Content Utility',
-        weight: d.Usage?.weight || 20,
+        weight: d.Usage?.weight || 15,
         observedStr: isNaN(useRaw) ? '—' : `${useRaw.toFixed(1)}%`,
         observedVal: isNaN(useRaw) ? 0 : Math.min(100, Math.max(0, useRaw)),
         benchmarkStr: `${b.usage.toFixed(1)}%`,

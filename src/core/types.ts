@@ -29,14 +29,16 @@ export interface HealthBenchmarks {
   quality: number;
   diversity: number;
   usage: number;
+  scale: number;
 }
 
 export interface HealthMetricDimension {
-  raw: number;
-  score: number;
+  raw: any;
+  score: number | null;
   weight: number;
   benchmark: number;
-  stars: [string, number];
+  stars?: string;
+  is_inaugural?: boolean;
 }
 
 export interface HealthMetrics {
@@ -49,6 +51,7 @@ export interface HealthMetrics {
     quality: HealthMetricDimension;
     diversity: HealthMetricDimension;
     usage: HealthMetricDimension;
+    scale: HealthMetricDimension;
   };
 }
 

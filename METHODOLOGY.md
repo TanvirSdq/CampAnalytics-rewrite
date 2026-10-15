@@ -9,7 +9,7 @@ This document outlines the theoretical foundations, mathematical formulations, c
 CampAnalytics is an analytical suite designed for organizers, researchers, and grant committees within the Wikimedia ecosystem. The platform provides empirical visibility into contributor dynamics and content outcomes across annual photography competitions (Wiki Loves Monuments, Wiki Loves Earth, Wiki Loves Folklore, Wiki Loves Africa, and Wiki Loves Bangla).
 
 The suite comprises five primary analytical tools:
-1. **Evaluation (Tool 01)**: Multi-dimensional campaign evaluation combining volunteer continuity, newcomer recruitment, content utility, quality recognition, and participation equity into a standardized 0–100 index.
+1. **Evaluation (Tool 01)**: Multi-dimensional campaign evaluation combining volunteer continuity, newcomer recruitment, community scale, content utility, quality recognition, and participation equity into a standardized 0–100 index.
 2. **Retention (Tool 02)**: Longitudinal participant continuity analysis across multi-year editions, directional cohort retention matrices, and geographic choropleth mappings.
 3. **Influx (Tool 03)**: Year-over-Year (YoY) contributor segmentation distinguishing first-time participants from returning veterans to assess participant pipeline sustainability.
 4. **Content Utility (Tool 04)**: Live encyclopedic reuse tracking across Wikimedia projects (`prop=globalusage`), article inclusion volume, cross-wiki project breadth, and photographer impact rankings.
@@ -62,14 +62,15 @@ $$C_t = \left| \bigcup_{k=1}^t U_k \right| = C_{t-1} + |N_t|$$
 
 ## 4. Multi-Dimensional Campaign Evaluation Framework
 
-The Campaign Evaluation module assesses overall campaign vitality across five core dimensions. Rather than evaluating campaigns against absolute, uncalibrated thresholds, metrics are normalized against contemporary regional peer benchmarks and regularized global baselines.
+The Campaign Evaluation module assesses overall campaign vitality across six core dimensions. Rather than evaluating campaigns against absolute, uncalibrated thresholds or relying solely on intensive ratios that mask cohort scale disparities, metrics are normalized against contemporary regional peer benchmarks and regularized global baselines.
 
 ### 4.1 Evaluation Dimensions
 
 | Dimension | Notation | Definition | Data Source |
 | :--- | :---: | :--- | :--- |
-| **Retention Index** | $S_{\text{ret}}$ | Continuity of baseline participants into target edition: $\frac{\|U_{\text{target}} \cap U_{\text{base}}\|}{\|U_{\text{base}}\|} \times 100\%$ | Commons Upload API Logs |
-| **Growth Capacity** | $S_{\text{grow}}$ | Share of target participants who are newcomers: $\frac{\|U_{\text{target}} \setminus U_{\text{base}}\|}{\|U_{\text{target}}\|} \times 100\%$ | Commons Upload API Logs |
+| **Retention Index** | $S_{\text{ret}}$ | Continuity of baseline participants into target edition: $\frac{|U_{\text{target}} \cap U_{\text{base}}|}{|U_{\text{base}}|} \times 100\%$ | Commons Upload API Logs |
+| **Growth Capacity** | $S_{\text{grow}}$ | Share of target participants who are newcomers: $\frac{|U_{\text{target}} \setminus U_{\text{base}}|}{|U_{\text{target}}|} \times 100\%$ | Commons Upload API Logs |
+| **Community Scale** | $S_{\text{scale}}$ | Total active uploader cohort size: $|U_{\text{target}}|$ | Commons Upload API Logs |
 | **Content Utility** | $S_{\text{util}}$ | Percentage of uploaded files actively deployed in Wikimedia project articles | Commons API (`prop=globalusage`) |
 | **Quality Recognition** | $S_{\text{qual}}$ | Percentage of uploaded files designated as Commons Quality Images (QI) or Featured Pictures (FP) | Commons Category Members API |
 | **Contributor Diversity** | $S_{\text{div}}$ | Inverse upload concentration: share of total uploads contributed by the top 10% most active uploaders | Commons API uploader distributions |
@@ -82,28 +83,28 @@ Weights are assigned using a balanced paired-dimension architecture summing to 1
 ┌────────────────────────────────────────────────────────────────────────┐
 │                      Composite Evaluation (100%)                       │
 ├──────────────────────────┬──────────────────────────┬──────────────────┤
-│  Community Vitality Pair │   Mission & Content Pair │   Participation  │
-│          (50%)           │          (35%)           │   Equity (15%)   │
-├─────────────┬────────────┼─────────────┬────────────┼──────────────────┤
-│  Retention  │   Growth   │   Utility   │  Quality   │    Diversity     │
-│    (25%)    │   (25%)    │    (20%)    │   (15%)    │      (15%)       │
-└─────────────┴────────────┴─────────────┴────────────┴──────────────────┘
+│  Community Vitality Pair │  Mission & Content Pair  │  Equity & Scale  │
+│          (40%)           │          (30%)           │    Pair (30%)    │
+├─────────────┬────────────┼─────────────┬────────────┼────────────┬─────┤
+│  Retention  │   Growth   │   Utility   │  Quality   │ Diversity  │Scale│
+│    (20%)    │   (20%)    │    (15%)    │   (15%)    │   (15%)    │(15%)│
+└─────────────┴────────────┴─────────────┴────────────┴────────────┴─────┘
 ```
 
 The composite evaluation score is calculated as:
 
-$$\text{Evaluation Index} = 0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}}$$
+$$\text{Evaluation Index} = 0.20 S_{\text{ret}} + 0.20 S_{\text{grow}} + 0.15 S_{\text{scale}} + 0.15 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}}$$
 
 #### Rationale for Paired Weighting
-- **Community Vitality Pair (50%)**: Balances volunteer retention ($25\%$) against newcomer recruitment ($25\%$). A campaign with high recruitment but zero retention represents an exhausting revolving door; conversely, a campaign with high retention but zero newcomers stagnates.
-- **Mission & Content Impact Pair (35%)**: Balances practical encyclopedic utility ($20\%$) against formal artistic quality ($15\%$). File uploads that illustrate Wikipedia articles deliver direct mission value; recognized Quality Images reflect high photographic execution.
-- **Participation Equity (15%)**: Assesses contributor distribution breadth, guarding against campaigns where aggregate numbers are heavily skewed by a single power uploader.
+- **Community Vitality Pair (40%)**: Balances volunteer retention ($20\%$) against newcomer recruitment ($20\%$). A campaign with high recruitment but zero retention represents an exhausting revolving door; conversely, a campaign with high retention but zero newcomers stagnates.
+- **Mission & Content Impact Pair (30%)**: Balances practical encyclopedic utility ($15\%$) against formal artistic quality ($15\%$). File uploads that illustrate Wikipedia articles deliver direct mission value; recognized Quality Images reflect high photographic execution.
+- **Equity & Scale Pair (30%)**: Balances participation distribution equity ($15\%$) against community mobilization scale ($15\%$). While pure-rate metrics protect smaller affiliates from arbitrary population biases, open collaboration movements require genuine participant mobilization. Incorporating Community Scale ensures that cross-regional comparisons (such as benchmarking an emerging chapter against European movement hubs) properly account for volunteer volume disparity without obliterating local newcomer recruitment accomplishments.
 
 ### 4.3 Inaugural Campaign Calibration (Dynamic Re-Weighting)
 
-When evaluating an inaugural edition of a campaign in a territory (where $|U_{\text{base}}| = 0$ due to the absence of a prior evaluated annual cycle), volunteer retention cannot be empirically measured. Rather than assigning an artificial $0.0\%$ score that would penalize inaugural organizing teams, the framework dynamically suppresses the retention dimension and recalibrates the remaining four indicators proportionally across the unit interval:
+When evaluating an inaugural edition of a campaign in a territory (where $|U_{\text{base}}| = 0$ due to the absence of a prior evaluated annual cycle), volunteer retention cannot be empirically measured. Rather than assigning an artificial $0.0\%$ score that would penalize inaugural organizing teams, the framework dynamically suppresses the retention dimension and recalibrates the remaining five indicators proportionally across the unit interval:
 
-$$\text{Evaluation Index}_{\text{inaugural}} = \frac{25}{75} S_{\text{grow}} + \frac{20}{75} S_{\text{util}} + \frac{15}{75} S_{\text{qual}} + \frac{15}{75} S_{\text{div}} \approx 0.333 S_{\text{grow}} + 0.267 S_{\text{util}} + 0.200 S_{\text{qual}} + 0.200 S_{\text{div}}$$
+$$\text{Evaluation Index}_{\text{inaugural}} = 0.25 S_{\text{grow}} + 0.20 S_{\text{scale}} + 0.20 S_{\text{util}} + 0.20 S_{\text{qual}} + 0.15 S_{\text{div}}$$
 
 This dynamic normalization maintains index defensibility and preserves community evaluation comparability across emerging initiatives.
 
@@ -117,7 +118,7 @@ Direct linear percentage ratios ($x / B$) suffer from two primary failure modes:
 
 To resolve this, CampAnalytics maps observed metrics $x$ against regional reference thresholds $B$ using continuous, concave utility functions.
 
-### 5.1 Positive Dimensions (Retention, Growth, Utility, Quality)
+### 5.1 Positive Dimensions (Retention, Growth, Community Scale, Utility, Quality)
 
 For dimensions where higher values represent stronger performance:
 
@@ -178,6 +179,7 @@ Derived from multi-year aggregate distributions across 50+ national editions:
 | :--- | :---: | :--- |
 | **Retention** | $20.0\%$ | Median cross-edition participant return rate |
 | **Newcomer Growth** | $65.0\%$ | Typical new contributor share in annual photo drives |
+| **Community Scale** | $150.0 \text{ uploaders}$ | Movement-wide median unique uploader cohort size |
 | **Content Utility** | $2.5\%$ | Median encyclopedic reuse rate across Wikipedia projects |
 | **Quality Recognition** | $1.5\%$ | Median Commons Quality Image / Featured Picture award rate |
 | **Contributor Diversity** | $70.0\%$ | Typical top-10% uploader concentration under open collaboration power laws |

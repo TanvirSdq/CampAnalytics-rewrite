@@ -29,21 +29,22 @@
                     <li><strong>Target Campaign Code:</strong> Enter the official identifier for the campaign edition you want to evaluate (e.g. <code>wlmbd24</code> for Wiki Loves Monuments 2024 Bangladesh, or <code>wlede23</code> for Wiki Loves Earth Germany).</li>
                     <li><strong>Baseline Reference Edition:</strong> Select <em>Previous Year Baseline</em> to measure progression against the immediately preceding year (e.g. 2023 vs 2024), or specify a custom baseline edition for multi-year comparisons. Both cohorts must have active upload records.</li>
                     <li><strong>Regional Peer Calibration:</strong> The tool automatically identifies your country's regional cluster (e.g. South Asia, Northern &amp; Western Europe, ESEAP). Regional benchmarks are computed from active peer campaigns in this group to ensure fair comparison between emerging and veteran communities.</li>
-                    <li><strong>Evaluation Scorecard &amp; Report:</strong> Review the 5 dimension scores, qualitative star ratings, quantitative participant counts, and diagnostic insights. Use the <strong>Export Report</strong> button to generate ready-to-copy summaries for Wikimedia grant reporting, talk pages, or organizing retrospectives.</li>
+                    <li><strong>Evaluation Scorecard &amp; Report:</strong> Review the 6 dimension scores, qualitative star ratings, quantitative participant counts, and diagnostic insights. Use the <strong>Export Report</strong> button to generate ready-to-copy summaries for Wikimedia grant reporting, talk pages, or organizing retrospectives.</li>
                 </ol>
 
                 <div class="math-panel">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Evaluation Weighting Model</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 10px 0;">
-                        The composite evaluation score is calculated on a 0–100 scale across five core dimensions organized into complementary structural pairs:
+                        The composite evaluation score is calculated on a 0–100 scale across six core dimensions organized into complementary structural pairs:
                     </p>
                     <div class="math-formula" style="margin: 10px 0 14px 0;">
-                        \[ \text{Evaluation Index} = 0.25 S_{\text{ret}} + 0.25 S_{\text{grow}} + 0.20 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}} \]
+                        \[ \text{Evaluation Index} = 0.20 S_{\text{ret}} + 0.20 S_{\text{grow}} + 0.15 S_{\text{scale}} + 0.15 S_{\text{util}} + 0.15 S_{\text{qual}} + 0.15 S_{\text{div}} \]
                     </div>
                     <ul style="color: var(--text-ink); font-size: 0.88rem; line-height: 1.7; margin: 0; padding-left: 20px;">
-                        <li><strong>Retention Index (25%):</strong> Percentage of baseline cohort participants who contributed to the target edition. Reflects multi-year community volunteer continuity.</li>
-                        <li><strong>Growth Capacity (25%):</strong> Percentage of target edition uploaders who are first-time entrants. Measures new contributor recruitment velocity.</li>
-                        <li><strong>Content Utility (20%):</strong> Share of uploaded images actively integrated into Wikimedia project articles (<code>prop=globalusage</code>). Measures direct encyclopedic deployment.</li>
+                        <li><strong>Retention Index (20%):</strong> Percentage of baseline cohort participants who contributed to the target edition. Reflects multi-year community volunteer continuity.</li>
+                        <li><strong>Growth Capacity (20%):</strong> Percentage of target edition uploaders who are first-time entrants. Measures new contributor recruitment velocity.</li>
+                        <li><strong>Community Scale (15%):</strong> Active uploader cohort volume calibrated against regional peer benchmarks and global movement baselines. Evaluates movement mobilization breadth.</li>
+                        <li><strong>Content Utility (15%):</strong> Share of uploaded images actively integrated into Wikimedia project articles (<code>prop=globalusage</code>). Measures direct encyclopedic deployment.</li>
                         <li><strong>Quality Recognition (15%):</strong> Share of submissions awarded formal community quality designations (Quality Images or Featured Pictures).</li>
                         <li><strong>Contributor Diversity (15%):</strong> Distribution equity of contributions, measured inversely against the top 10% uploader concentration to evaluate participation breadth.</li>
                     </ul>
@@ -52,7 +53,7 @@
                 <div class="math-panel" style="margin-bottom: 0;">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Empirical Bayesian Shrinkage &amp; Benchmarks</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; line-height: 1.6;">
-                        Regional reference thresholds are computed from active peer campaigns within each geographic cluster. To prevent distortion in regions with small sample sizes (\(N \le 3\)), Empirical Bayesian shrinkage blends regional peer metrics with global movement baselines:
+                        Regional reference thresholds are computed from active peer campaigns within each geographic cluster. To prevent distortion in regions with small sample sizes (\(N \le 3\)), Empirical Bayesian shrinkage blends regional peer metrics with global movement baselines (retention: 20.0%, growth: 65.0%, scale: 150 uploaders, utility: 2.5%, quality: 1.5%, diversity: 70.0%):
                     </p>
                     <div class="math-formula" style="margin: 8px 0;">
                         \[ B_{\text{effective}} = \frac{N}{N + 3} B_{\text{regional}} + \frac{3}{N + 3} B_{\text{global}} \]
