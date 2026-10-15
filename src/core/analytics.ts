@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import {
+  HealthBenchmarks,
   HealthEvaluationResult,
   HistoricalEditionPoint,
   PeerComparisonPoint,
@@ -1317,128 +1318,13 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
 // HEALTH EVALUATION ENGINE
 // =========================================================================
 
-export function getMovementBaselines(eventType: string, region?: string) {
-  const isAll = eventType === 'all';
-  const cleanRegion = (region || '').trim();
-
-  // Empirical baselines calibrated from longitudinal Wikimedia Commons & Toolforge harvest (2015-2024)
-  if (cleanRegion === 'Northern & Western Europe') {
-    return {
-      retention: isAll ? 24.0 : 18.5,
-      growth: isAll ? 1000.0 : 280.0,
-      expansion: isAll ? 1000.0 : 280.0,
-      usage: isAll ? 4.5 : 3.5,
-      usage_count: isAll ? 350.0 : 80.0,
-      diversity: 70.0,
-      quality: isAll ? 2.5 : 2.0,
-      quality_count: isAll ? 120.0 : 30.0,
-      scale: isAll ? 1200.0 : 330.0
-    };
-  }
-  if (cleanRegion === 'Central & Eastern Europe') {
-    return {
-      retention: isAll ? 22.0 : 18.5,
-      growth: isAll ? 850.0 : 240.0,
-      expansion: isAll ? 850.0 : 240.0,
-      usage: isAll ? 4.0 : 3.0,
-      usage_count: isAll ? 300.0 : 70.0,
-      diversity: 70.0,
-      quality: isAll ? 2.2 : 1.8,
-      quality_count: isAll ? 100.0 : 25.0,
-      scale: isAll ? 950.0 : 280.0
-    };
-  }
-  if (cleanRegion === 'Southern Europe') {
-    return {
-      retention: isAll ? 20.0 : 15.5,
-      growth: isAll ? 1800.0 : 800.0,
-      expansion: isAll ? 1800.0 : 800.0,
-      usage: isAll ? 4.5 : 3.5,
-      usage_count: isAll ? 400.0 : 100.0,
-      diversity: 70.0,
-      quality: isAll ? 2.5 : 2.0,
-      quality_count: isAll ? 150.0 : 35.0,
-      scale: isAll ? 2200.0 : 950.0
-    };
-  }
-  if (cleanRegion === 'South Asia') {
-    return {
-      retention: isAll ? 8.0 : 4.5,
-      growth: isAll ? 600.0 : 200.0,
-      expansion: isAll ? 600.0 : 200.0,
-      usage: isAll ? 3.5 : 2.5,
-      usage_count: isAll ? 150.0 : 35.0,
-      diversity: 72.0,
-      quality: isAll ? 1.5 : 1.0,
-      quality_count: isAll ? 30.0 : 8.0,
-      scale: isAll ? 800.0 : 220.0
-    };
-  }
-  if (cleanRegion === 'Sub-Saharan Africa') {
-    return {
-      retention: isAll ? 12.0 : 9.5,
-      growth: isAll ? 200.0 : 50.0,
-      expansion: isAll ? 200.0 : 50.0,
-      usage: isAll ? 3.0 : 2.0,
-      usage_count: isAll ? 60.0 : 15.0,
-      diversity: 75.0,
-      quality: isAll ? 1.5 : 1.0,
-      quality_count: isAll ? 20.0 : 5.0,
-      scale: isAll ? 250.0 : 60.0
-    };
-  }
-  if (cleanRegion === 'Latin America & Caribbean' || cleanRegion === 'Americas') {
-    return {
-      retention: isAll ? 8.0 : 4.0,
-      growth: isAll ? 700.0 : 250.0,
-      expansion: isAll ? 700.0 : 250.0,
-      usage: isAll ? 3.5 : 2.5,
-      usage_count: isAll ? 180.0 : 40.0,
-      diversity: 72.0,
-      quality: isAll ? 1.5 : 1.0,
-      quality_count: isAll ? 40.0 : 10.0,
-      scale: isAll ? 850.0 : 320.0
-    };
-  }
-  if (cleanRegion === 'North America') {
-    return {
-      retention: isAll ? 8.0 : 4.0,
-      growth: isAll ? 750.0 : 300.0,
-      expansion: isAll ? 750.0 : 300.0,
-      usage: isAll ? 4.0 : 3.0,
-      usage_count: isAll ? 220.0 : 50.0,
-      diversity: 70.0,
-      quality: isAll ? 2.0 : 1.5,
-      quality_count: isAll ? 60.0 : 15.0,
-      scale: isAll ? 900.0 : 350.0
-    };
-  }
-
-  // Global movement defaults
-  return {
-    retention: isAll ? 20.0 : 16.0,
-    growth: isAll ? 1000.0 : 300.0,
-    expansion: isAll ? 1000.0 : 300.0,
-    usage: isAll ? 4.0 : 3.0,
-    usage_count: isAll ? 250.0 : 60.0,
-    diversity: 70.0,
-    quality: isAll ? 2.0 : 1.5,
-    quality_count: isAll ? 80.0 : 20.0,
-    scale: isAll ? 1200.0 : 350.0
-  };
+export function computeEmpiricalMedian(arr: number[]): number | null {
+  if (!arr || arr.length === 0) return null;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const med = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+  return parseFloat(med.toFixed(1));
 }
-
-export const GLOBAL_MOVEMENT_BASELINES = {
-  retention: 18.0,
-  usage: 3.5,
-  usage_count: 60.0,
-  growth: 300.0,
-  expansion: 300.0,
-  diversity: 70.0,
-  quality: 2.0,
-  quality_count: 25.0,
-  scale: 350.0
-};
 
 export function calculateStars(score: number): [string, number] {
   const norm = Math.min(Math.max(score / 100, 0), 1);
@@ -1490,14 +1376,14 @@ export function generateHealthMetrics(
   const baseUploads = baselineStructural?.total_uploads || 0;
 
   // 1. Community Scale (Active Uploaders Volume)
-  const scaleBm = benchmarks.scale || GLOBAL_MOVEMENT_BASELINES.scale;
+  const scaleBm = typeof benchmarks.scale === 'number' ? benchmarks.scale : null;
   const scaleDelta = !isInaugural ? targetCount - baseCount : null;
   const scaleDeltaPct = !isInaugural && baseCount > 0 ? parseFloat((((targetCount - baseCount) / baseCount) * 100).toFixed(1)) : null;
   let scaleDeltaFormatted = 'Inaugural';
   if (!isInaugural && scaleDelta !== null && scaleDeltaPct !== null) {
     scaleDeltaFormatted = scaleDelta >= 0 ? `▲ +${scaleDelta.toLocaleString()} (+${scaleDeltaPct}%)` : `▼ -${Math.abs(scaleDelta).toLocaleString()} (${scaleDeltaPct}%)`;
   }
-  const scaleRegDelta = Math.round(targetCount - scaleBm);
+  const scaleRegDelta = scaleBm !== null ? Math.round(targetCount - scaleBm) : null;
 
   metrics.Scale = {
     raw: `${targetCount.toLocaleString()} uploaders`,
@@ -1506,15 +1392,15 @@ export function generateHealthMetrics(
     yoy_delta: scaleDelta,
     yoy_delta_pct: scaleDeltaPct,
     yoy_delta_formatted: scaleDeltaFormatted,
-    regional_median: Math.round(scaleBm),
+    regional_median: scaleBm !== null ? Math.round(scaleBm) : null,
     regional_delta: scaleRegDelta,
     is_positive: scaleDelta !== null ? scaleDelta >= 0 : true,
-    benchmark: Math.round(scaleBm),
+    benchmark: scaleBm !== null ? Math.round(scaleBm) : null,
     is_inaugural: isInaugural
   };
 
   // 2. Contributor Retention
-  const retBm = benchmarks.retention || GLOBAL_MOVEMENT_BASELINES.retention;
+  const retBm = typeof benchmarks.retention === 'number' ? benchmarks.retention : null;
   if (isInaugural) {
     metrics.Retention = {
       raw: 'Inaugural Baseline',
@@ -1535,9 +1421,9 @@ export function generateHealthMetrics(
       if (baselineUsers.has(u)) overlap++;
     }
     const rawRate = parseFloat(((overlap / baseCount) * 100.0).toFixed(1));
-    const regDelta = parseFloat((rawRate - retBm).toFixed(1));
+    const regDelta = retBm !== null ? parseFloat((rawRate - retBm).toFixed(1)) : null;
     const retFormatted = `${overlap.toLocaleString()} / ${baseCount.toLocaleString()} (${rawRate.toFixed(1)}%)`;
-    const retDeltaFormatted = regDelta >= 0 ? `▲ +${regDelta.toFixed(1)}% vs peer norm` : `▼ ${regDelta.toFixed(1)}% vs peer norm`;
+    const retDeltaFormatted = regDelta !== null ? (regDelta >= 0 ? `▲ +${regDelta.toFixed(1)}% vs peer norm` : `▼ ${regDelta.toFixed(1)}% vs peer norm`) : `${rawRate.toFixed(1)}% retained`;
 
     metrics.Retention = {
       raw: `${rawRate.toFixed(1)}%`,
@@ -1551,7 +1437,7 @@ export function generateHealthMetrics(
       regional_delta: regDelta,
       benchmark: retBm,
       is_inaugural: false,
-      is_positive: regDelta >= 0
+      is_positive: regDelta !== null ? regDelta >= 0 : true
     };
   }
 
@@ -1560,25 +1446,25 @@ export function generateHealthMetrics(
   for (const u of targetUsers) {
     if (!baselineUsers || !baselineUsers.has(u)) newUsersCount++;
   }
-  const expBm = benchmarks.expansion || benchmarks.growth || GLOBAL_MOVEMENT_BASELINES.expansion;
+  const expBm = typeof benchmarks.expansion === 'number' ? benchmarks.expansion : (typeof benchmarks.growth === 'number' ? benchmarks.growth : null);
   const newcomerShare = targetCount > 0 ? parseFloat(((newUsersCount / targetCount) * 100).toFixed(1)) : 0.0;
-  const expRegDelta = Math.round(newUsersCount - expBm);
+  const expRegDelta = expBm !== null ? Math.round(newUsersCount - expBm) : null;
   const expFormatted = `${newUsersCount.toLocaleString()} newcomers (${newcomerShare.toFixed(1)}%)`;
-  const expDeltaFormatted = expRegDelta >= 0 ? `▲ +${expRegDelta.toLocaleString()} vs peer norm` : `▼ ${expRegDelta.toLocaleString()} vs peer norm`;
+  const expDeltaFormatted = expRegDelta !== null ? (expRegDelta >= 0 ? `▲ +${expRegDelta.toLocaleString()} vs peer norm` : `▼ ${expRegDelta.toLocaleString()} vs peer norm`) : `${newUsersCount.toLocaleString()} newcomers`;
 
   metrics.Growth = {
     raw: `${newUsersCount.toLocaleString()} newcomers`,
     raw_formatted: expFormatted,
     count: newUsersCount,
-    baseline_val: Math.round(expBm),
+    baseline_val: expBm !== null ? Math.round(expBm) : null,
     yoy_delta: expRegDelta,
     yoy_delta_pct: newcomerShare,
     yoy_delta_formatted: expDeltaFormatted,
-    regional_median: Math.round(expBm),
+    regional_median: expBm !== null ? Math.round(expBm) : null,
     regional_delta: expRegDelta,
-    benchmark: Math.round(expBm),
+    benchmark: expBm !== null ? Math.round(expBm) : null,
     newcomers_count: newUsersCount,
-    is_positive: expRegDelta >= 0,
+    is_positive: expRegDelta !== null ? expRegDelta >= 0 : true,
     is_inaugural: isInaugural
   };
   metrics.Expansion = metrics.Growth;
@@ -1586,10 +1472,10 @@ export function generateHealthMetrics(
   // 4. Content Utility (Wikipedia Article Transclusions)
   const rawUsage = parseFloat(structuralMetrics.usage_share || 0.0);
   const rawUsageCount = Math.round((totalUploads * rawUsage) / 100);
-  const useRateBm = benchmarks.usage || GLOBAL_MOVEMENT_BASELINES.usage;
-  const useCountBm = benchmarks.usage_count || GLOBAL_MOVEMENT_BASELINES.usage_count || 60;
-  const useRegDelta = parseFloat((rawUsage - useRateBm).toFixed(1));
-  const useDeltaFormatted = useRegDelta >= 0 ? `▲ +${useRegDelta.toFixed(1)}% vs peer norm` : `▼ ${useRegDelta.toFixed(1)}% vs peer norm`;
+  const useRateBm = typeof benchmarks.usage === 'number' ? benchmarks.usage : null;
+  const useCountBm = typeof benchmarks.usage_count === 'number' ? benchmarks.usage_count : null;
+  const useRegDelta = useRateBm !== null ? parseFloat((rawUsage - useRateBm).toFixed(1)) : null;
+  const useDeltaFormatted = useRegDelta !== null ? (useRegDelta >= 0 ? `▲ +${useRegDelta.toFixed(1)}% vs peer norm` : `▼ ${useRegDelta.toFixed(1)}% vs peer norm`) : `${rawUsage.toFixed(1)}% usage`;
 
   metrics.Usage = {
     raw: rawUsage,
@@ -1602,18 +1488,18 @@ export function generateHealthMetrics(
     regional_median: useRateBm,
     regional_delta: useRegDelta,
     benchmark: useRateBm,
-    benchmark_count: Math.round(useCountBm),
-    is_positive: useRegDelta >= 0,
+    benchmark_count: useCountBm !== null ? Math.round(useCountBm) : null,
+    is_positive: useRegDelta !== null ? useRegDelta >= 0 : true,
     is_inaugural: false
   };
 
   // 5. Quality Recognition (Quality / Featured Images)
   const rawQuality = parseFloat(structuralMetrics.quality_image_share || 0.0);
   const rawQualityCount = Math.round((totalUploads * rawQuality) / 100);
-  const qualRateBm = benchmarks.quality || GLOBAL_MOVEMENT_BASELINES.quality;
-  const qualCountBm = benchmarks.quality_count || GLOBAL_MOVEMENT_BASELINES.quality_count || 25;
-  const qualRegDelta = parseFloat((rawQuality - qualRateBm).toFixed(1));
-  const qualDeltaFormatted = qualRegDelta >= 0 ? `▲ +${qualRegDelta.toFixed(1)}% vs peer norm` : `▼ ${qualRegDelta.toFixed(1)}% vs peer norm`;
+  const qualRateBm = typeof benchmarks.quality === 'number' ? benchmarks.quality : null;
+  const qualCountBm = typeof benchmarks.quality_count === 'number' ? benchmarks.quality_count : null;
+  const qualRegDelta = qualRateBm !== null ? parseFloat((rawQuality - qualRateBm).toFixed(1)) : null;
+  const qualDeltaFormatted = qualRegDelta !== null ? (qualRegDelta >= 0 ? `▲ +${qualRegDelta.toFixed(1)}% vs peer norm` : `▼ ${qualRegDelta.toFixed(1)}% vs peer norm`) : `${rawQuality.toFixed(1)}% QI`;
 
   metrics.Quality = {
     raw: rawQuality,
@@ -1626,16 +1512,16 @@ export function generateHealthMetrics(
     regional_median: qualRateBm,
     regional_delta: qualRegDelta,
     benchmark: qualRateBm,
-    benchmark_count: Math.round(qualCountBm),
-    is_positive: qualRegDelta >= 0,
+    benchmark_count: qualCountBm !== null ? Math.round(qualCountBm) : null,
+    is_positive: qualRegDelta !== null ? qualRegDelta >= 0 : true,
     is_inaugural: false
   };
 
   // 6. Contributor Diversity (Top 10% Upload Share)
   const rawDiversity = targetCount > 0 ? parseFloat(structuralMetrics.top10_uploader_share ?? 0.0) : 0.0;
-  const divBm = benchmarks.diversity || GLOBAL_MOVEMENT_BASELINES.diversity;
-  const divRegDelta = parseFloat((rawDiversity - divBm).toFixed(1));
-  const divDeltaFormatted = divRegDelta <= 0 ? `▲ ${Math.abs(divRegDelta).toFixed(1)}% broader` : `▼ +${divRegDelta.toFixed(1)}% concentrated`;
+  const divBm = typeof benchmarks.diversity === 'number' ? benchmarks.diversity : null;
+  const divRegDelta = divBm !== null ? parseFloat((rawDiversity - divBm).toFixed(1)) : null;
+  const divDeltaFormatted = divRegDelta !== null ? (divRegDelta <= 0 ? `▲ ${Math.abs(divRegDelta).toFixed(1)}% broader` : `▼ +${divRegDelta.toFixed(1)}% concentrated`) : `${rawDiversity.toFixed(1)}% by top 10%`;
 
   metrics.Diversity = {
     raw: rawDiversity,
@@ -1648,7 +1534,7 @@ export function generateHealthMetrics(
     regional_median: divBm,
     regional_delta: divRegDelta,
     benchmark: divBm,
-    is_positive: divRegDelta <= 0,
+    is_positive: divRegDelta !== null ? divRegDelta <= 0 : true,
     is_inaugural: false
   };
 
@@ -1694,8 +1580,12 @@ export function generateInsights(
     );
   } else {
     const rawRet = parseFloat(String(metrics.Retention?.raw || '0').replace('%', ''));
-    const retBm = benchmarks.retention || GLOBAL_MOVEMENT_BASELINES.retention;
-    if (rawRet >= retBm) {
+    const retBm = typeof benchmarks.retention === 'number' ? benchmarks.retention : null;
+    if (retBm === null) {
+      insights.push(
+        `Retention is ${rawRet.toFixed(1)}%: retained ${overlapCount.toLocaleString()} out of ${baseCount.toLocaleString()} prior-edition contributors. Regional peer baseline unavailable (no concurrent regional peers).`
+      );
+    } else if (rawRet >= retBm) {
       insights.push(
         `Retention is strong (${rawRet.toFixed(1)}%): retained ${overlapCount.toLocaleString()} out of ${baseCount.toLocaleString()} prior-edition contributors (+${(rawRet - retBm).toFixed(1)}% above ${regionLabel} of ${retBm.toFixed(1)}%). Demonstrates high volunteer continuity.`
       );
@@ -1712,8 +1602,12 @@ export function generateInsights(
 
   // 2. Contributor Expansion Insight
   const rawGrowth = metrics.Growth?.newcomers_count ?? newcomerCount;
-  const groBm = benchmarks.expansion || benchmarks.growth || GLOBAL_MOVEMENT_BASELINES.expansion;
-  if (rawGrowth >= groBm) {
+  const groBm = typeof benchmarks.expansion === 'number' ? benchmarks.expansion : (typeof benchmarks.growth === 'number' ? benchmarks.growth : null);
+  if (groBm === null) {
+    insights.push(
+      `Newcomer recruitment: ${rawGrowth.toLocaleString()} first-time contributors joined the campaign.`
+    );
+  } else if (rawGrowth >= groBm) {
     insights.push(
       `Newcomer recruitment is exceptional (${rawGrowth.toLocaleString()} newcomers): exceeded the ${regionLabel} (${Math.round(groBm).toLocaleString()} newcomers), driving substantial volunteer expansion.`
     );
@@ -1729,8 +1623,14 @@ export function generateInsights(
 
   // 3. Content Utility Insight
   const rawUsage = parseFloat(String(metrics.Usage?.raw || '0'));
-  const useBm = benchmarks.usage || GLOBAL_MOVEMENT_BASELINES.usage;
-  if (rawUsage >= useBm) {
+  const useBm = typeof benchmarks.usage === 'number' ? benchmarks.usage : null;
+  if (useBm === null) {
+    insights.push(
+      rawUsage > 0.0
+        ? `Content Utility is ${rawUsage.toFixed(1)}%: uploaded files are active in Wikipedia article illustrations.`
+        : 'Content Utility is unindexed (0.0%): no uploaded files are currently recorded in active Wikipedia article use.'
+    );
+  } else if (rawUsage >= useBm) {
     insights.push(
       `Content Utility is robust (${rawUsage.toFixed(1)}%): file reuse across Wikipedia articles matches or exceeds the ${regionLabel} (${useBm.toFixed(1)}%), delivering direct encyclopedic value.`
     );
@@ -1746,14 +1646,14 @@ export function generateInsights(
 
   // 4. Diversity Insight
   const rawDiv = parseFloat(String(metrics.Diversity?.raw || '70'));
-  const divBm = benchmarks.diversity || GLOBAL_MOVEMENT_BASELINES.diversity;
+  const divBm = typeof benchmarks.diversity === 'number' ? benchmarks.diversity : null;
   if (rawDiv <= 65.0) {
     insights.push(
       `Participation breadth is exceptionally distributed: top 10% uploaders contributed ${rawDiv.toFixed(1)}% of files, demonstrating broad grassroots participation beyond the power-user core.`
     );
   } else if (rawDiv <= 85.0) {
     insights.push(
-      `Participation distribution (${rawDiv.toFixed(1)}% by top 10% uploaders) aligns with standard Wikimedia peer-production power laws (regional norm: ${divBm.toFixed(1)}%).`
+      `Participation distribution (${rawDiv.toFixed(1)}% by top 10% uploaders) aligns with standard Wikimedia peer-production power laws${divBm !== null ? ` (regional norm: ${divBm.toFixed(1)}%)` : ''}.`
     );
   } else {
     insights.push(
@@ -1763,8 +1663,14 @@ export function generateInsights(
 
   // 5. Quality Recognition Insight
   const rawQual = parseFloat(String(metrics.Quality?.raw || '0'));
-  const qualBm = benchmarks.quality || GLOBAL_MOVEMENT_BASELINES.quality;
-  if (rawQual >= qualBm) {
+  const qualBm = typeof benchmarks.quality === 'number' ? benchmarks.quality : null;
+  if (qualBm === null) {
+    insights.push(
+      rawQual > 0.0
+        ? `Quality Recognition: ${rawQual.toFixed(1)}% of submissions recognized as Commons Quality Images or Featured Pictures.`
+        : 'Quality Recognition is unindexed (0.0%): no files have formal Commons Quality Image designations.'
+    );
+  } else if (rawQual >= qualBm) {
     insights.push(
       `Quality Recognition is high (${rawQual.toFixed(1)}%): formal Commons Quality Image / Featured Picture nominations outperform the ${regionLabel} (${qualBm.toFixed(1)}%).`
     );
@@ -1780,8 +1686,12 @@ export function generateInsights(
 
   // 6. Community Scale Insight
   const rawScale = metrics.Scale?.count ?? targetCount;
-  const scaleBm = benchmarks.scale || GLOBAL_MOVEMENT_BASELINES.scale;
-  if (rawScale >= scaleBm) {
+  const scaleBm = typeof benchmarks.scale === 'number' ? benchmarks.scale : null;
+  if (scaleBm === null) {
+    insights.push(
+      `Community Scale is ${rawScale.toLocaleString()} active uploaders participating in this edition.`
+    );
+  } else if (rawScale >= scaleBm) {
     insights.push(
       `Community Scale is substantial (${rawScale.toLocaleString()} uploaders): cohort volume matches or exceeds the ${regionLabel} (${Math.round(scaleBm).toLocaleString()} uploaders), demonstrating major mobilization reach.`
     );
@@ -2288,7 +2198,6 @@ export async function computeHealthEvaluation(
   const region = resolveRegionName(regionInput, targetCc);
   const baselineEvent = `${eventType}${targetCc}${prevYearStr}`;
   const isAll = eventType === 'all';
-  const baselines = getMovementBaselines(eventType, region);
 
   // Collect chronological past 3-5 years for longitudinal trajectory
   const pastYears: number[] = [];
@@ -2355,8 +2264,6 @@ export async function computeHealthEvaluation(
       let o = 0;
       for (const u of tU) if (bU.has(u)) o++;
       repRetentions.push((o / bU.size) * 100);
-    } else if (tU.size > 0) {
-      repRetentions.push(15.0);
     }
 
     if (tU.size > 0) {
@@ -2379,28 +2286,17 @@ export async function computeHealthEvaluation(
     }
   }
 
-  function computeBayesianBenchmark(arr: number[], baselineGlobal: number, priorWeight = 1.5): number {
-    if (!arr.length) return baselineGlobal;
-    const n = arr.length;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const mid = Math.floor(n / 2);
-    const bRegional = n % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-    const lambda = n / (n + priorWeight);
-    const bEffective = lambda * bRegional + (1.0 - lambda) * baselineGlobal;
-    return parseFloat(bEffective.toFixed(1));
-  }
-
-  const benchmarks = {
-    retention: computeBayesianBenchmark(repRetentions, baselines.retention),
-    growth: computeBayesianBenchmark(repGrowths, baselines.growth),
-    expansion: computeBayesianBenchmark(repGrowths, baselines.expansion),
-    newcomers: computeBayesianBenchmark(repGrowths, baselines.expansion),
-    quality: computeBayesianBenchmark(repQualityRates, baselines.quality),
-    quality_count: computeBayesianBenchmark(repQualityCounts, baselines.quality_count),
-    diversity: computeBayesianBenchmark(repDiversities, baselines.diversity),
-    usage: computeBayesianBenchmark(repUsages, baselines.usage),
-    usage_count: computeBayesianBenchmark(repUsageCounts, baselines.usage_count),
-    scale: computeBayesianBenchmark(repScales, baselines.scale)
+  const benchmarks: HealthBenchmarks = {
+    retention: computeEmpiricalMedian(repRetentions),
+    growth: computeEmpiricalMedian(repGrowths),
+    expansion: computeEmpiricalMedian(repGrowths),
+    newcomers: computeEmpiricalMedian(repGrowths),
+    quality: computeEmpiricalMedian(repQualityRates),
+    quality_count: computeEmpiricalMedian(repQualityCounts),
+    diversity: computeEmpiricalMedian(repDiversities),
+    usage: computeEmpiricalMedian(repUsages),
+    usage_count: computeEmpiricalMedian(repUsageCounts),
+    scale: computeEmpiricalMedian(repScales)
   };
 
   const targetStructural = structuralMetrics[targetEvent.toLowerCase()] || {
@@ -2499,6 +2395,42 @@ export async function computeHealthEvaluation(
   const usageShare = targetStructural.usage_share || 0;
   const qualityShare = targetStructural.quality_image_share || 0;
 
+  let compositeScore: number | null = null;
+  let tier: string | null = null;
+  let stars: [string, number] | null = null;
+  let ratingLabel: string | null = null;
+
+  const scoredDimensions: { score: number; weight: number }[] = [];
+  if (benchmarks.growth !== null && metrics.Growth?.count !== undefined) {
+    const groScore = calculateRelativeScore(metrics.Growth.count, benchmarks.growth, true, true);
+    scoredDimensions.push({ score: groScore, weight: 25 });
+  }
+  if (!metrics.Retention?.is_inaugural && benchmarks.retention !== null && typeof metrics.Retention?.yoy_delta_pct === 'number') {
+    const retScore = calculateRelativeScore(metrics.Retention.yoy_delta_pct, benchmarks.retention, true);
+    scoredDimensions.push({ score: retScore, weight: 25 });
+  }
+  if (benchmarks.usage !== null && typeof metrics.Usage?.raw === 'number') {
+    const useScore = calculateRelativeScore(metrics.Usage.raw, benchmarks.usage, true);
+    scoredDimensions.push({ score: useScore, weight: 20 });
+  }
+  if (benchmarks.quality !== null && typeof metrics.Quality?.raw === 'number') {
+    const qualScore = calculateRelativeScore(metrics.Quality.raw, benchmarks.quality, true);
+    scoredDimensions.push({ score: qualScore, weight: 15 });
+  }
+  if (benchmarks.diversity !== null && typeof metrics.Diversity?.raw === 'number') {
+    const divScore = calculateRelativeScore(metrics.Diversity.raw, benchmarks.diversity, false);
+    scoredDimensions.push({ score: divScore, weight: 15 });
+  }
+
+  if (scoredDimensions.length > 0) {
+    const totalWeight = scoredDimensions.reduce((sum, d) => sum + d.weight, 0);
+    const weightedSum = scoredDimensions.reduce((sum, d) => sum + d.score * d.weight, 0);
+    compositeScore = Math.round(weightedSum / totalWeight);
+    tier = compositeScore >= 80 ? 'Tier 1' : compositeScore >= 60 ? 'Tier 2' : 'Tier 3';
+    stars = calculateStars(compositeScore);
+    ratingLabel = compositeScore >= 85 ? 'Outstanding' : compositeScore >= 70 ? 'Strong' : compositeScore >= 50 ? 'Moderate' : compositeScore >= 30 ? 'Emerging' : 'Critical / Low';
+  }
+
   const overallReport: OverallCampaignReport = {
     campaign_code: targetEvent.toLowerCase(),
     campaign_name: EVENT_MAP[eventType] ? `Wiki Loves ${EVENT_MAP[eventType]}` : eventType.toUpperCase(),
@@ -2507,6 +2439,10 @@ export async function computeHealthEvaluation(
     edition_year: 2000 + yearInt,
     region,
     generated_date: new Date().toISOString().split('T')[0],
+    composite_score: compositeScore,
+    tier: tier ?? undefined,
+    rating_label: ratingLabel ?? undefined,
+    stars: stars ?? undefined,
     total_uploaders: targetUsers.size,
     newcomer_uploaders: newcomerCount,
     returning_uploaders: overlap,

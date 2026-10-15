@@ -80,14 +80,16 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     const d = result.dimensions;
     const b = result.benchmarks;
 
+    const groVal = typeof b.expansion === 'number' ? b.expansion : (typeof b.growth === 'number' ? b.growth : null);
+
     benchmarkComparisons = [
       {
         id: 'scale',
         name: 'Community Scale',
         observedStr: d.Scale?.raw || `${result.target_users_count.toLocaleString()} uploaders`,
         observedVal: d.Scale?.count || result.target_users_count || 0,
-        benchmarkStr: `${Math.round(b.scale).toLocaleString()} uploaders`,
-        benchmarkVal: Math.round(b.scale),
+        benchmarkStr: typeof b.scale === 'number' ? `${Math.round(b.scale).toLocaleString()} uploaders` : '—',
+        benchmarkVal: typeof b.scale === 'number' ? Math.round(b.scale) : null,
         deltaFormatted: d.Scale?.yoy_delta_formatted || '—',
         isPositive: d.Scale?.is_positive !== false,
         isInaugural: d.Scale?.is_inaugural || false
@@ -97,7 +99,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         name: 'Contributor Retention',
         observedStr: d.Retention?.raw_formatted || d.Retention?.raw || '—',
         observedVal: typeof d.Retention?.yoy_delta_pct === 'number' ? d.Retention.yoy_delta_pct : 0,
-        benchmarkStr: `${b.retention.toFixed(1)}%`,
+        benchmarkStr: typeof b.retention === 'number' ? `${b.retention.toFixed(1)}%` : '—',
         benchmarkVal: b.retention,
         deltaFormatted: d.Retention?.yoy_delta_formatted || 'N/A',
         isPositive: d.Retention?.is_positive !== false,
@@ -108,8 +110,8 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         name: 'Newcomer Recruitment',
         observedStr: d.Growth?.raw_formatted || d.Growth?.raw || '—',
         observedVal: d.Growth?.count || 0,
-        benchmarkStr: `${Math.round(b.expansion || b.growth || 180).toLocaleString()} newcomers`,
-        benchmarkVal: Math.round(b.expansion || b.growth || 180),
+        benchmarkStr: groVal !== null ? `${Math.round(groVal).toLocaleString()} newcomers` : '—',
+        benchmarkVal: groVal !== null ? Math.round(groVal) : null,
         deltaFormatted: d.Growth?.yoy_delta_formatted || '—',
         isPositive: d.Growth?.is_positive !== false,
         isInaugural: d.Growth?.is_inaugural || false
@@ -130,7 +132,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         name: 'Content Utility',
         observedStr: d.Usage?.raw_formatted || `${d.Usage?.raw || 0}%`,
         observedVal: typeof d.Usage?.raw === 'number' ? d.Usage.raw : 0,
-        benchmarkStr: b.usage_count ? `${Math.round(b.usage_count).toLocaleString()} usages (${b.usage.toFixed(1)}%)` : `${b.usage.toFixed(1)}%`,
+        benchmarkStr: typeof b.usage === 'number' ? (typeof b.usage_count === 'number' ? `${Math.round(b.usage_count).toLocaleString()} usages (${b.usage.toFixed(1)}%)` : `${b.usage.toFixed(1)}%`) : '—',
         benchmarkVal: b.usage,
         deltaFormatted: d.Usage?.yoy_delta_formatted || '—',
         isPositive: d.Usage?.is_positive !== false,
@@ -141,7 +143,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         name: 'Quality Recognition',
         observedStr: d.Quality?.raw_formatted || `${d.Quality?.raw || 0}%`,
         observedVal: typeof d.Quality?.raw === 'number' ? d.Quality.raw : 0,
-        benchmarkStr: b.quality_count ? `${Math.round(b.quality_count).toLocaleString()} works (${b.quality.toFixed(1)}%)` : `${b.quality.toFixed(1)}%`,
+        benchmarkStr: typeof b.quality === 'number' ? (typeof b.quality_count === 'number' ? `${Math.round(b.quality_count).toLocaleString()} works (${b.quality.toFixed(1)}%)` : `${b.quality.toFixed(1)}%`) : '—',
         benchmarkVal: b.quality,
         deltaFormatted: d.Quality?.yoy_delta_formatted || '—',
         isPositive: d.Quality?.is_positive !== false,
@@ -152,7 +154,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
         name: 'Contributor Diversity',
         observedStr: d.Diversity?.raw_formatted || `${d.Diversity?.raw || 0}%`,
         observedVal: typeof d.Diversity?.raw === 'number' ? d.Diversity.raw : 0,
-        benchmarkStr: `${b.diversity.toFixed(1)}%`,
+        benchmarkStr: typeof b.diversity === 'number' ? `${b.diversity.toFixed(1)}%` : '—',
         benchmarkVal: b.diversity,
         deltaFormatted: d.Diversity?.yoy_delta_formatted || '—',
         isPositive: d.Diversity?.is_positive !== false,

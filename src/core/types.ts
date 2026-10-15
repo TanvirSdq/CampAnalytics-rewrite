@@ -24,18 +24,18 @@ export interface GlobalContext {
 }
 
 export interface HealthBenchmarks {
-  retention: number;
-  growth: number;
-  expansion?: number;
-  newcomers?: number;
-  quality: number;
-  quality_count?: number;
-  quality_rate?: number;
-  diversity: number;
-  usage: number;
-  usage_count?: number;
-  usage_rate?: number;
-  scale: number;
+  retention: number | null;
+  growth: number | null;
+  expansion?: number | null;
+  newcomers?: number | null;
+  quality: number | null;
+  quality_count?: number | null;
+  quality_rate?: number | null;
+  diversity: number | null;
+  usage: number | null;
+  usage_count?: number | null;
+  usage_rate?: number | null;
+  scale: number | null;
 }
 
 export interface HealthMetricDimension {
