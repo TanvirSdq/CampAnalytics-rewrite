@@ -68,6 +68,8 @@ export function getCustomCss(): string {
   return cachedCss;
 }
 
+export const ASSET_VERSION = `${Date.now().toString(36)}`;
+
 export function getGlobalContext(req: Request): GlobalContext {
   const currentYear = new Date().getFullYear();
   return {
@@ -86,6 +88,7 @@ export function getGlobalContext(req: Request): GlobalContext {
     TEXT_MUTED: '#54595d',
     CURRENT_YEAR: currentYear,
     DEFAULT_START_YEAR: currentYear - 4,
+    ASSET_VERSION,
     request: {
       path: req.path,
       query: req.query

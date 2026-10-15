@@ -4,7 +4,7 @@ import nunjucks from 'nunjucks';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { getGlobalContext, getCustomCss } from './core/context.js';
+import { getGlobalContext, getCustomCss, ASSET_VERSION } from './core/context.js';
 import { computeComparativeAnalytics } from './core/analytics.js';
 import healthzRouter from './routes/healthz.js';
 import indexRouter from './routes/index.js';
@@ -79,13 +79,24 @@ nunjucksEnv.addFilter('format', (fmt: any, val: any) => {
   return n.toLocaleString();
 });
 
+// Global template locals
+app.locals.ASSET_VERSION = ASSET_VERSION;
+
 // Static Assets
 const publicPath = path.join(PROJECT_ROOT, 'public');
-app.use(express.static(publicPath, { maxAge: '1d', index: false }));
+app.use(express.static(publicPath, {
+  maxAge: '1h',
+  setHeaders: (res: Response, filePath: string) => {
+    if (filePath.endsWith('.css') || filePath.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+    }
+  },
+  index: false
+}));
 
 // Backward compatibility alias for /styles.css
 app.get('/styles.css', (req: Request, res: Response) => {
-  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
   res.type('text/css').send(getCustomCss());
 });
 

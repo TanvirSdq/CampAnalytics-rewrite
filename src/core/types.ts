@@ -16,6 +16,7 @@ export interface GlobalContext {
   TEXT_MUTED: string;
   CURRENT_YEAR: number;
   DEFAULT_START_YEAR: number;
+  ASSET_VERSION?: string;
   request: {
     path: string;
     query: Record<string, any>;

@@ -56,8 +56,8 @@
         document.addEventListener("DOMContentLoaded", renderMath);
         window.addEventListener("load", renderMath);
     </script>
-    <link rel="stylesheet" href="/css/styles.css?v=20261026_v10">
-    <script src="/js/comparative.js?v=20261026_v10"></script>
+    <link rel="stylesheet" href="/css/styles.css?v={{ ASSET_VERSION | default('20261026_v11') }}">
+    <script src="/js/comparative.js?v={{ ASSET_VERSION | default('20261026_v11') }}"></script>
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -72,14 +72,13 @@
                         <line x1="3" y1="18" x2="21" y2="18"></line>
                     </svg>
                 </button>
+                {% if request.path != '/' and request.path != '' and mode != 'Home' and mode != 'CampTools' %}
                 <div class="navbar-brand-group">
-                    <a href="https://meta.wikimedia.org/wiki/Project_Korikath" class="nav-korikath-link" target="_blank" rel="noopener noreferrer" title="Project Korikath — Wikimedia Community Initiative" aria-label="Project Korikath — Wikimedia Community Initiative">
-                        <img src="{{ KORIKATH_LOGO_URL }}" alt="Project Korikath Logo" class="korikath-navbar-logo">
-                    </a>
                     <a href="/" class="navbar-brand" title="CampTools Home">
                         <span class="brand-bold">Camp</span><span class="brand-accent">Tools</span>
                     </a>
                 </div>
+                {% endif %}
             </div>
             <nav class="site-desktop-nav" aria-label="Main Navigation">
                 <ul class="site-nav-list">

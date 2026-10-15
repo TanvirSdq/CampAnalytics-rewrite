@@ -6546,10 +6546,18 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     margin: 0 0 4px;
     font-family: var(--font-serif);
     font-size: clamp(2rem, 3.5vw, 2.7rem);
-    font-weight: 700;
-    color: var(--text-ink);
     letter-spacing: -0.02em;
     line-height: 1.15;
+}
+
+.camp-brand-title .brand-bold {
+    font-weight: 700;
+    color: var(--text-ink);
+}
+
+.camp-brand-title .brand-accent {
+    font-weight: 700;
+    color: var(--wiki-blue);
 }
 
 .camp-brand-tagline {
