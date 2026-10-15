@@ -1308,7 +1308,7 @@ th.sort-desc .sort-indicator {
 table.camp-data-table td,
 table.data-table td {
     padding: 9px 14px;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-color);
     color: var(--text-ink);
     white-space: nowrap;
     transition: background-color 0.12s ease;
@@ -3718,11 +3718,12 @@ table.data-table {
 table.data-table th {
     padding: 9px 11px !important;
     background: #f3f6fa !important;
-    border-bottom-width: 1px !important;
+    border: 1px solid var(--border-color) !important;
 }
 
 table.data-table td {
     padding: 8px 11px !important;
+    border: 1px solid var(--border-color) !important;
 }
 
 .table-pagination-bar {

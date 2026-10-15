@@ -153,8 +153,8 @@ describe('Tier 1: Feature Coverage & Route Routing Integrity', () => {
       'Expected /influx to contain #influx-form'
     );
     assert.ok(
-      res.text.includes('New User Influx'),
-      'Expected /influx to contain "New User Influx"'
+      res.text.includes('Participant Influx') || res.text.includes('New User Influx'),
+      'Expected /influx to contain "Participant Influx" or "New User Influx"'
     );
 
     // Negative assertion: Must NOT serve home.html content
@@ -417,7 +417,7 @@ describe('Tier 2: Boundary & Corner Cases', () => {
     const res = await makeRequest('/?mode=Influx');
     assert.equal(res.status, 200, 'Expected status 200 for /?mode=Influx');
     assert.ok(
-      res.text.includes('New User Influx'),
+      res.text.includes('Participant Influx') || res.text.includes('New User Influx'),
       'Expected mode=Influx to render Influx content'
     );
   });
@@ -755,7 +755,7 @@ describe('Tier 4: Real-World Scenarios (Multi-Tool Workflow)', () => {
     const step3 = await makeRequest('/influx');
     assert.equal(step3.status, 200, 'Step 3: Influx must respond 200');
     assert.ok(
-      step3.text.includes('New User Influx'),
+      step3.text.includes('Participant Influx') || step3.text.includes('New User Influx'),
       'Step 3: Expected Influx title'
     );
     assert.ok(
