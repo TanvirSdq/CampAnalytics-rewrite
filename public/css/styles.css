@@ -3782,12 +3782,35 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     display: none !important;
 }
 
-.nav-hamburger-btn {
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-ink);
-    cursor: pointer;
+@media (max-width: 992px) {
+    .nav-hamburger-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-ink);
+        cursor: pointer;
+    }
+    .slim-header .nav-hamburger-btn {
+        display: inline-flex !important;
+        color: var(--text-main);
+    }
+    .site-desktop-nav {
+        display: none !important;
+    }
+}
+
+@media (min-width: 993px) {
+    .nav-hamburger-btn,
+    .slim-header .nav-hamburger-btn {
+        display: none !important;
+    }
+    .mobile-nav-backdrop,
+    .mobile-nav-drawer {
+        display: none !important;
+    }
+    .site-desktop-nav {
+        display: flex !important;
+    }
 }
 
 .slim-header {
@@ -3810,11 +3833,6 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.slim-header .nav-hamburger-btn {
-    display: inline-flex;
-    color: var(--text-main);
 }
 
 .slim-header .navbar-brand {
@@ -6530,24 +6548,30 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     font-variant-numeric: tabular-nums;
 }
 
-/* Compact Tool Directory Layout */
+/* Split Tool Directory Layout */
 .camp-directory-container {
-    max-width: 680px;
-    margin: 16px auto 44px;
-    padding: 0 16px;
+    max-width: 1140px;
+    margin: 40px auto 60px;
+    padding: 0 24px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 48px;
 }
 
 .camp-brand-hero {
+    flex: 0 0 320px;
     text-align: center;
-    margin-bottom: 24px;
+    padding-top: 12px;
 }
 
 .camp-brand-logo {
     display: inline-block;
-    width: 76px;
-    height: 76px;
-    margin-bottom: 10px;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 14px;
 }
 
 .camp-brand-title {
@@ -6570,15 +6594,17 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
 
 .camp-brand-tagline {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: var(--text-muted);
     font-weight: 400;
 }
 
 .camp-tool-list {
+    flex: 1;
+    max-width: 720px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
 }
 
@@ -6591,7 +6617,7 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     text-decoration: none;
     color: var(--text-ink);
     transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
-    line-height: 1.4;
+    line-height: 1.45;
     box-sizing: border-box;
 }
 
@@ -6626,27 +6652,39 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     font-size: 0.88rem;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 860px) {
     .camp-directory-container {
-        margin: 8px auto 24px;
-        padding: 0 12px;
+        flex-direction: column;
+        align-items: center;
+        max-width: 600px;
+        margin: 16px auto 32px;
+        padding: 0 16px;
+        gap: 20px;
     }
     .camp-brand-hero {
-        margin-bottom: 18px;
+        flex: none;
+        width: 100%;
+        text-align: center;
+        padding-top: 0;
+        margin-bottom: 4px;
     }
     .camp-brand-logo {
-        width: 64px;
-        height: 64px;
-        margin-bottom: 6px;
+        width: 68px;
+        height: 68px;
+        margin-bottom: 8px;
     }
     .camp-brand-title {
-        font-size: 2.1rem;
+        font-size: 2.15rem;
     }
     .camp-brand-tagline {
         font-size: 0.92rem;
     }
+    .camp-tool-list {
+        max-width: 100%;
+        gap: 8px;
+    }
     .camp-tool-row {
-        padding: 12px 14px;
+        padding: 11px 14px;
     }
     .camp-tool-name {
         display: inline;

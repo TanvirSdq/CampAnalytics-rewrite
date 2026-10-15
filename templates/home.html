@@ -3,20 +3,26 @@
 {% block extra_head %}
 <style>
 .camp-directory-container {
-    max-width: 680px;
-    margin: 16px auto 44px;
-    padding: 0 16px;
+    max-width: 1140px;
+    margin: 40px auto 60px;
+    padding: 0 24px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 48px;
 }
 .camp-brand-hero {
+    flex: 0 0 320px;
     text-align: center;
-    margin-bottom: 24px;
+    padding-top: 12px;
 }
 .camp-brand-logo {
     display: inline-block;
-    width: 76px;
-    height: 76px;
-    margin-bottom: 10px;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 14px;
 }
 .camp-brand-title {
     margin: 0 0 4px;
@@ -35,14 +41,16 @@
 }
 .camp-brand-tagline {
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: var(--text-muted);
     font-weight: 400;
 }
 .camp-tool-list {
+    flex: 1;
+    max-width: 720px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
 }
 .camp-tool-row {
@@ -54,7 +62,7 @@
     text-decoration: none;
     color: var(--text-ink);
     transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
-    line-height: 1.4;
+    line-height: 1.45;
     box-sizing: border-box;
 }
 .camp-tool-row:hover {
@@ -82,27 +90,39 @@
     color: var(--text-muted);
     font-size: 0.88rem;
 }
-@media (max-width: 600px) {
+@media (max-width: 860px) {
     .camp-directory-container {
-        margin: 8px auto 24px;
-        padding: 0 12px;
+        flex-direction: column;
+        align-items: center;
+        max-width: 600px;
+        margin: 16px auto 32px;
+        padding: 0 16px;
+        gap: 20px;
     }
     .camp-brand-hero {
-        margin-bottom: 18px;
+        flex: none;
+        width: 100%;
+        text-align: center;
+        padding-top: 0;
+        margin-bottom: 4px;
     }
     .camp-brand-logo {
-        width: 64px;
-        height: 64px;
-        margin-bottom: 6px;
+        width: 68px;
+        height: 68px;
+        margin-bottom: 8px;
     }
     .camp-brand-title {
-        font-size: 2.1rem;
+        font-size: 2.15rem;
     }
     .camp-brand-tagline {
         font-size: 0.92rem;
     }
+    .camp-tool-list {
+        max-width: 100%;
+        gap: 8px;
+    }
     .camp-tool-row {
-        padding: 12px 14px;
+        padding: 11px 14px;
     }
     .camp-tool-name {
         display: inline;
