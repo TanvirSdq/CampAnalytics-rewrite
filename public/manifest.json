@@ -1,0 +1,23 @@
+{
+  "name": "CampTools",
+  "short_name": "CampTools",
+  "description": "Longitudinal evaluation and retention analytics for Wikimedia campaigns.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#202122",
+  "icons": [
+    {
+      "src": "/images/camptools-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/camptools-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

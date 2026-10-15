@@ -29,7 +29,7 @@ export function handleHome(req: Request, res: Response): void | Promise<void> {
 
   res.render('home.html', {
     ...getGlobalContext(req),
-    PAGE_TITLE: 'CampTools — Wikimedia Campaign & Contributor Analytics',
+    PAGE_TITLE: 'CampTools',
     mode: 'Tools'
   });
 }
@@ -38,7 +38,7 @@ router.get('/', handleHome);
 router.get('/tools', (req: Request, res: Response) => {
   res.render('home.html', {
     ...getGlobalContext(req),
-    PAGE_TITLE: 'CampTools — Wikimedia Campaign & Contributor Analytics',
+    PAGE_TITLE: 'CampTools',
     mode: 'Tools'
   });
 });

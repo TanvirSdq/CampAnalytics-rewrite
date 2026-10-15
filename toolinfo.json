@@ -1,6 +1,6 @@
 {
     "name": "camptools",
-    "title": "CampTools - Analysis of Wikimedia Campaigns",
+    "title": "CampTools",
     "description": "A comprehensive analytics suite for Wikimedia campaigns, providing real-time metrics on user retention, content quality, and participant influx.",
     "url": "https://camptools.toolforge.org/",
     "keywords": [
