@@ -44,20 +44,26 @@ CampTools is organized into five specialized analytical tools accessible via top
 ```
 
 ### 1. Health Evaluation (`/health`, `/api/health`)
-Scores campaign editions on a 0–100 scale across five core dimensions grouped into three balanced pillars, benchmarked against regional peer thresholds:
-* **Retention Index ($S_{\text{ret}}$, 25%)**: Percentage of prior-edition participants who returned.
-* **Growth Capacity ($S_{\text{grow}}$, 25%)**: Proportion of active participants joining for the first time.
-* **Content Utility ($S_{\text{util}}$, 20%)**: Uploads embedded across Wikipedia language editions (`prop=globalusage`).
-* **Quality Recognition ($S_{\text{qual}}$, 15%)**: Share of uploads achieving Quality Image (QI), Featured Picture (FP), or Valued Image (VI) badges.
-* **Contributor Diversity ($S_{\text{div}}$, 15%)**: Upload distribution equity (inverse top-10% uploader concentration).
+Scores campaign editions on a 0–100 scale across six core dimensions grouped into three balanced structural pairs, benchmarked against empirical regional peer distributions:
+* **Community Scale ($S_{\text{scale}}$, 30%)**: Active uploader cohort volume calibrated against regional peer benchmarks using fluid elasticity ($\gamma = 1.15$) to properly measure mobilization reach.
+* **Retention Index ($S_{\text{ret}}$, 20%)**: Percentage of baseline-edition participants who returned in the target edition, applying Bayesian shrinkage for small baseline cohorts.
+* **Content Utility ($S_{\text{util}}$, 20%)**: Dual harmonic metric: 60% global Wikipedia transclusion volume + 40% article inclusion rate (`prop=globalusage`).
+* **Quality Recognition ($S_{\text{qual}}$, 10%)**: Dual harmonic metric: 60% Commons Quality/Featured Image volume + 40% curatorial distinction rate.
+* **Contributor Expansion ($S_{\text{exp}}$, 10%)**: Dual metric: 60% volume-normalized newcomer recruitment yield + 40% YoY community cohort size expansion.
+* **Contributor Diversity ($S_{\text{div}}$, 10%)**: Upload distribution equity (inverse top-10% uploader concentration).
+
+**Zero-Synthetic Data & Unheld Campaign Policy**:
+* 100% live Wikimedia Commons & Toolforge data with zero synthetic cohort generators or mock fallbacks.
+* Unheld editions (e.g. `wlmbd21`, `wlmfr23`) are explicitly flagged as unheld and cannot be evaluated, receiving neither a 0 nor a regional average, and are excluded from peer benchmark groups.
 
 **Interactive Visuals**:
 * Responsive **SVG Spider Radar Chart** comparing the campaign's scores against regional and global benchmark polygons.
-* Composite 4-tier grading badge:
+* Composite 5-tier grading badge:
   * ★★★★★ **Outstanding** (85.0–100.0)
   * ★★★★☆ **Strong** (70.0–84.9)
   * ★★★☆☆ **Moderate** (50.0–69.9)
-  * ★★☆☆☆ **Emerging / Critical** (<50.0)
+  * ★★☆☆☆ **Emerging** (30.0–49.9)
+  * ★☆☆☆☆ **Critical / Low** (<30.0)
 
 ### 2. Contributor Retention (`/retention`, `/api/retention`, `/api/comparative`)
 * **Directional Persistence**: Evaluates exact retention between baseline and target editions ($A \to B$), preserving directional asymmetry:

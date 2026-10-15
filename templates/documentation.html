@@ -41,7 +41,7 @@
                         \[ \text{Evaluation Index} = 0.30 S_{\text{scale}} + 0.20 S_{\text{ret}} + 0.20 S_{\text{util}} + 0.10 S_{\text{qual}} + 0.10 S_{\text{exp}} + 0.10 S_{\text{div}} \]
                     </div>
                     <ul style="color: var(--text-ink); font-size: 0.88rem; line-height: 1.7; margin: 0; padding-left: 20px;">
-                        <li><strong>Community Scale (30%):</strong> Active uploader cohort volume calibrated against regional peer benchmarks using superlinear elasticity (\(\gamma = 1.35\)) to properly reward mobilization reach.</li>
+                        <li><strong>Community Scale (30%):</strong> Active uploader cohort volume calibrated against regional peer benchmarks using fluid elasticity (\(\gamma = 1.15\)) to properly reward mobilization reach without cliff-edge score collapses.</li>
                         <li><strong>Retention Index (20%):</strong> Percentage of baseline cohort participants who contributed to the target edition, applying Empirical Bayesian shrinkage for small baseline cohorts.</li>
                         <li><strong>Content Utility (20%):</strong> Dual-component harmonic score combining Wikipedia article transclusion volume (60%) and article inclusion rate (40%) via <code>prop=globalusage</code>.</li>
                         <li><strong>Quality Recognition (10%):</strong> Dual-component harmonic score combining Commons Quality/Featured Image volume (60%) and curatorial distinction rate (40%).</li>
@@ -58,6 +58,9 @@
                     <div class="math-formula" style="margin: 8px 0;">
                         \[ B_{\text{effective}} = \frac{N}{N + 1.5} B_{\text{regional}} + \frac{1.5}{N + 1.5} B_{\text{global}} \]
                     </div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0 0; line-height: 1.5;">
+                        <strong>Zero-Synthetic Invariant &amp; Unheld Campaign Policy:</strong> The engine evaluates 100% empirical Wikimedia Commons data without synthetic imputation or mock fallbacks. Unheld editions (e.g. <code>wlmbd21</code>, <code>wlmfr23</code>) are explicitly flagged as unheld and excluded from peer benchmarks rather than being assigned artificial zeros or regional averages.
+                    </p>
                 </div>
             </div>
         </div>
