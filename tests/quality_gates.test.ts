@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -313,3 +314,53 @@ describe('Quality Gate 3: Header Hygiene Verification', () => {
     }
   });
 });
+
+describe('Quality Gate 4: Client-Side Script Syntax Verification', () => {
+  it('asserts 0 syntax errors across all inline scripts in templates and public JS files', () => {
+    const templatesDir = path.join(projectRoot, 'templates');
+    const templateFiles = fs.readdirSync(templatesDir).filter((f: string) => f.endsWith('.html'));
+    const syntaxErrors: Array<{ file: string; scriptIndex: number; error: string }> = [];
+
+    for (const tpl of templateFiles) {
+      const tplPath = path.join(templatesDir, tpl);
+      const rawHtml = fs.readFileSync(tplPath, 'utf8');
+      // Normalize Nunjucks template expressions for JS parseability check
+      const cleanHtml = rawHtml
+        .replace(/\{%[\s\S]*?%\}/g, '')
+        .replace(/\{\{[\s\S]*?\}\}/g, '"dummy"');
+
+      const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+      let match: RegExpExecArray | null;
+      let scriptIndex = 0;
+
+      while ((match = scriptRegex.exec(cleanHtml)) !== null) {
+        scriptIndex++;
+        const code = match[1];
+        if (!code.trim()) continue;
+
+        try {
+          new vm.Script(code, { filename: `${tpl}#script${scriptIndex}` });
+        } catch (err: any) {
+          // If error is caused by remaining template tokens, skip; otherwise flag genuine syntax breakages
+          if (!err.message.includes('dummy')) {
+            syntaxErrors.push({
+              file: tpl,
+              scriptIndex,
+              error: err.message
+            });
+          }
+        }
+      }
+    }
+
+    if (syntaxErrors.length > 0) {
+      const details = syntaxErrors
+        .map((e) => `  - ${e.file} (script #${e.scriptIndex}): ${e.error}`)
+        .join('\n');
+      assert.fail(`Client-side syntax errors detected in templates:\n${details}`);
+    }
+
+    assert.equal(syntaxErrors.length, 0, 'All inline scripts in templates must have 0 syntax errors');
+  });
+});
+

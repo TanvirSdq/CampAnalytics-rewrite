@@ -8,12 +8,14 @@ This document outlines the theoretical foundations, mathematical formulations, c
 
 CampAnalytics is an analytical suite designed for organizers, researchers, and grant committees within the Wikimedia ecosystem. The platform provides empirical visibility into contributor dynamics and content outcomes across annual photography competitions (Wiki Loves Monuments, Wiki Loves Earth, Wiki Loves Folklore, Wiki Loves Africa, and Wiki Loves Bangla).
 
-The suite comprises five primary analytical tools:
+The suite comprises seven primary analytical tools:
 1. **Performance Dynamics (Tool 01)**: Multi-dimensional empirical campaign dynamics combining longitudinal participant trajectories, cohort continuity, newcomer influx yield, Wikipedia content utility, curatorial quality honors, and Year-over-Year (YoY) velocity increments/decrements ($\Delta$) into an unslanted, purely observational framework.
 2. **Retention (Tool 02)**: Longitudinal participant continuity analysis across multi-year editions, directional cohort retention matrices, and geographic choropleth mappings.
 3. **Influx (Tool 03)**: Year-over-Year (YoY) contributor segmentation distinguishing first-time participants from returning veterans to assess participant pipeline sustainability.
-4. **Content Utility (Tool 04)**: Live encyclopedic reuse tracking across Wikimedia projects (`prop=globalusage`), article inclusion volume, cross-wiki project breadth, and photographer impact rankings.
-5. **Quality Recognition (Tool 05)**: Movement-wide curatorial and technical honors tracking (Quality Images, Featured Pictures, Valued Images) with structured Commons category harvesting and top contributing photographers.
+4. **Contributor Mobility (Tool 04)**: Cross-campaign migration modeling, pairwise cohort intersections, directional conversion rates, and ecosystem flow dynamics across national competitions.
+5. **Contributor Diversity (Tool 05)**: Participation equity modeling via discrete Gini inequality coefficients, Pareto decile concentration curves, and multi-tier contributor volume classification.
+6. **Content Utility (Tool 06)**: Live encyclopedic reuse tracking across Wikimedia projects (`prop=globalusage`), article inclusion volume, cross-wiki project breadth, and photographer impact rankings.
+7. **Quality Recognition (Tool 07)**: Movement-wide curatorial and technical honors tracking (Quality Images, Featured Pictures, Valued Images) with structured Commons category harvesting and top contributing photographers.
 
 ---
 
@@ -60,7 +62,85 @@ $$C_t = \left| \bigcup_{k=1}^t U_k \right| = C_{t-1} + |N_t|$$
 
 ---
 
-### 4. Multi-Dimensional Campaign Observability & Performance Dynamics
+## 4. Contributor Mobility and Cross-Campaign Flow Modeling
+
+Within national Wikimedia affiliate ecosystems, volunteer photographers frequently participate in multiple photography campaigns (e.g. Wiki Loves Monuments, Wiki Loves Earth, and Wiki Loves Folklore). Contributor Mobility evaluates the extent to which participant pools overlap, migrate, or remain isolated across distinct campaign streams.
+
+### 4.1 Directional Conversion Rate
+
+Let $U_A$ and $U_B$ denote the unique uploader sets for two campaigns organized within the same national ecosystem or evaluation cycle. The **Directional Conversion Rate** from campaign $A$ to campaign $B$ is defined as:
+
+$$M(A \to B) = \frac{|U_A \cap U_B|}{|U_A|} \times 100\%$$
+
+Where:
+- $|U_A|$ is the donor cohort size.
+- $|U_A \cap U_B|$ is the mutual participant intersection.
+- Asymmetry is preserved: $M(A \to B) \neq M(B \to A)$ when $|U_A| \neq |U_B|$, highlighting donor-recipient flow asymmetries (e.g. a high percentage of WLF uploaders also participating in WLM, while WLM contributors show lower affinity toward WLF).
+
+### 4.2 Jaccard Community Similarity
+
+To establish an undirected, symmetric measure of community affinity between two campaigns, CampTools computes the **Jaccard Similarity Index**:
+
+$$J(A, B) = \frac{|U_A \cap U_B|}{|U_A \cup U_B|} = \frac{|U_A \cap U_B|}{|U_A| + |U_B| - |U_A \cap U_B|}$$
+
+Where $J(A, B) \in [0, 1]$:
+- $J = 0.0$ signifies entirely disjoint participant communities.
+- $J = 1.0$ signifies absolute community congruence ($U_A = U_B$).
+
+### 4.3 Deduplicated Ecosystem Union
+
+For a set of $K$ campaigns active in a target country during year $Y$ (e.g., $E = \{ \text{wlm}, \text{wle}, \text{wlf}, \text{wla}, \text{wlb} \}$), the **Total Unique Ecosystem Reach** is computed by de-duplicating participants across all active events:
+
+$$U_{\text{ecosystem}} = \left| \bigcup_{k \in E} U_k \right|$$
+
+The **Ecosystem Expansion Factor** ($\chi$) quantifies cross-campaign synergy relative to the raw sum of participants:
+
+$$\chi = \frac{\sum_{k \in E} |U_k|}{U_{\text{ecosystem}}}$$
+
+Where $\chi > 1.0$ indicates cross-pollination across initiatives, while $\chi = 1.0$ indicates zero cross-over.
+
+---
+
+## 5. Contributor Diversity and Production Equity Modeling
+
+Contributor Diversity evaluates the distribution of creative production across participants. Movement research indicates that open-collaboration projects often exhibit extreme participation inequality, where a tiny minority submits the vast majority of media files while the majority of contributors submit only 1–2 files.
+
+### 5.1 Discrete Gini Coefficient Formulation
+
+Let $y_1 \le y_2 \le \dots \le y_n$ represent the sorted sequence of upload counts submitted by each of the $n = |U|$ human contributors in a campaign. The **Discrete Gini Coefficient** ($G \in [0, 1]$) is formulated as:
+
+$$G = \frac{\sum_{i=1}^n \sum_{j=1}^n |y_i - y_j|}{2n \sum_{i=1}^n y_i} = \frac{2 \sum_{i=1}^n i \cdot y_i}{n \sum_{i=1}^n y_i} - \frac{n + 1}{n}$$
+
+Where:
+- $G \to 0$ denotes perfect equality (every participant submits an identical number of photographs).
+- $G \to 1$ denotes extreme oligarchy (a single uploader accounts for virtually all submissions).
+
+### 5.2 Pareto Top-Decile Upload Share ($c_{10\%}$)
+
+To provide an intuitive, non-parametric indicator of participation concentration, CampTools measures the share of total files contributed by the top 10% most prolific uploaders:
+
+$$k = \lceil 0.10 \times n \rceil$$
+
+$$c_{10\%} = \frac{\sum_{i = n - k + 1}^n y_i}{\sum_{i=1}^n y_i} \times 100\%$$
+
+In Wikimedia photography campaigns, $c_{10\%}$ typically ranges between 60% and 85%.
+
+### 5.3 4-Tier Contributor Volume Classification
+
+Every contributor $u \in U$ is classified into one of four mutually exclusive operational volume tiers based on verified submissions $y_u$:
+
+| Tier | Submission Volume ($y_u$) | Operational Role |
+| :--- | :---: | :--- |
+| **Tier 1: Single Uploaders** | $y_u = 1$ | Casual or accidental grassroots participants |
+| **Tier 2: Low-Volume Contributors** | $2 \le y_u \le 5$ | Deliberate local participants |
+| **Tier 3: Moderate Contributors** | $6 \le y_u \le 20$ | Active hobbyist photographers |
+| **Tier 4: Power Uploaders** | $y_u \ge 21$ | Heavy contributors and semi-professional archivists |
+
+Longitudinal tracking of tier shares allows organizers to monitor whether community growth is driven by healthy grassroots onboarding or disproportionate dependency on a handful of power uploaders.
+
+---
+
+## 6. Multi-Dimensional Campaign Observability & Performance Dynamics
 
 The Campaign Performance Dynamics module provides direct empirical visibility into contributor dynamics, submission volume, and downstream cultural impact. In strict adherence to open data integrity, CampAnalytics rejects arbitrary 0–100 subjective composite scores, opaque weighting coefficients, and automated grading advice. Instead, organizers, jury members, and researchers are provided with authentic, non-imputed observational metrics, interactive multi-year longitudinal charts, and Year-over-Year (YoY) velocity deltas ($\Delta$).
 
@@ -78,7 +158,7 @@ The Campaign Performance Dynamics module provides direct empirical visibility in
 
 ---
 
-## 5. Year-over-Year (YoY) Velocity Dynamics & Longitudinal Trajectories
+## 7. Year-over-Year (YoY) Velocity Dynamics & Longitudinal Trajectories
 
 ### 5.1 Velocity Increment & Decrement Modeling ($\Delta$)
 
@@ -116,9 +196,9 @@ Stacked visual waterfall charts illustrate the balance between veteran retention
 
 ---
 
-## 6. Regional Contextual Benchmarking & Non-Imputation Invariants
+## 8. Regional Contextual Benchmarking & Non-Imputation Invariants
 
-### 6.1 Regional Peer Medians ($P_{50}$)
+### 8.1 Regional Peer Medians ($P_{50}$)
 
 To provide non-evaluative perspective across distinct organizational realities, CampAnalytics computes central tendencies across active national peer campaigns within each geographic cluster:
 
@@ -128,7 +208,7 @@ $$\Delta_{\text{peer}} = X_{\text{target}} - \text{Median}_{\text{regional}}$$
 
 Peer distributions allow organizers to understand their operational scale relative to regional neighbors (e.g. comparing Bangladesh against South Asian peers or Germany against Western European peers) without imposing artificial movement-wide rankings.
 
-### 6.2 Empirical Regional Movement Reference Levels (10-Year Extraction)
+### 8.2 Empirical Regional Movement Reference Levels (10-Year Extraction)
 
 Derived from longitudinal extraction across 100 country-editions on Wikimedia Commons:
 
@@ -142,7 +222,7 @@ Derived from longitudinal extraction across 100 country-editions on Wikimedia Co
 | **Sub-Saharan Africa** | 60 | 9.5% | 2.0% | 1.0% | 75.0% |
 | **Global Movement Median** | 350 | 16.0% | 3.0% | 1.5% | 70.0% |
 
-### 6.3 Zero-Synthetic Data Invariant & Unheld Campaign Rejection Policy
+### 8.3 Zero-Synthetic Data Invariant & Unheld Campaign Rejection Policy
 
 1. **Zero Synthetic Imputation**: Under no circumstances does the engine generate deterministic pseudo-random cohorts, fake sample topics, or synthetic quality counts. All calculations are executed exclusively against live Wikimedia Commons APIs and Toolforge replica databases.
 2. **Explicit Unheld Campaign Policy**: If a campaign edition was not organized or has zero recorded uploads on Wikimedia Commons (e.g., `wlmbd21`, `wlmfr23`, or unheld future years), the engine returns an explicit operational notice:
@@ -151,11 +231,11 @@ Derived from longitudinal extraction across 100 country-editions on Wikimedia Co
 
 ---
 
-## 7. Content Utility Modeling (`prop=globalusage`)
+## 9. Content Utility Modeling (`prop=globalusage`)
 
 Content Utility evaluates the direct downstream encyclopedic impact of uploaded files. Media uploaded to Wikimedia Commons is evaluated against live deployment across global Wikimedia projects (Wikipedia language editions, Wikidata, Wikivoyage, Wikinews, etc.).
 
-### 7.1 Utility Rate Formulation
+### 9.1 Utility Rate Formulation
 Let $F$ denote the total set of verified files uploaded during campaign edition $C$. For each file $f \in F$, let $P(f)$ represent the set of distinct wiki pages in which file $f$ is actively embedded, obtained via `prop=globalusage`.
 
 The subset of utilized files is defined as:
@@ -164,30 +244,30 @@ $$F_{\text{in-use}} = \{ f \in F \mid |P(f)| > 0 \}$$
 The **Campaign File Utility Rate** ($U_r$) is:
 $$U_r = \frac{|F_{\text{in-use}}|}{|F|} \times 100\%$$
 
-### 7.2 Global Inclusions & Cross-Wiki Footprint
+### 9.2 Global Inclusions & Cross-Wiki Footprint
 1. **Total Article Inclusions ($I_{\text{total}}$)**: Cumulative instances of media deployment across all client wikis:
    $$I_{\text{total}} = \sum_{f \in F} |P(f)|$$
 2. **Project Breadth Index ($B_{\text{proj}}$)**: Count of distinct Wikimedia domains (e.g. `en.wikipedia.org`, `de.wikipedia.org`, `wikidata.org`) hosting at least one campaign submission:
    $$B_{\text{proj}} = \left| \bigcup_{f \in F} \{ \text{domain}(p) \mid p \in P(f) \} \right|$$
 3. **Photographer Impact Contribution**: For uploader $u$, the aggregate usage volume of their portfolio is evaluated to construct the campaign contributor utility leaderboard.
 
-### 7.3 Empirical Non-Imputation & Bot Exclusion Principles
+### 9.3 Empirical Non-Imputation & Bot Exclusion Principles
 1. **Strict Non-Imputation (Zero-Floor Integrity)**: In accordance with movement research standards, CampAnalytics strictly prohibits synthetic data imputation or simulated extrapolation. If sampling detects zero encyclopedic embeddings for a cohort, the utility rate is explicitly recorded as $0.0\%$, reflecting the true unindexed empirical reality rather than heuristic projections.
 2. **Automated Bot Exclusion**: Accounts recognized as automated ingestion or synchronization bots (e.g. `Flickr upload bot`, `File Upload Bot (Magnus Manske)`, `CommonsDelinker`, `WLM-Bot`, and accounts matching bot naming patterns) are systematically excluded from contributor metrics, retention cohorts, newcomer pools, and photographer leaderboards. Contributor Diversity ($c_{10\%}$) is evaluated exclusively across genuine human participants.
 
 ---
 
-## 8. Quality Recognition Modeling (Commons Curatorial Standards)
+## 10. Quality Recognition Modeling (Commons Curatorial Standards)
 
 Quality Recognition quantifies formal artistic, technical, and canonical achievements awarded by established Wikimedia Commons peer review processes.
 
-### 8.1 Community Designation Types
+### 10.1 Community Designation Types
 Submissions are evaluated against three formal Commons award categories:
 1. **Quality Images (QI)**: Images meeting rigorous technical standards (composition, exposure, sharpness, lighting), evaluated and ratified by the Commons Quality Images committee.
 2. **Featured Pictures (FP)**: The movement's premier visual content, selected by community consensus via strict multi-day candidacy votes (indexed under both `Category:Featured pictures` and `Category:Featured pictures on Wikimedia Commons`).
 3. **Valued Images (VI)**: Images recognized as the most valuable of their kind for depicting particular encyclopedic subjects or concepts.
 
-### 8.2 Quality Rate Formulation
+### 10.2 Quality Rate Formulation
 Let $F_{\text{honored}} \subseteq F$ denote the set of campaign files awarded at least one formal designation ($QI \cup FP \cup VI$), discovered via structured Commons category trees (`Quality images from [Campaign]`, `Featured pictures from [Campaign]`, or `Valued images from [Campaign]`):
 
 The **Quality Distinction Rate** ($Q_r$) is:
@@ -196,27 +276,27 @@ $$Q_r = \frac{|F_{\text{honored}}|}{|F|} \times 100\%$$
 The **Honored Photographers Count** ($H$) quantifies distinct uploaders who created at least one recognized work:
 $$H = |\{ \text{uploader}(f) \mid f \in F_{\text{honored}} \}|$$
 
-### 8.3 Category Linguistic Normalization & Discovery
+### 10.3 Category Linguistic Normalization & Discovery
 To prevent category fragmentation across international campaigns, CampAnalytics incorporates automated grammar normalization. National campaigns containing definite articles (e.g. `in the United States`, `in the Netherlands`, `in the Philippines`, `in the United Kingdom`, `in the Czech Republic`) are automatically resolved alongside canonical aliases and MediaWiki category redirect directives (`{{Category redirect}}`).
 
 ---
 
-## 9. Boundary & Bias Disclosures
+## 11. Boundary & Bias Disclosures
 
 To uphold academic integrity and transparency, the following systemic boundaries and methodological trade-offs are explicitly disclosed:
 
-### 9.1 Retentional Taxonomy Breakage (Organizational Fragmentation)
+### 11.1 Retentional Taxonomy Breakage (Organizational Fragmentation)
 Directional retention $R(A \to B)$ relies on the macroscopic categorization topology of Wikimedia Commons as ground truth. If organizers alter target geographic boundaries or campaign naming conventions between editions, trackable cohort continuity is broken. While the framework utilizes linguistic normalization and explicit aliases, undocumented taxonomy breakage is intentionally treated as organizational fragmentation rather than an algorithmic failure.
 
-### 9.2 Linguistic Resource Normalization
+### 11.2 Linguistic Resource Normalization
 Campaign File Utility Rate ($U_r$) is formulated as a binary deployment metric ($|P(f)| > 0$). While campaigns associated with high-resource languages will naturally generate a larger absolute volume of article inclusions ($I_{\text{total}}$), the binary rate $U_r$ normalizes this disparity. A file deployed on Bengali Wikipedia carries the exact same mathematical weight as a file on English Wikipedia, ensuring emerging communities are not penalized for their linguistic scale.
 
-### 9.3 Bot-Driven Knowledge Distribution
+### 11.3 Bot-Driven Knowledge Distribution
 While automated *uploader* bots are strictly excluded, algorithmic *consumer* embeddings (e.g., localized stub-bots, Wikidata `P18` mass-insertions) are captured by `prop=globalusage`. CampAnalytics intentionally embraces this. Satisfying a machine-readable Wikidata property claim is a formally sanctioned, high-value form of media distribution. Algorithmic integration is evaluated as legitimate encyclopedic utility equivalent to human curatorial reuse.
 
 ---
 
-## 10. References and Literature
+## 12. References and Literature
 
 1. **OECD / European Commission JRC (2008)**. *Handbook on Constructing Composite Indicators: Methodology and User Guide*. OECD Publishing, Paris.
 2. **Halfaker, A., Geiger, R. S., Morgan, J. T., & Riedl, J. (2013)**. The Rise and Decline of an Open Collaboration System: How Wikipedia’s reaction to popularity is causing its decline. *American Behavioral Scientist*, 57(5), 664–688.

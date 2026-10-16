@@ -806,6 +806,8 @@
                 if (compPrev) compPrev.checked = true;
             }
             toggleCustomBaseline();
+            const form = document.getElementById('health-form') || (targetInput ? targetInput.closest('form') : null);
+            if (form) form.submit();
         }
 
         // Toggle custom baseline input visibility in Health View
@@ -871,17 +873,8 @@
             const yrEndInput = document.getElementById('influx_yr_end');
             if (yrEndInput) yrEndInput.value = y2;
             syncInfluxBuilder();
-
-            const codesInput = document.getElementById('influx_codes');
-            if (codesInput) {
-                codesInput.style.transition = 'box-shadow 0.2s ease, border-color 0.2s ease';
-                codesInput.style.borderColor = 'var(--wiki-blue)';
-                codesInput.style.boxShadow = '0 0 0 3px rgba(54, 89, 227, 0.25)';
-                setTimeout(() => {
-                    codesInput.style.borderColor = '';
-                    codesInput.style.boxShadow = '';
-                }, 1100);
-            }
+            const form = document.getElementById('influx-form');
+            if (form) form.submit();
         }
 
         function clearInfluxCodes() {
@@ -975,15 +968,8 @@
             const yrInput = document.getElementById('utility_year');
             if (yrInput) yrInput.value = yr;
             syncUtilityBuilder();
-            const targetInput = document.getElementById('target_campaign_utility');
-            if (targetInput) {
-                targetInput.style.borderColor = 'var(--wiki-blue)';
-                targetInput.style.boxShadow = '0 0 0 3px rgba(54, 89, 227, 0.25)';
-                setTimeout(() => {
-                    targetInput.style.borderColor = '';
-                    targetInput.style.boxShadow = '';
-                }, 1000);
-            }
+            const form = document.getElementById('utility-form');
+            if (form) form.submit();
         }
 
         function parseCodeToUtilityBuilder() {
@@ -1040,15 +1026,8 @@
             const yrInput = document.getElementById('quality_year');
             if (yrInput) yrInput.value = yr;
             syncQualityBuilder();
-            const targetInput = document.getElementById('target_campaign_quality');
-            if (targetInput) {
-                targetInput.style.borderColor = 'var(--wiki-blue)';
-                targetInput.style.boxShadow = '0 0 0 3px rgba(54, 89, 227, 0.25)';
-                setTimeout(() => {
-                    targetInput.style.borderColor = '';
-                    targetInput.style.boxShadow = '';
-                }, 1000);
-            }
+            const form = document.getElementById('quality-form');
+            if (form) form.submit();
         }
 
         function parseCodeToQualityBuilder() {
@@ -1589,12 +1568,6 @@
 
                     m += `---\n`;
                     m += `*Compiled with [CampTools](https://camptools.toolforge.org) · Empirical Campaign Analytics on Wikimedia Toolforge.*`;
-                    ta.value = m;
-                }
-            },
-
-                    m += `---\n`;
-                    m += `*Compiled with [CampTools](https://camptools.toolforge.org) · Evaluation Framework & Process Documentation available on Wikimedia Toolforge.*`;
                     ta.value = m;
                 }
             },

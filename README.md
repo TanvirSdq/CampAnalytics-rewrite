@@ -31,16 +31,16 @@ An analytics platform for Wikimedia Commons photography campaigns, providing mul
 
 ## Core Analytical Modules
 
-CampTools is organized into five specialized analytical tools accessible via top navigation, sidebar drawer, or programmatic JSON APIs:
+CampTools is organized into seven specialized analytical tools accessible via top navigation, mobile off-canvas drawer, or programmatic JSON APIs:
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                      CAMPTOOLS ANALYTICAL SUITE                        │
-├─────────────┬─────────────┬─────────────┬──────────────┬───────────────┤
-│   Tool 01   │   Tool 02   │   Tool 03   │   Tool 04    │    Tool 05    │
-│  Evaluation │  Retention  │   Influx    │   Utility    │    Quality    │
-│  (/health)  │ (/retention)│  (/influx)  │  (/utility)  │   (/quality)  │
-└─────────────┴─────────────┴─────────────┴──────────────┴───────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    CAMPTOOLS ANALYTICAL SUITE                                     │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┬─────────────┬───────────────┤
+│   Tool 01   │   Tool 02   │   Tool 03   │   Tool 04   │   Tool 05   │   Tool 06   │    Tool 07    │
+│  Evaluation │  Retention  │   Influx    │  Mobility   │  Diversity  │   Utility   │    Quality    │
+│  (/health)  │ (/retention)│  (/influx)  │ (/mobility) │(/diversity) │  (/utility) │   (/quality)  │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴───────────────┘
 ```
 
 ### 1. Campaign Performance Dynamics (`/health`, `/api/health`)
@@ -77,14 +77,31 @@ Provides empirical, non-imputed visibility into volunteer mobilization, multi-ye
 * **Lifecycle Profiles**: Segments contributors into 1-time entrants, repeaters (2–3 editions), and core veterans (4+ editions).
 * **Multi-Preset Quick Selectors**: 1-click loading for single-campaign sequences or cross-campaign national ecosystems.
 
-### 4. Content Utility (`/utility`, `/api/utility`, `/api/comparative`)
+### 4. Contributor Mobility (`/mobility`, `/api/mobility`, `/api/comparative`)
+* **Cross-Campaign Migration**: Analyzes movement and overlap of contributors across different photography competitions within the same national ecosystem or region.
+* **Directional Conversion Rate**: Measures what proportion of participants in campaign $A$ also participated in campaign $B$:
+  $$M(A \to B) = \left( \frac{|U_A \cap U_B|}{|U_A|} \right) \times 100\%$$
+* **Jaccard Community Similarity**: Measures pairwise uploader cohort affinity between competitions:
+  $$J(A, B) = \frac{|U_A \cap U_B|}{|U_A \cup U_B|}$$
+* **Deduplicated Ecosystem Union**: Quantifies total unique photographers active across all competitions without double-counting ($U_{\text{total}} = |\bigcup_k U_k|$).
+* **Interactive Views**: Transition Matrix, Multi-Year Cohort Breakdown, and Ecosystem Flow Sankey diagrams.
+
+### 5. Contributor Diversity (`/diversity`, `/api/diversity`, `/api/comparative`)
+* **Grassroots Participation Equity**: Analyzes production concentration across contributor volume tiers to ensure campaigns are broad-based rather than oligarchical.
+* **Discrete Gini Inequality**: Calculates the exact Gini coefficient ($G \in [0, 1]$) on contributor upload distribution:
+  $$G = \frac{\sum_{i=1}^n \sum_{j=1}^n |y_i - y_j|}{2n \sum_{i=1}^n y_i}$$
+* **Pareto Top-Decile Share ($c_{10\%}$)**: Proportion of total campaign media submitted by the top 10% most prolific contributors.
+* **4-Tier Contributor Classification**: Partitions contributors into 1-time uploaders (1 file), Low volume (2–5 files), Moderate volume (6–20 files), and Power uploaders (21+ files).
+* **Interactive Views**: Tiers Distribution bar chart, Cumulative Pareto curve, Longitudinal Gini trajectory, and Contributor Volume Ledger.
+
+### 6. Content Utility (`/utility`, `/api/utility`, `/api/comparative`)
 * **Live Encyclopedic Reuse**: Measures media integration across all Wikipedia language editions, Wikidata, Wikivoyage, and Commons galleries via `prop=globalusage`.
 * **Multi-Country Comparative Reuse**: Compare global utility rates and embed counts across campaign countries over time.
 * **Summary Scorecards**: Displays Global Utility Rate, Total Global Embeds, Unique Articles Reached, and Top Consuming Project.
 * **Live Media Articles Table**: Interactive table with search, column sorting, pagination, and multi-format exporters (CSV, Wikitext, JSON).
 * **Photographer Utilization Leaderboard**: Ranks contributors whose uploads achieve the highest encyclopedic integration.
 
-### 5. Quality Recognition (`/quality`, `/api/quality`, `/api/comparative`)
+### 7. Quality Recognition (`/quality`, `/api/quality`, `/api/comparative`)
 * **Curatorial Peer-Reviewed Status**: Audits uploads for community distinction badges:
   * **Quality Images (QI)**: Technical excellence verified by Commons reviewers.
   * **Featured Pictures (FP)**: Finest photographic achievements chosen by community consensus.
