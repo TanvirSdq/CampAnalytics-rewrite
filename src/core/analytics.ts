@@ -26,6 +26,8 @@ import {
   DiversityResult
 } from './types.js';
 
+import { BoundedCache, mapConcurrent, computeEmpiricalMean } from './utils.js';
+
 export type {
   HealthEvaluationResult,
   HistoricalEditionPoint,
@@ -220,11 +222,11 @@ export function getSubCampaignCodes(code: string): string[] {
 }
 
 
-// In-Memory Participant & Metrics Cache
-const _participantCache = new Map<string, { users: Set<string>; ts: number }>();
-const _userCountsCache = new Map<string, { counts: Map<string, number>; ts: number }>();
-const _metricsCache = new Map<string, { data: any; ts: number }>();
-const _categoryFileCountCache = new Map<string, { count: number; ts: number }>();
+// In-Memory Participant & Metrics Cache (Bounded to prevent memory leaks)
+const _participantCache = new BoundedCache<string, { users: Set<string>; ts: number }>(1000);
+const _userCountsCache = new BoundedCache<string, { counts: Map<string, number>; ts: number }>(1000);
+const _metricsCache = new BoundedCache<string, { data: any; ts: number }>(1000);
+const _categoryFileCountCache = new BoundedCache<string, { count: number; ts: number }>(2000);
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export async function fetchCategoryFileCount(category: string): Promise<number> {
@@ -434,11 +436,9 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
 
 export async function fetchAllConcurrently(codes: string[]): Promise<Record<string, Set<string>>> {
   const results: Record<string, Set<string>> = {};
-  await Promise.all(
-    codes.map(async (code) => {
-      results[code.toLowerCase()] = await getParticipants(code);
-    })
-  );
+  await mapConcurrent(codes, 6, async (code) => {
+    results[code.toLowerCase()] = await getParticipants(code);
+  });
   return results;
 }
 
@@ -588,11 +588,9 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
 
 export async function fetchStructuralMetricsConcurrently(codes: string[]): Promise<Record<string, any>> {
   const results: Record<string, any> = {};
-  await Promise.all(
-    codes.map(async (code) => {
-      results[code.toLowerCase()] = await getCampaignStructuralMetrics(code);
-    })
-  );
+  await mapConcurrent(codes, 6, async (code) => {
+    results[code.toLowerCase()] = await getCampaignStructuralMetrics(code);
+  });
   return results;
 }
 
@@ -673,23 +671,15 @@ export function buildGlobalTable(validCountries: Record<string, Record<string, S
     const { all, forward } = retDict;
     if (!all || all.length === 0) continue;
 
-    const mean = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
-    const median = (arr: number[]) => {
-      if (!arr.length) return 0;
-      const s = [...arr].sort((a, b) => a - b);
-      const mid = Math.floor(s.length / 2);
-      return s.length % 2 !== 0 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-    };
-
-    const fwdVal = forward.length ? mean(forward) : mean(all);
+    const fwdVal = forward.length ? computeEmpiricalMean(forward) : computeEmpiricalMean(all);
     const maxVal = Math.max(...all);
 
     rows.push({
       country: countryDisplayName(countryCode),
       occurrences: Object.keys(events).length,
       forwardRetention: parseFloat(fwdVal.toFixed(1)),
-      avgRetention: parseFloat(mean(all).toFixed(1)),
-      medianRetention: parseFloat(median(all).toFixed(1)),
+      avgRetention: parseFloat(computeEmpiricalMean(all).toFixed(1)),
+      medianRetention: computeEmpiricalMedian(all) ?? 0,
       maxRetention: parseFloat(maxVal.toFixed(1))
     });
   }
@@ -734,14 +724,7 @@ export function buildWorldData(
     const percentages = computeRetentionPercentages(events);
     if (!percentages.length) continue;
 
-    const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-    const median = (arr: number[]) => {
-      const s = [...arr].sort((a, b) => a - b);
-      const mid = Math.floor(s.length / 2);
-      return s.length % 2 !== 0 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-    };
-
-    const val = metric === 'Average' ? mean(percentages) : median(percentages);
+    const val = metric === 'Average' ? computeEmpiricalMean(percentages) : (computeEmpiricalMedian(percentages) ?? 0);
     rows.push({
       country: countryDisplayName(countryCode),
       retention: parseFloat(val.toFixed(1)),
@@ -783,7 +766,7 @@ export function createWorldMapHtml(
             if (attempts > 12 && !document.getElementById('plotly-fallback-cdn')) {
               var script = document.createElement('script');
               script.id = 'plotly-fallback-cdn';
-              script.src = 'https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js';
+              script.src = '/plotly.min.js';
               script.onload = renderMap;
               document.head.appendChild(script);
               return;
@@ -2553,26 +2536,24 @@ export async function computeComparativeAnalytics(
   const diversityResults: Record<string, DiversityRecord> = {};
 
   if (module === 'quality') {
-    await Promise.all(
-      allCodes.map(async (code) => {
-        qualityResults[code] = await computeQualityRecognitionDeep(code);
-      })
-    );
+    await mapConcurrent(allCodes, 6, async (code) => {
+      qualityResults[code] = await computeQualityRecognitionDeep(code);
+    });
   } else if (module === 'utility') {
-    await Promise.all(
-      allCodes.map(async (code) => {
-        utilityResults[code] = await computeContentUtilityDeep(code);
-      })
-    );
+    await mapConcurrent(allCodes, 6, async (code) => {
+      utilityResults[code] = await computeContentUtilityDeep(code);
+    });
   } else if (module === 'diversity') {
-    await Promise.all(
-      requestedCountries.flatMap((cc) =>
-        years.map(async (y) => {
-          const rec = await computeSingleDiversityRecord(eventType, cc, y);
-          diversityResults[`${cc}_${y}`] = rec;
-        })
-      )
-    );
+    const diversityTasks: Array<{ cc: string; y: number }> = [];
+    for (const cc of requestedCountries) {
+      for (const y of years) {
+        diversityTasks.push({ cc, y });
+      }
+    }
+    await mapConcurrent(diversityTasks, 6, async (task) => {
+      const rec = await computeSingleDiversityRecord(eventType, task.cc, task.y);
+      diversityResults[`${task.cc}_${task.y}`] = rec;
+    });
   }
 
   // Construct series per country

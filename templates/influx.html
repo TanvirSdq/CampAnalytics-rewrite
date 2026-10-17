@@ -342,7 +342,7 @@
                                 <span>Cumulative Contributor Pool</span>
                                 <span class="stat-kpi-badge badge-primary">Total Reach</span>
                             </div>
-                            <div class="stat-kpi-value">{{ "{:,}".format(influx_result.summary.total_unique_community) }}</div>
+                            <div class="stat-kpi-value">{{ influx_result.summary.total_unique_community | commas }}</div>
                             <div class="stat-kpi-subtext">Distinct individuals mobilized across all editions</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -358,7 +358,7 @@
                                 <span>Peak Influx Year</span>
                                 <span class="stat-kpi-badge badge-neutral">{{ influx_result.summary.peak_influx_year }}</span>
                             </div>
-                            <div class="stat-kpi-value">+{{ "{:,}".format(influx_result.summary.peak_influx_count) }}</div>
+                            <div class="stat-kpi-value">+{{ influx_result.summary.peak_influx_count | commas }}</div>
                             <div class="stat-kpi-subtext">Max single-year newcomer intake</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -366,15 +366,15 @@
                                 <span>Latest Edition ({{ influx_result.summary.latest_year }})</span>
                                 <span class="stat-kpi-badge badge-neutral">Active</span>
                             </div>
-                            <div class="stat-kpi-value">{{ "{:,}".format(influx_result.summary.latest_total) }}</div>
-                            <div class="stat-kpi-subtext">{{ "{:,}".format(influx_result.summary.latest_new) }} new · {{ "{:,}".format(influx_result.summary.latest_returning) }} returning</div>
+                            <div class="stat-kpi-value">{{ influx_result.summary.latest_total | commas }}</div>
+                            <div class="stat-kpi-subtext">{{ influx_result.summary.latest_new | commas }} new · {{ influx_result.summary.latest_returning | commas }} returning</div>
                         </div>
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Contributor Longevity</span>
                                 <span class="stat-kpi-badge badge-positive">Retention</span>
                             </div>
-                            <div class="stat-kpi-value">{{ "{:,}".format(influx_result.lifecycle.repeat_2_3 + influx_result.lifecycle.core_4_plus) }}</div>
+                            <div class="stat-kpi-value">{{ (influx_result.lifecycle.repeat_2_3 + influx_result.lifecycle.core_4_plus) | commas }}</div>
                             <div class="stat-kpi-subtext">Recurring contributors (2+ years)</div>
                         </div>
                     </div>
@@ -406,15 +406,15 @@
                             <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-ink); margin-bottom: 8px;">Cohort Lifecycle Segmentation</div>
                             <div class="footprint-strip" style="margin-top: 0;">
                                 <div class="footprint-stat">
-                                    <div class="footprint-val" style="color: #64748b;">{{ "{:,}".format(influx_result.lifecycle.one_time) }}</div>
+                                    <div class="footprint-val" style="color: #64748b;">{{ influx_result.lifecycle.one_time | commas }}</div>
                                     <div class="footprint-lbl">1-Time Entrants (One-off)</div>
                                 </div>
                                 <div class="footprint-stat">
-                                    <div class="footprint-val" style="color: var(--wiki-blue);">{{ "{:,}".format(influx_result.lifecycle.repeat_2_3) }}</div>
+                                    <div class="footprint-val" style="color: var(--wiki-blue);">{{ influx_result.lifecycle.repeat_2_3 | commas }}</div>
                                     <div class="footprint-lbl">Repeaters (2–3 Editions)</div>
                                 </div>
                                 <div class="footprint-stat">
-                                    <div class="footprint-val" style="color: var(--nav-teal);">{{ "{:,}".format(influx_result.lifecycle.core_4_plus) }}</div>
+                                    <div class="footprint-val" style="color: var(--nav-teal);">{{ influx_result.lifecycle.core_4_plus | commas }}</div>
                                     <div class="footprint-lbl">Core Veterans (4+ Editions)</div>
                                 </div>
                             </div>
@@ -478,9 +478,9 @@
                                                         <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 3px; line-height: 1.3;">{{ r.breakdown_str }}</div>
                                                     {% endif %}
                                                 </td>
-                                                <td style="font-weight: 600;">{{ "{:,}".format(r.total_active) }}</td>
-                                                <td style="color: #0d9488; font-weight: 600;">+{{ "{:,}".format(r.new_contributors) }}</td>
-                                                <td style="color: var(--nav-teal); font-weight: 600;">{{ "{:,}".format(r.returning_contributors) }}</td>
+                                                <td style="font-weight: 600;">{{ r.total_active | commas }}</td>
+                                                <td style="color: #0d9488; font-weight: 600;">+{{ r.new_contributors | commas }}</td>
+                                                <td style="color: var(--nav-teal); font-weight: 600;">{{ r.returning_contributors | commas }}</td>
                                                 <td>
                                                     {% if r.is_baseline %}
                                                         <span style="display: inline-block; width: 44px;">{{ r.newcomer_share_pct }}%</span>
@@ -511,7 +511,7 @@
                                                         <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
                                                     {% endif %}
                                                 </td>
-                                                <td style="font-weight: 600; color: var(--nav-teal);">{{ "{:,}".format(r.cumulative_pool) }}</td>
+                                                <td style="font-weight: 600; color: var(--nav-teal);">{{ r.cumulative_pool | commas }}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>

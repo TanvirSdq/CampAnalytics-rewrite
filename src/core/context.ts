@@ -28,29 +28,6 @@ export function makeDict<T extends Record<string, any>>(obj: T): T {
   return d;
 }
 
-// Polyfill Jinja compatibility methods on String prototype
-(String.prototype as any).format = function (...args: any[]) {
-  const str = this.toString();
-  if (str === '{:,}' || str.includes('{:,}')) {
-    const val = Number(args[0]);
-    return isNaN(val) ? String(args[0] ?? 0) : val.toLocaleString();
-  }
-  if (str.startsWith('%.') && str.endsWith('f')) {
-    const digits = parseInt(str.slice(2, -1), 10) || 1;
-    const val = Number(args[0]);
-    return isNaN(val) ? String(args[0] ?? 0) : val.toFixed(digits);
-  }
-  return String(args[0] ?? '');
-};
-
-(String.prototype as any).startswith = function (prefix: string) {
-  return this.startsWith(prefix);
-};
-
-(String.prototype as any).endswith = function (suffix: string) {
-  return this.endsWith(suffix);
-};
-
 let cachedCss = '';
 export function getCustomCss(): string {
   if (cachedCss) return cachedCss;
@@ -70,18 +47,22 @@ export function getCustomCss(): string {
 
 export const ASSET_VERSION = `${Date.now().toString(36)}`;
 
+// Pre-wrap static dictionaries once to eliminate per-request Object.defineProperty overhead
+const WRAPPED_EVENT_MAP = makeDict(analytics.EVENT_MAP);
+const WRAPPED_REGION_MAPPING = makeDict(analytics.REGION_COUNTRY_MAPPING);
+
 export function getGlobalContext(req: Request): GlobalContext {
   const currentYear = new Date().getFullYear();
   return {
     PAGE_TITLE: 'CampTools - Event Evaluation',
     PAGE_ICON: '📊',
     KORIKATH_LOGO_URL: 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Project_Korikath_Logo.svg',
-    EVENT_MAP: makeDict(analytics.EVENT_MAP),
+    EVENT_MAP: WRAPPED_EVENT_MAP,
     EVENT_DISPLAY_MAP: analytics.EVENT_DISPLAY_MAP,
     EVENT_COUNTRY_SCOPE: analytics.EVENT_COUNTRY_SCOPE,
     COUNTRY_OPTIONS: analytics.COUNTRY_OPTIONS,
     COUNTRY_MAP: analytics.COUNTRY_MAP,
-    REGION_COUNTRY_MAPPING: makeDict(analytics.REGION_COUNTRY_MAPPING),
+    REGION_COUNTRY_MAPPING: WRAPPED_REGION_MAPPING,
     COUNTRY_TO_REGION: analytics.COUNTRY_TO_REGION,
     EXAMPLE_CODES: analytics.EXAMPLE_CODES,
     CUSTOM_CSS: getCustomCss(),

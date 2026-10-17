@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { getGlobalContext } from '../core/context.js';
 import * as analytics from '../core/analytics.js';
 
+import { parseCountryList } from '../core/utils.js';
+
 const router = Router();
 
 export async function handleUtility(req: Request, res: Response): Promise<void> {
@@ -18,15 +20,8 @@ export async function handleUtility(req: Request, res: Response): Promise<void> 
   const yrEnd = parseInt((reqDict.utility_yr_end || reqDict.yr_end || reqDict.end_year || year) as string, 10) || currentY;
 
   // Multi-country parsing
-  let countryList: string[] = [];
-  const rawCountries = reqDict.countries || reqDict.utility_countries;
-  if (Array.isArray(rawCountries)) {
-    countryList = rawCountries.map(String).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  } else if (typeof rawCountries === 'string' && rawCountries.trim()) {
-    countryList = rawCountries.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  } else if (country) {
-    countryList = country.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  }
+  const rawCountries = reqDict.countries || reqDict.utility_countries || country;
+  const countryList = parseCountryList(rawCountries);
 
   if (req.method === 'GET' && Object.keys(req.query).length === 0 && !targetCampaign) {
     res.render('utility.html', {

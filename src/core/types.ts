@@ -63,15 +63,7 @@ export interface HealthMetrics {
   composite_score?: number | null;
   tier?: string;
   stars?: [string, number];
-  dimensions: {
-    retention: HealthMetricDimension;
-    growth: HealthMetricDimension;
-    expansion?: HealthMetricDimension;
-    quality: HealthMetricDimension;
-    diversity: HealthMetricDimension;
-    usage: HealthMetricDimension;
-    scale: HealthMetricDimension;
-  };
+  dimensions: Record<string, HealthMetricDimension>;
 }
 
 export interface OverallCampaignReport {
@@ -100,7 +92,7 @@ export interface OverallCampaignReport {
   quality_image_share_pct: number;
   quality_images_estimate: number;
   top10_uploader_share_pct: number;
-  dimensions: any;
+  dimensions: Record<string, HealthMetricDimension>;
   benchmarks: HealthBenchmarks;
   insights?: string[];
   historical_series?: HistoricalEditionPoint[];
@@ -140,7 +132,7 @@ export interface HealthEvaluationResult {
   composite_score?: number | null;
   tier?: string;
   stars?: [string, number];
-  dimensions: any;
+  dimensions: Record<string, HealthMetricDimension>;
   benchmarks: HealthBenchmarks;
   insights?: string[];
   historical_series?: HistoricalEditionPoint[];

@@ -31,10 +31,10 @@
                             <div class="form-group">
                                 <label class="form-label">Campaign Type</label>
                                 <div class="pill-group" id="health-event-group">
-                                    <input type="radio" name="health_event_type" value="all" id="health-evt-all" class="pill-checkbox" {% if target_event and target_event.startswith('all') %}checked{% endif %} onchange="syncHealthBuilderToCode()" onclick="syncHealthBuilderToCode()">
+                                    <input type="radio" name="health_event_type" value="all" id="health-evt-all" class="pill-checkbox" {% if target_event and target_event.startsWith('all') %}checked{% endif %} onchange="syncHealthBuilderToCode()" onclick="syncHealthBuilderToCode()">
                                     <label for="health-evt-all" class="pill-label" onclick="setTimeout(syncHealthBuilderToCode, 10)">All Campaigns</label>
                                     {% for event_key, event_val in EVENT_MAP.items() %}
-                                        <input type="radio" name="health_event_type" value="{{ event_key }}" id="health-evt-{{ event_key }}" class="pill-checkbox" {% if (target_event and target_event.startswith(event_key)) or (not target_event and event_key == 'wlm') %}checked{% endif %} onchange="syncHealthBuilderToCode()" onclick="syncHealthBuilderToCode()">
+                                        <input type="radio" name="health_event_type" value="{{ event_key }}" id="health-evt-{{ event_key }}" class="pill-checkbox" {% if (target_event and target_event.startsWith(event_key)) or (not target_event and event_key == 'wlm') %}checked{% endif %} onchange="syncHealthBuilderToCode()" onclick="syncHealthBuilderToCode()">
                                         <label for="health-evt-{{ event_key }}" class="pill-label" onclick="setTimeout(syncHealthBuilderToCode, 10)">{{ event_val }}</label>
                                     {% endfor %}
                                 </div>

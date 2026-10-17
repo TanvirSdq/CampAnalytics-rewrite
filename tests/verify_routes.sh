@@ -107,7 +107,7 @@ check_endpoint "Documentation Alias (/info)" "GET" "/info" "200" "Documentation"
 # ------------------------------------------------------------------------------
 echo ""
 echo "--- 2. Tool Routes (R1 Routing Resolution & Negative Check) ---"
-check_endpoint "Influx Tool (/influx)" "GET" "/influx" "200" "New User Influx" "Welcome to CampTools"
+check_endpoint "Influx Tool (/influx)" "GET" "/influx" "200" "Participant Influx" "Welcome to CampTools"
 check_endpoint "Health Tool (/health)" "GET" "/health" "200" "scorecard-grid" "Welcome to CampTools"
 check_endpoint "Retention Tool (/retention)" "GET" "/retention" "200" "Retention Analysis" "Welcome to CampTools"
 check_endpoint "Content Utility Tool (/utility)" "GET" "/utility" "200" "Content Utility" "Welcome to CampTools"

@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { getGlobalContext, getCustomCss, ASSET_VERSION } from './core/context.js';
-import { computeComparativeAnalytics } from './core/analytics.js';
 import healthzRouter from './routes/healthz.js';
 import indexRouter from './routes/index.js';
 import healthRouter from './routes/health.js';
@@ -16,6 +15,7 @@ import diversityRouter from './routes/diversity.js';
 import utilityRouter from './routes/utility.js';
 import qualityRouter from './routes/quality.js';
 import documentationRouter from './routes/documentation.js';
+import comparativeRouter from './routes/comparative.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,10 +23,19 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 const app = express();
 
+// Security Headers Middleware
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-XSS-Protection', '0');
+  next();
+});
+
 // Middleware
 app.use(compression() as any);
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+app.use(express.json({ limit: '100kb' }));
 
 // Execution Timing & Memory Profiling Middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -34,38 +43,55 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const origRender = res.render.bind(res);
 
   res.render = function (view: string, options?: any, callback?: any) {
+    let actualOptions = options;
+    let actualCallback = callback;
+    if (typeof options === 'function') {
+      actualCallback = options;
+      actualOptions = {};
+    }
+
     const elapsedNs = process.hrtime.bigint() - start;
     const elapsedSec = Number(elapsedNs) / 1e9;
     const executionTimeSec = elapsedSec < 0.001 ? '0.001' : elapsedSec.toFixed(3);
     const executionTimeMs = (Number(elapsedNs) / 1e6).toFixed(1);
     const heapUsedMb = (process.memoryUsage().heapUsed / (1024 * 1024)).toFixed(1);
 
-    res.setHeader('X-Response-Time', `${executionTimeMs}ms`);
+    if (!res.headersSent) {
+      res.setHeader('X-Response-Time', `${executionTimeMs}ms`);
+    }
 
     const mergedOptions = {
       execution_time_sec: executionTimeSec,
       execution_time_ms: executionTimeMs,
       memory_usage_mb: heapUsedMb,
-      ...(typeof options === 'object' && options !== null ? options : {})
+      ...(typeof actualOptions === 'object' && actualOptions !== null ? actualOptions : {})
     };
 
-    return origRender(view, mergedOptions, callback);
+    return origRender(view, mergedOptions, actualCallback);
   };
 
   next();
 });
 
 // Nunjucks Environment
+const isProd = process.env.NODE_ENV === 'production';
 const templatesPath = path.join(PROJECT_ROOT, 'templates');
 const nunjucksEnv = nunjucks.configure(templatesPath, {
   autoescape: true,
   express: app,
   watch: false,
-  noCache: true
+  noCache: !isProd
 });
 
+// XSS-Safe tojson filter: escapes HTML control characters and script terminators
 nunjucksEnv.addFilter('tojson', (obj: any) => {
-  return (nunjucks.runtime as any).markSafe(JSON.stringify(obj === undefined ? null : obj));
+  const json = JSON.stringify(obj === undefined ? null : obj)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+  return (nunjucks.runtime as any).markSafe(json);
 });
 
 nunjucksEnv.addFilter('format', (fmt: any, val: any) => {
@@ -88,6 +114,14 @@ nunjucksEnv.addFilter('commas', (val: any) => {
   const n = typeof val === 'number' ? val : parseFloat(val);
   if (isNaN(n)) return String(val);
   return Number.isInteger(n) ? n.toLocaleString('en-US') : n.toFixed(1);
+});
+
+nunjucksEnv.addFilter('startswith', (str: any, prefix: string) => {
+  return typeof str === 'string' && str.startsWith(prefix);
+});
+
+nunjucksEnv.addFilter('endswith', (str: any, suffix: string) => {
+  return typeof str === 'string' && str.endsWith(suffix);
 });
 
 // Global template locals
@@ -139,44 +173,7 @@ app.use(diversityRouter);
 app.use(utilityRouter);
 app.use(qualityRouter);
 app.use(documentationRouter);
-
-// Unified Comparative Analytics API
-app.get('/api/comparative', async (req: Request, res: Response) => {
-  const moduleParam = ((req.query.module || 'influx') as string).trim().toLowerCase();
-  if (!['influx', 'retention', 'quality', 'utility', 'diversity', 'mobility'].includes(moduleParam)) {
-    res.status(400).json({
-      error: `Invalid module '${moduleParam}'. Supported modules: influx, retention, quality, utility, diversity, mobility.`
-    });
-    return;
-  }
-
-  const eventType = ((req.query.event_type || req.query.eventType) as string || 'wlm').trim().toLowerCase();
-  const rawCountries = req.query.countries || req.query.country_codes || req.query.countryCodes;
-  let countryCodes: string[] = [];
-  if (Array.isArray(rawCountries)) {
-    countryCodes = rawCountries.map(String).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  } else if (typeof rawCountries === 'string' && rawCountries.trim()) {
-    countryCodes = rawCountries.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  }
-
-  const yrStart = parseInt((req.query.start_year || req.query.startYear || req.query.yr_start) as string, 10);
-  const yrEnd = parseInt((req.query.end_year || req.query.endYear || req.query.yr_end) as string, 10);
-  const metricKey = ((req.query.metric || req.query.metric_key || req.query.metricKey) as string || '').trim();
-
-  try {
-    const result = await computeComparativeAnalytics({
-      module: moduleParam as 'influx' | 'retention' | 'quality' | 'utility' | 'diversity' | 'mobility',
-      eventType,
-      countryCodes,
-      startYear: yrStart,
-      endYear: yrEnd,
-      metricKey: metricKey || undefined
-    });
-    res.json(result);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.use(comparativeRouter);
 
 app.use(indexRouter); // Mounted last to allow root handler and fallbacks
 
@@ -201,9 +198,10 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-// Process Safety
+// Process Safety: Log and terminate gracefully to allow container orchestrator recovery
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+  console.error('CRITICAL Uncaught Exception - terminating process:', err);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {

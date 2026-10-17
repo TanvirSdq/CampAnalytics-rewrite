@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { getGlobalContext } from '../core/context.js';
 import * as analytics from '../core/analytics.js';
 
+import { parseCountryList } from '../core/utils.js';
+
 const router = Router();
 
 export async function handleRetention(req: Request, res: Response): Promise<void> {
@@ -35,18 +37,8 @@ export async function handleRetention(req: Request, res: Response): Promise<void
   const yrEnd = parseInt((reqDict.yr_end || reqDict.end_year || reqDict.retention_yr_end || reqDict.builder_yr_end) as string, 10) || currentY;
 
   // Multi-country parsing harmonized across all analytical modules
-  let countryList: string[] = [];
-  const rawCountries = reqDict.countries || reqDict.retention_countries;
-  if (Array.isArray(rawCountries)) {
-    countryList = rawCountries.map(String).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  } else if (typeof rawCountries === 'string' && rawCountries.trim()) {
-    countryList = rawCountries.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  }
-
-  const singleCountry = ((reqDict.retention_country || reqDict.country) as string || '').trim().toLowerCase();
-  if (!countryList.length && singleCountry) {
-    countryList = singleCountry.split(/[,\s]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
-  }
+  const rawCountries = reqDict.countries || reqDict.retention_countries || reqDict.retention_country || reqDict.country;
+  const countryList = parseCountryList(rawCountries);
 
   if (!targetCampaigns && builderCountry && builderEvents.length > 0) {
     const y1 = parseInt(builderYrStart, 10) || currentYear - 2;
@@ -375,8 +367,10 @@ export async function handleRetentionApi(req: Request, res: Response): Promise<v
 
 export async function handleHeatmapsApi(req: Request, res: Response): Promise<void> {
   const targetCampaigns = ((req.query.target_campaigns as string) || '').trim();
-  const offset = Math.max(0, parseInt(req.query.offset as string, 10) || 6);
-  const limit = Math.max(1, Math.min(24, parseInt(req.query.limit as string, 10) || 6));
+  const parsedOffset = parseInt(req.query.offset as string, 10);
+  const offset = Number.isNaN(parsedOffset) ? 0 : Math.max(0, parsedOffset);
+  const parsedLimit = parseInt(req.query.limit as string, 10);
+  const limit = Number.isNaN(parsedLimit) ? 6 : Math.max(1, Math.min(24, parsedLimit));
 
   if (!targetCampaigns) {
     res.status(400).json({ error: 'Missing target_campaigns parameter', heatmaps: [] });
