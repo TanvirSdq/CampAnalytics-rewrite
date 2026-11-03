@@ -185,9 +185,12 @@ export async function handleRetention(req: Request, res: Response): Promise<void
         }
         error = scopeNotices.length > 0 ? scopeNotices.join(' ') : 'No comparative vectors resolved. Verify that at least two overlapping temporal editions exist for your selected countries.';
       } else {
-        const worldData = analytics.buildWorldData(validCountries, metricChoice);
-        if (worldData.length > 0) {
-          worldmapHtml = analytics.createWorldMapHtml(worldData, metricChoice);
+        const shouldRenderMap = viewMode === 'Both' || viewMode === 'Map' || !viewMode;
+        if (shouldRenderMap) {
+          const worldData = analytics.buildWorldData(validCountries, metricChoice);
+          if (worldData.length > 0) {
+            worldmapHtml = analytics.createWorldMapHtml(worldData, metricChoice);
+          }
         }
 
         const tableHtml = analytics.buildGlobalTable(validCountries);
@@ -201,14 +204,17 @@ export async function handleRetention(req: Request, res: Response): Promise<void
           return sumB - sumA;
         });
 
-        totalHeatmapsCount = sortedCountries.length;
-        const initialLimit = 6;
-        for (const [countryCode, events] of sortedCountries.slice(0, initialLimit)) {
-          const cName = analytics.countryDisplayName(countryCode);
-          const svgB64 = analytics.createHeatmapSvg(events, cName);
-          heatmaps.push([cName, svgB64]);
+        const shouldRenderHeatmaps = viewMode === 'Both' || viewMode === 'Matrix Heatmaps' || !viewMode;
+        if (shouldRenderHeatmaps) {
+          totalHeatmapsCount = sortedCountries.length;
+          const initialLimit = 6;
+          for (const [countryCode, events] of sortedCountries.slice(0, initialLimit)) {
+            const cName = analytics.countryDisplayName(countryCode);
+            const svgB64 = analytics.createHeatmapSvg(events, cName);
+            heatmaps.push([cName, svgB64]);
+          }
+          remainingHeatmapsCount = Math.max(0, totalHeatmapsCount - initialLimit);
         }
-        remainingHeatmapsCount = Math.max(0, totalHeatmapsCount - initialLimit);
 
         const comparatorCountries: Array<{
           code: string;

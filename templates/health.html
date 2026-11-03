@@ -193,10 +193,6 @@
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                             <span>Export Report</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_performance_dynamics')" title="Export MediaWiki wikitext table">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
-                            <span>Export Wikitext</span>
-                        </button>
                     </div>
                 </div>
 
@@ -645,24 +641,6 @@
                         <div class="camp-footer-license">
                             Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a> · Project Korikath
                         </div>
-                    </div>
-                    <div class="camp-footer-actions">
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.openExportReportModal()" title="Generate campaign report">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                            <span>Export Report</span>
-                        </button>
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'camptools_performance_{{ target_event or 'dynamics' }}')" title="Download dataset as CSV">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            <span>CSV</span>
-                        </button>
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_performance_{{ target_event or 'dynamics' }}')" title="Export MediaWiki wikitext table">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
-                            <span>Wikitext</span>
-                        </button>
-                        <button type="button" class="camp-footer-btn" onclick="copyPermalink()" title="Share deep-link">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                            <span>Share Link</span>
-                        </button>
                     </div>
                 </div>
             </div>

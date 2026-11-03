@@ -1,9 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
     <div>
         <h1 class="page-title" style="margin-bottom: 0;">Documentation</h1>
     </div>
+</div>
+
+<div class="doc-jump-strip" role="navigation" aria-label="Documentation Section Quick Links">
+    <a href="#health-guide" class="doc-jump-pill">01 Performance</a>
+    <a href="#retention-guide" class="doc-jump-pill">02 Retention</a>
+    <a href="#influx-guide" class="doc-jump-pill">03 Influx</a>
+    <a href="#mobility-guide" class="doc-jump-pill">04 Mobility</a>
+    <a href="#diversity-guide" class="doc-jump-pill">05 Diversity</a>
+    <a href="#utility-guide" class="doc-jump-pill">06 Utility</a>
+    <a href="#quality-guide" class="doc-jump-pill">07 Quality</a>
+    <a href="#glossary-guide" class="doc-jump-pill">08 Metric Glossary</a>
 </div>
 
         <!-- ================================================================== -->
@@ -12,7 +23,7 @@
         <div class="display-panel" id="health-guide">
             <div class="display-panel-header">
                 <div>
-                    <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 01</span>
+                    <span class="tool-card-badge" style="background-color: #eff6ff; color: #1d4ed8; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 01</span>
                     <span style="font-weight: 700; font-size: 1.05rem;">Campaign Performance Dynamics</span>
                 </div>
                 <a href="/health" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
@@ -20,51 +31,39 @@
                 </a>
             </div>
             <div class="display-panel-body">
-                <p style="color: var(--text-muted); line-height: 1.6;">
-                    The Campaign Performance Dynamics module provides empirical observability into volunteer mobilization, multi-year longitudinal trajectories, and Year-over-Year (YoY) velocity without subjective scoring indices, arbitrary weights, or automated advice notes:
+                <p style="color: var(--text-ink); line-height: 1.6; margin-bottom: 14px;">
+                    The Campaign Performance Dynamics module provides direct empirical observability into volunteer mobilization, multi-year longitudinal trajectories, and Year-over-Year (YoY) velocity without subjective scoring indices, arbitrary weights, or automated advice notes:
                 </p>
 
-                <h4 style="margin: 14px 0 8px 0; color: var(--text-ink); font-size: 0.95rem;">Step-by-Step Tool Usage &amp; Exploration Process</h4>
-                <ol style="color: var(--text-ink); line-height: 1.7; padding-left: 20px;">
-                    <li><strong>Target Campaign Code:</strong> Enter the official identifier for the campaign edition you want to evaluate (e.g. <code>wlmbd24</code> for Wiki Loves Monuments 2024 Bangladesh, or <code>wlede23</code> for Wiki Loves Earth Germany).</li>
-                    <li><strong>Baseline Reference Edition:</strong> Select <em>Previous Year Baseline</em> to measure trajectory shifts against the immediately preceding year (e.g. 2023 vs 2024), or specify a custom baseline edition for multi-year comparisons.</li>
-                    <li><strong>Regional Peer Calibration:</strong> The tool automatically identifies your country's regional cluster (e.g. South Asia, Northern &amp; Western Europe, ESEAP). Regional peer medians are computed across active campaigns to provide context without artificial rankings.</li>
-                    <li><strong>Empirical KPIs &amp; Velocity Badges:</strong> Review the 6 core observational cards showing live totals alongside Year-over-Year velocity badges indicating exact net shifts (+/-) and percentage progression.</li>
-                    <li><strong>Interactive Manipulative Charts (Plotly.js):</strong> Explore three dynamic visualizers:
-                        <ul style="margin-top: 4px; padding-left: 18px;">
-                            <li><strong>Multi-Year Longitudinal Trajectory:</strong> Dual-axis interactive chart tracking active uploaders, Commons submissions, and quality honors across up to 5 consecutive editions.</li>
-                            <li><strong>Cohort Retention &amp; Newcomer Waterfall:</strong> Stacked breakdown illustrating the operational balance between returning volunteers and recruited newcomers.</li>
-                            <li><strong>Regional Peer Context Comparison:</strong> Interactive bar chart comparing your campaign against active regional peers across selectable metrics.</li>
-                        </ul>
-                    </li>
-                    <li><strong>Export Empirical Report:</strong> Export raw, non-graded observational records in Wikitext, Markdown, or CSV formats for community reports and affiliate documentation.</li>
+                <h4 style="margin: 16px 0 10px 0; color: var(--text-ink); font-size: 0.95rem; font-weight: 600;">Tool Workflow &amp; Features</h4>
+                <ol style="color: var(--text-ink); line-height: 1.7; padding-left: 20px; margin-bottom: 16px;">
+                    <li><strong>Target Campaign Code:</strong> Enter the official identifier for the campaign edition to evaluate (e.g. <code>wlmbd24</code> for Wiki Loves Monuments 2024 Bangladesh, or <code>wlede23</code> for Wiki Loves Earth Germany).</li>
+                    <li><strong>Baseline Reference Edition:</strong> Select <em>Previous Year Baseline</em> to measure trajectory shifts against the prior year (e.g. 2023 vs 2024), or specify a custom reference edition.</li>
+                    <li><strong>Regional Peer Calibration:</strong> The tool automatically identifies the country's regional cluster (e.g. South Asia, Northern &amp; Western Europe, ESEAP). Regional peer medians are computed across active campaigns in the cluster.</li>
+                    <li><strong>Empirical Indicators &amp; Velocity:</strong> Six observational cards displaying live totals alongside Year-over-Year velocity badges with exact net shifts (+/-) and percentage change.</li>
+                    <li><strong>Interactive Visualizers:</strong> Multi-Year Longitudinal Trajectory (uploaders, submissions, quality honors), Retention &amp; Newcomer Waterfall, and Regional Peer Benchmark comparisons.</li>
+                    <li><strong>Report Export:</strong> Export unweighted, observational records in Wikitext, Markdown, or CSV formats for community reports and affiliate grant documentation.</li>
                 </ol>
 
                 <div class="math-panel">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year Progression</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 10px 0;">
-                        Rather than grading affiliates with subjective scores, the platform tracks simple, observable changes between consecutive campaign editions:
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        Rather than grading affiliates with subjective scores, the platform tracks observable changes between consecutive campaign editions:
                     </p>
-                    <div class="math-formula" style="margin: 10px 0 14px 0;">
+                    <div class="math-formula">
                         \[ \text{Year-over-Year Net Shift} = \text{Target Edition Count} - \text{Baseline Edition Count} \]
+                    </div>
+                    <div class="math-formula">
                         \[ \text{Year-over-Year Change (\%)} = \frac{\text{Target Edition Count} - \text{Baseline Edition Count}}{\text{Baseline Edition Count}} \times 100\% \]
                     </div>
-                    <ul style="color: var(--text-ink); font-size: 0.88rem; line-height: 1.7; margin: 0; padding-left: 20px;">
-                        <li><strong>Community Scale:</strong> Net change in unique photographers submitting at least one eligible photograph.</li>
-                        <li><strong>Contributor Retention:</strong> Percentage of previous-year participants who returned to upload in the current edition.</li>
-                        <li><strong>Newcomer Recruitment:</strong> Number of first-time participants who had not uploaded in earlier recorded editions.</li>
-                        <li><strong>Content Utility:</strong> Number and percentage of submitted photographs actively illustrating Wikipedia articles or Wikidata items.</li>
-                        <li><strong>Quality Recognition:</strong> Number and percentage of photos receiving formal community honors (Quality Images and Featured Pictures).</li>
-                        <li><strong>Contributor Diversity:</strong> Distribution of submissions across participants, tracked via the share of photos from the top 10% most prolific uploaders.</li>
-                    </ul>
                 </div>
 
                 <div class="math-panel" style="margin-bottom: 0;">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Regional Benchmark &amp; Zero-Synthetic Invariant</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; line-height: 1.6;">
-                        Regional peer medians provide context across up to 5 active national campaigns within the same geographic cluster, including the target country when held.
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        Regional peer medians provide context across up to 5 active national campaigns within the same geographic cluster, including the target country when held:
                     </p>
-                    <div class="math-formula" style="margin: 8px 0;">
+                    <div class="math-formula">
                         \[ \text{Regional Comparison Shift} = \text{Target Value} - \text{Regional Median (Top 5 Active Campaigns)} \]
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0 0; line-height: 1.5;">
@@ -80,52 +79,51 @@
         <div class="display-panel" id="retention-guide">
             <div class="display-panel-header">
                 <div>
-                    <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 02</span>
-                    <span style="font-weight: 700; font-size: 1.05rem;">Retention</span>
+                    <span class="tool-card-badge" style="background-color: #f0fdf4; color: #15803d; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 02</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Retention Analytics</span>
                 </div>
                 <a href="/retention" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
                 </a>
             </div>
             <div class="display-panel-body">
-                <p style="color: var(--text-muted); line-height: 1.6;">
-                    The Retention Analytics interface evaluates participant continuity between successive campaign editions and cross-event contributor migration:
+                <p style="color: var(--text-ink); line-height: 1.6; margin-bottom: 14px;">
+                    The Retention Analytics interface evaluates participant continuity between successive campaign editions, multi-country comparative trajectories, and cross-event contributor retention:
                 </p>
-                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
-                    <li><strong>Campaign Selection:</strong> Select one or more configured Wiki Loves campaigns (such as Monuments <code>wlm</code>, Earth <code>wle</code>, Folklore <code>wlf</code>, Africa <code>wla</code>, or Bangla <code>wlb</code>). Query codes follow the standard format <code>[event][country][year]</code> (e.g. <code>wlmbd24</code>, <code>wlede22</code>).</li>
-                    <li><strong>Geographic &amp; Temporal Parameters:</strong> Select a target country, regional cluster, or all available countries (50+ global nations), and define the longitudinal year span. Use the <strong>Replace Codes</strong> or <strong>Append Codes</strong> buttons to populate the target codes input.</li>
-                    <li><strong>Quick Presets:</strong> Pre-configured comparison vectors are available in the presets panel for common evaluation pairs (e.g. Monuments Germany, Earth India, Folklore Bangladesh).</li>
-                    <li><strong>Analytical Projection Models:</strong> Choose the desired visualization output:
+                <ol style="color: var(--text-ink); line-height: 1.7; padding-left: 20px; margin-bottom: 16px;">
+                    <li><strong>Campaign Scope:</strong> Select one or more configured Wiki Loves campaigns (Monuments <code>wlm</code>, Earth <code>wle</code>, Folklore <code>wlf</code>, Africa <code>wla</code>, Bangla <code>wlb</code>). Query codes follow the format <code>[event][country][year]</code> (e.g. <code>wlmbd24</code>, <code>wlede22</code>).</li>
+                    <li><strong>Geographic &amp; Temporal Parameters:</strong> Select a country, regional cluster, or all supported nations, and define the year span. Quick presets allow 1-click loading for standard national cohorts.</li>
+                    <li><strong>Analytical Visualizations:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
-                            <li><strong>Data Table:</strong> Tabular breakdown of baseline cohort size, target cohort size, intersecting participant count, and directional retention rate.</li>
-                            <li><strong>Heatmap Matrix:</strong> Color-coded matrix displaying pairwise retention shares across consecutive editions.</li>
-                            <li><strong>Choropleth World Map:</strong> Spatial distribution of country-level average or median retention metrics across international campaigns.</li>
+                            <li><strong>Comparative Time Series (Line):</strong> Pure SVG multi-country longitudinal retention lines with exact data tooltips.</li>
+                            <li><strong>Cohort Data Table (Table):</strong> Sortable breakdown of baseline cohort, target cohort, mutual participants, and retention rate with CSV and Wikitext export.</li>
+                            <li><strong>Choropleth Map:</strong> Geographic projection of country-level participant retention across international campaigns.</li>
+                            <li><strong>Heatmap Matrices:</strong> Color-coded matrices displaying cross-edition retention transitions.</li>
                         </ul>
                     </li>
                 </ol>
 
                 <div class="math-panel">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Contributor Retention Rate</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        Retention measures what fraction of contributors from an earlier baseline edition returned to participate in a subsequent target edition:
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        Retention measures what fraction of contributors from a baseline edition returned to participate in a subsequent target edition:
                     </p>
                     <div class="math-formula">
                         \[ \text{Retention Rate} = \frac{\text{Returning Contributors from Baseline}}{\text{Total Contributors in Baseline Edition}} \times 100\% \]
                     </div>
-                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        Retention is directional: comparing baseline participants who returned in a later year yields a different percentage than evaluating the later year against the earlier baseline, because total community sizes differ across years.
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0 0; line-height: 1.5;">
+                        <strong>Directional Asymmetry:</strong> Retention from edition A to edition B differs from B to A because baseline cohort sizes change across years.
                     </p>
                 </div>
 
                 <div class="math-panel" style="margin-bottom: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Data Extraction Pipeline &amp; Limitations</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Data Extraction Pipeline &amp; Unheld Editions</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.6;">
-                        Data is extracted in real time directly from Wikimedia Commons. The primary ingestion pathway queries Toolforge replica tools (<code>ptools.toolforge.org</code>) for low-latency category membership enumeration, with automatic failover to the official Wikimedia Commons Action API (<code>commons.wikimedia.org/w/api.php</code>) utilizing the <code>categorymembers</code> generator with automatic pagination and exponential backoff.
+                        Data is extracted in real time directly from Wikimedia Commons using Toolforge database replicas and the Commons Action API with automatic pagination.
                     </p>
-                    <ul style="color: var(--text-muted); font-size: 0.82rem; line-height: 1.6; margin: 0; padding-left: 20px;">
-                        <li>Evaluations reflect observable on-wiki upload records and do not account for offline organizing contributions.</li>
-                        <li>Incomplete or unheld campaign categories are identified as missing data and excluded from evaluation to prevent erroneous zero-scoring.</li>
-                    </ul>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">
+                        <strong>Missing Data Integrity:</strong> Incomplete or unheld campaign categories are identified and excluded from cohort evaluations to prevent artificial zeros.
+                    </p>
                 </div>
             </div>
         </div>
@@ -136,62 +134,57 @@
         <div class="display-panel" id="influx-guide">
             <div class="display-panel-header">
                 <div>
-                    <span class="tool-card-badge" style="margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 03</span>
-                    <span style="font-weight: 700; font-size: 1.05rem;">Influx</span>
+                    <span class="tool-card-badge" style="background-color: #fdf4ff; color: #a21caf; margin-bottom: 0; vertical-align: middle; margin-right: 8px;">Tool 03</span>
+                    <span style="font-weight: 700; font-size: 1.05rem;">Participant Influx</span>
                 </div>
                 <a href="/influx" class="btn btn-sm" style="padding: 4px 12px; font-size: 0.8rem; background: #f8f9fa; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; text-decoration: none; font-weight: 500;">
                     Go To Tool →
                 </a>
             </div>
             <div class="display-panel-body">
-                <p style="color: var(--text-muted); line-height: 1.6;">
-                    The Influx Analytics module assesses continuous community renewal, newcomer acquisition, and long-term contributor mobilization:
+                <p style="color: var(--text-ink); line-height: 1.6; margin-bottom: 14px;">
+                    The Influx Analytics module assesses continuous community renewal, newcomer acquisition yield, and long-term contributor mobilization:
                 </p>
-                <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
-                    <li><strong>Series Selection:</strong> Choose a campaign type (or All Campaigns), country, and consecutive year span (e.g. {{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }}).</li>
-                    <li><strong>Generated Campaign Sequence:</strong> Chronological campaign sequence automatically assembled or customized to evaluate longitudinal trends.</li>
+                <ol style="color: var(--text-ink); line-height: 1.7; padding-left: 20px; margin-bottom: 16px;">
+                    <li><strong>Series Selection:</strong> Choose a specific campaign type (or All Campaigns for national ecosystem view), target country, and consecutive year span (e.g. {{ DEFAULT_START_YEAR }}–{{ CURRENT_YEAR }}).</li>
+                    <li><strong>Generated Campaign Sequence:</strong> Chronological campaign sequence automatically assembled to evaluate longitudinal inflow and veteran return.</li>
                     <li><strong>Trend Visualizations &amp; Outputs:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
-                            <li><strong>Summary KPI Cards:</strong> Cumulative Contributor Pool, Peak Influx Year, Peak Overall Edition, and Contributor Longevity (recurring participants).</li>
-                            <li><strong>Visual Influx Dynamics:</strong> Dual-axis stacked bar chart showing first-time newcomers stacked with returning participants alongside the cumulative pool trajectory.</li>
-                            <li><strong>Cohort Lifecycle Segmentation:</strong> Categorization into 1-Time Entrants (one-off contributors), Repeaters (2–3 editions), and Core Veterans (4+ editions).</li>
-                            <li><strong>Detailed Data Table:</strong> Comprehensive table with YoY Net Growth, Newcomer Share, Direct Retention, and CSV export capability.</li>
+                            <li><strong>Summary KPI Cards:</strong> Cumulative Contributor Pool, Peak Influx Year, Peak Edition, and Contributor Longevity.</li>
+                            <li><strong>Dual-Axis Dynamics:</strong> Stacked bar chart showing first-time newcomers alongside returning participants, with the cumulative pool curve on the secondary axis.</li>
+                            <li><strong>Cohort Lifecycle Profiles:</strong> 1-Time Entrants (one-off contributors), Repeaters (2–3 editions), and Core Veterans (4+ editions).</li>
+                            <li><strong>Detailed Data Table:</strong> YoY net growth, newcomer share, direct retention, and CSV/Wikitext export.</li>
                         </ul>
                     </li>
                 </ol>
 
                 <div class="math-panel">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year Newcomers &amp; Retention</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        In each edition of a campaign series, contributors are divided into two distinct groups: first-time newcomers and returning participants:
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        Contributors in each edition are partitioned into first-time newcomers and returning veterans:
                     </p>
                     <div class="math-formula">
                         \[ \text{Newcomer Share} = \frac{\text{First-Time Contributors}}{\text{Total Active Contributors in Edition}} \times 100\% \]
+                    </div>
+                    <div class="math-formula">
                         \[ \text{Direct Retention Rate} = \frac{\text{Returning Contributors from Prior Edition}}{\text{Total Contributors in Prior Edition}} \times 100\% \]
                     </div>
-                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        <strong>First-Time Contributors:</strong> Photographers who have never uploaded to any prior recorded edition in the series.<br>
-                        <strong>Returning Contributors:</strong> Photographers who previously uploaded in at least one earlier recorded edition.
-                    </p>
                 </div>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">All-Campaigns De-duplication</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        When analyzing all campaigns together (using the <code>all[country][year]</code> option), participants across all active photography contests (such as Monuments, Earth, Folklore, Africa, and Bangla) in a given year are combined into a single ecosystem pool:
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">All-Campaigns Ecosystem De-duplication</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        When analyzing all campaigns together (via <code>all[country][year]</code>), participants across active contests in that country are de-duplicated into a single annual cohort:
                     </p>
                     <div class="math-formula">
                         \[ \text{Annual Active Community} = \text{Count of Unique Individuals Active Across Any Contest in that Year} \]
                     </div>
-                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        Each volunteer username is counted once per year, eliminating double-counting when a photographer submits images to multiple contests during the same calendar year.
-                    </p>
                 </div>
 
-                <div class="math-panel">
+                <div class="math-panel" style="margin-bottom: 0;">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Cumulative Contributor Pool</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        The cumulative community pool tracks the total number of distinct individuals who have contributed at least one photo across the entire evaluated series up to that edition year:
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        The cumulative community pool measures the total number of distinct individuals who have contributed at least one photograph across the entire series to date:
                     </p>
                     <div class="math-formula">
                         \[ \text{Cumulative Contributor Pool} = \text{Total Unique Photographers Mobilized Across All Editions to Date} \]
@@ -351,12 +344,21 @@
 
                 <div class="math-panel">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Content Utility Rate</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        Tracks how effectively campaign submissions are put to use across Wikipedia articles, Wikidata, and sister projects:
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        Proportion of submitted photographs embedded across active Wikipedia articles, Wikidata, and sister projects:
                     </p>
                     <div class="math-formula">
                         \[ \text{Content Utility Rate} = \frac{\text{Uploaded Photos in Active Use}}{\text{Total Contest Submissions}} \times 100\% \]
-                        \[ \text{Total Article Inclusions} = \text{Cumulative Count of Live Embeddings Across All Wikimedia Projects} \]
+                    </div>
+                </div>
+
+                <div class="math-panel" style="margin-bottom: 0;">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Cumulative Article Inclusions</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        Total live instances of campaign files embedded across encyclopedic pages across all Wikimedia language editions:
+                    </p>
+                    <div class="math-formula">
+                        \[ \text{Total Article Inclusions} = \text{Cumulative Count of Live Embeddings Across Wikimedia Namespaces} \]
                     </div>
                 </div>
             </div>
@@ -394,12 +396,21 @@
 
                 <div class="math-panel">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Quality Recognition Rate</h4>
-                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
                         Measures the proportion of submitted photographs that earned formal community quality designations:
                     </p>
                     <div class="math-formula">
                         \[ \text{Quality Recognition Rate} = \frac{\text{Awarded Photos (Quality Images or Featured Pictures)}}{\text{Total Contest Submissions}} \times 100\% \]
-                        \[ \text{Recognized Photographers} = \text{Distinct Count of Photographers with At Least One Honored Photo} \]
+                    </div>
+                </div>
+
+                <div class="math-panel" style="margin-bottom: 0;">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Recognized Photographers</h4>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 8px 0; line-height: 1.5;">
+                        Net count of distinct contributors who produced one or more certified quality works in the campaign:
+                    </p>
+                    <div class="math-formula">
+                        \[ \text{Recognized Photographers} = \text{Unique Count of Photographers with At Least One Certified Photo} \]
                     </div>
                 </div>
             </div>
@@ -417,8 +428,7 @@
             </div>
             <div class="display-panel-body">
                 <div class="math-panel" style="margin-bottom: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Metric Glossary &amp; Data Dictionary</h4>
-                    <table class="camp-data-table" style="font-size: 0.82rem; margin-top: 8px;">
+                    <table class="camp-data-table" style="font-size: 0.82rem; margin-top: 0;">
                         <thead>
                             <tr>
                                 <th style="width: 24%;">Metric Name</th>

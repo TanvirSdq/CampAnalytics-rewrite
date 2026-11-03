@@ -3608,11 +3608,18 @@ select.form-control {
     border-radius: 0 !important;
 }
 
-.math-panel p,
-.math-panel li,
 .math-panel h4 {
-    font-size: .78rem !important;
-    line-height: 1.55 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: var(--text-ink) !important;
+    margin: 0 0 6px 0 !important;
+}
+
+.math-panel p,
+.math-panel li {
+    font-size: 0.88rem !important;
+    line-height: 1.6 !important;
+    color: var(--text-ink) !important;
 }
 
 .math-formula {
@@ -3622,14 +3629,46 @@ select.form-control {
 
 .tool-card-badge {
     display: inline-block;
-    padding: 2px 6px !important;
+    padding: 3px 8px !important;
     border-radius: 0 !important;
-    background: #e8f0ff !important;
-    color: var(--accent-blue) !important;
-    font-size: .64rem !important;
+    background: #eef2f6 !important;
+    color: var(--text-ink) !important;
+    font-size: 0.72rem !important;
     font-weight: 700;
     letter-spacing: .04em;
     text-transform: uppercase;
+}
+
+/* Documentation Section Jump Navigation */
+.doc-jump-strip {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    padding: 8px 12px;
+    margin-bottom: 20px;
+}
+
+.doc-jump-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    background: #f8f9fa;
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    color: var(--text-ink);
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.doc-jump-pill:hover {
+    background: #edf2f7;
+    border-color: #cbd5e1;
+    color: var(--wiki-blue);
+    text-decoration: none;
 }
 
 .table-interactive-wrapper {
@@ -3686,9 +3725,6 @@ table.data-table td {
     padding: 9px 12px !important;
 }
 
-.display-panel [style*="font-size: 0.95rem"] {
-    font-size: .8rem !important;
-}
 
 @media (max-width: 700px) {
     .scorecard-header-card {
@@ -5255,10 +5291,10 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 20px;
+    padding: 10px 18px;
     background: #ffffff;
     border-top: 1px solid var(--border-color);
-    gap: 14px;
+    gap: 8px;
     flex-wrap: wrap;
     font-size: 0.78rem;
 }
@@ -5436,19 +5472,8 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     .camp-shell-footer {
         flex-direction: column;
         align-items: flex-start;
-        padding: 12px 14px;
-        gap: 10px;
-    }
-
-    .camp-footer-actions {
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .camp-footer-btn {
-        flex: 1 1 auto;
-        justify-content: center;
-        min-height: 36px;
+        padding: 10px 14px;
+        gap: 6px;
     }
 
     .form-row-2col {

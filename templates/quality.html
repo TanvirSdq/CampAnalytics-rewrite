@@ -307,12 +307,6 @@
                                 <span>Top Photographers</span>
                             </button>
                         </div>
-                        <div class="segmented-actions">
-                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('quality-photographers-table', 'wikitext', 'camptools_quality_{{ quality_result.code }}')" title="Export MediaWiki wikitext table">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
-                                <span>Export Wikitext</span>
-                            </button>
-                        </div>
                     </div>
                 <div class="display-panel-body camp-shell-body">
                     <!-- Analytical KPI Summary Grid -->
@@ -534,24 +528,6 @@
                         <div class="camp-footer-license">
                             Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a> · Project Korikath
                         </div>
-                    </div>
-                    <div class="camp-footer-actions">
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('quality-photographers-table', 'csv', 'camptools_quality_{{ quality_result.code }}_top_photographers')" title="Download top photographers data as CSV">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            <span>CSV</span>
-                        </button>
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('quality-photographers-table', 'wikitext', 'camptools_quality_{{ quality_result.code }}_top_photographers')" title="Export MediaWiki wikitext table">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
-                            <span>Wikitext</span>
-                        </button>
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('quality-photographers-table', 'json', 'camptools_quality_{{ quality_result.code }}_top_photographers')" title="Download top photographers data as JSON">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                            <span>JSON</span>
-                        </button>
-                        <button type="button" class="camp-footer-btn" onclick="copyPermalink()" title="Share deep-link">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                            <span>Share Link</span>
-                        </button>
                     </div>
                 </div>
             </div>
