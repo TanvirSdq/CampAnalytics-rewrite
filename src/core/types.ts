@@ -103,6 +103,7 @@ export interface OverallCampaignReport {
   benchmarks_median?: HealthBenchmarks;
   historical_series?: HistoricalEditionPoint[];
   peer_comparisons?: PeerComparisonPoint[];
+  insights?: any[];
 }
 
 export interface HistoricalEditionPoint {

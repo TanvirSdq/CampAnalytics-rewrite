@@ -2397,8 +2397,7 @@ export async function computeHealthEvaluation(
     benchmarks_median,
     benchmarks_mean,
     historical_series: historicalSeries,
-    peer_comparisons: peerComparisons,
-    insights: []
+    peer_comparisons: peerComparisons
   };
 
   return {
