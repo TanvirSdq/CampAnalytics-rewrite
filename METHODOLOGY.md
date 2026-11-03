@@ -6,16 +6,16 @@ This document outlines the theoretical foundations, mathematical formulations, c
 
 ## 1. Overview and Core Analytical Modules
 
-CampAnalytics is an analytical suite designed for organizers, researchers, and grant committees within the Wikimedia ecosystem. The platform provides empirical visibility into contributor dynamics and content outcomes across annual photography competitions (Wiki Loves Monuments, Wiki Loves Earth, Wiki Loves Folklore, Wiki Loves Africa, and Wiki Loves Bangla).
+CampAnalytics is an analytical suite designed for organizers, affiliates, and researchers within the Wikimedia ecosystem. The platform provides empirical visibility into contributor dynamics and content outcomes across annual photography competitions (Wiki Loves Monuments, Wiki Loves Earth, Wiki Loves Folklore, Wiki Loves Africa, and Wiki Loves Bangla).
 
 The suite comprises seven primary analytical tools:
-1. **Performance Dynamics (Tool 01)**: Multi-dimensional empirical campaign dynamics combining longitudinal participant trajectories, cohort continuity, newcomer influx yield, Wikipedia content utility, curatorial quality honors, and Year-over-Year (YoY) velocity increments/decrements ($\Delta$) into an unslanted, purely observational framework.
+1. **Event Performance (Tool 01)**: Multi-dimensional empirical campaign dynamics combining longitudinal participant trajectories, cohort continuity, newcomer influx yield, Wikipedia content utility, curatorial quality honors, and Year-over-Year (YoY) velocity increments/decrements ($\Delta$) into an unslanted, purely observational framework.
 2. **Retention (Tool 02)**: Longitudinal participant continuity analysis across multi-year editions, directional cohort retention matrices, and geographic choropleth mappings.
 3. **Influx (Tool 03)**: Year-over-Year (YoY) contributor segmentation distinguishing first-time participants from returning veterans to assess participant pipeline sustainability.
 4. **Contributor Mobility (Tool 04)**: Cross-campaign migration modeling, pairwise cohort intersections, directional conversion rates, and ecosystem flow dynamics across national competitions.
 5. **Contributor Diversity (Tool 05)**: Participation equity modeling via discrete Gini inequality coefficients, Pareto decile concentration curves, and multi-tier contributor volume classification.
 6. **Content Utility (Tool 06)**: Live encyclopedic reuse tracking across Wikimedia projects (`prop=globalusage`), article inclusion volume, cross-wiki project breadth, and photographer impact rankings.
-7. **Quality Recognition (Tool 07)**: Movement-wide curatorial and technical honors tracking (Quality Images, Featured Pictures, Valued Images) with structured Commons category harvesting and top contributing photographers.
+7. **Quality Recognition (Tool 07)**: Movement-wide curatorial and technical honors tracking (Quality Images and Featured Pictures) with structured Commons category harvesting and top contributing photographers.
 
 ---
 
@@ -153,7 +153,7 @@ The Campaign Performance Dynamics module provides direct empirical visibility in
 | **Contributor Expansion** | $N_{\text{new}}$ | Absolute first-time newcomer recruitment yield: $|U_{\text{target}} \setminus \bigcup_{k < \text{target}} U_k|$ | Commons Contributor History |
 | **Commons Submissions** | $F_{\text{total}}$ | Total verified media submissions uploaded to Wikimedia Commons | Category Member Harvest |
 | **Content Utility** | $U_{\text{total}}$ | Encyclopedic deployment footprint: absolute Wikipedia article inclusions and illustrated file rate ($U_r$) | Commons API (`prop=globalusage`) |
-| **Quality Recognition** | $Q_{\text{total}}$ | Curatorial honors volume: peer-reviewed Commons distinctions (Quality Images, Featured Pictures, Valued Images) | Commons Curatorial Categories |
+| **Quality Recognition** | $Q_{\text{total}}$ | Curatorial distinctions volume: community-reviewed Commons distinctions (Quality Images and Featured Pictures) | Commons Curatorial Categories |
 | **Contributor Diversity** | $c_{10\%}$ | Participation equity: upload concentration share of top-10% contributors (inverse Pareto ratio) | Upload Distribution Logs |
 
 ---
@@ -182,7 +182,7 @@ Where:
 Single-year snapshots frequently obscure multi-year community cycles. CampAnalytics harvests up to 5 consecutive chronological editions ($E_{t-4}, E_{t-3}, \dots, E_t$) to construct multi-year longitudinal trajectories:
 - **Participant Mobilization**: Active uploader volume progression across successive years.
 - **Submission Output**: Total verified media files contributed per edition.
-- **Curatorial Distinction Yield**: Absolute count of Quality Images, Featured Pictures, and Valued Images produced.
+- **Curatorial Distinction Yield**: Absolute count of Quality Images and Featured Pictures produced.
 
 Interactive dual-axis visualizers allow organizers to inspect whether community engagement translates proportionally into high-utility cultural assets.
 
@@ -200,9 +200,9 @@ Stacked visual waterfall charts illustrate the balance between veteran retention
 
 ### 8.1 Regional Peer Medians ($P_{50}$)
 
-To provide non-evaluative perspective across distinct organizational realities, CampAnalytics computes central tendencies across active national peer campaigns within each geographic cluster:
+To provide non-evaluative perspective across distinct organizational realities, CampAnalytics computes central tendencies across up to 5 active national campaigns within each geographic cluster (including the target campaign when held):
 
-$$\text{Median}_{\text{regional}} = P_{50}\left( \{ X_{\text{peer}, 1}, X_{\text{peer}, 2}, \dots, X_{\text{peer}, K} \} \right)$$
+$$\text{Median}_{\text{regional}} = P_{50}\left( \{ X_{\text{active}, 1}, X_{\text{active}, 2}, \dots, X_{\text{active}, K} \} \right), \quad K \le 5$$
 
 $$\Delta_{\text{peer}} = X_{\text{target}} - \text{Median}_{\text{regional}}$$
 
@@ -259,16 +259,15 @@ $$U_r = \frac{|F_{\text{in-use}}|}{|F|} \times 100\%$$
 
 ## 10. Quality Recognition Modeling (Commons Curatorial Standards)
 
-Quality Recognition quantifies formal artistic, technical, and canonical achievements awarded by established Wikimedia Commons peer review processes.
+Quality Recognition quantifies formal artistic, technical, and canonical achievements awarded through established Wikimedia Commons community review processes.
 
 ### 10.1 Community Designation Types
-Submissions are evaluated against three formal Commons award categories:
-1. **Quality Images (QI)**: Images meeting rigorous technical standards (composition, exposure, sharpness, lighting), evaluated and ratified by the Commons Quality Images committee.
+Submissions are evaluated against two formal Commons award categories:
+1. **Quality Images (QI)**: Images meeting rigorous technical standards (composition, exposure, sharpness, lighting), evaluated and approved by Commons Quality Image reviewers.
 2. **Featured Pictures (FP)**: The movement's premier visual content, selected by community consensus via strict multi-day candidacy votes (indexed under both `Category:Featured pictures` and `Category:Featured pictures on Wikimedia Commons`).
-3. **Valued Images (VI)**: Images recognized as the most valuable of their kind for depicting particular encyclopedic subjects or concepts.
 
 ### 10.2 Quality Rate Formulation
-Let $F_{\text{honored}} \subseteq F$ denote the set of campaign files awarded at least one formal designation ($QI \cup FP \cup VI$), discovered via structured Commons category trees (`Quality images from [Campaign]`, `Featured pictures from [Campaign]`, or `Valued images from [Campaign]`):
+Let $F_{\text{honored}} \subseteq F$ denote the set of campaign files awarded formal designation ($QI \cup FP$), discovered via structured Commons category trees (`Quality images from [Campaign]` and `Featured pictures from [Campaign]`):
 
 The **Quality Distinction Rate** ($Q_r$) is:
 $$Q_r = \frac{|F_{\text{honored}}|}{|F|} \times 100\%$$
@@ -293,6 +292,9 @@ Campaign File Utility Rate ($U_r$) is formulated as a binary deployment metric (
 
 ### 11.3 Bot-Driven Knowledge Distribution
 While automated *uploader* bots are strictly excluded, algorithmic *consumer* embeddings (e.g., localized stub-bots, Wikidata `P18` mass-insertions) are captured by `prop=globalusage`. CampAnalytics intentionally embraces this. Satisfying a machine-readable Wikidata property claim is a formally sanctioned, high-value form of media distribution. Algorithmic integration is evaluated as legitimate encyclopedic utility equivalent to human curatorial reuse.
+
+### 11.4 Valued Images (VI) Category Non-Uniformity
+While Quality Images benefit from standardized, bot-assisted category trees across national campaign editions (e.g., `Category:Quality images from Wiki Loves Monuments 2023 in Germany`), the Commons Valued Images project does not maintain campaign-specific subcategory structures. Empirical verification across major national editions confirms that `Category:Valued images from [Campaign]` yields zero indexed files on Wikimedia Commons. Because Valued Images lack uniform per-campaign category taxonomy, they are excluded from automated campaign harvesting to prevent severe undercounting and false negatives.
 
 ---
 

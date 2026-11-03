@@ -108,11 +108,11 @@
                         </div>
                     </div>
 
-                    <!-- Priority Action Bar at Base of Health Tool -->
+                    <!-- Priority Action Bar at Base of Performance Tool -->
                     <div class="builder-action-bar">
-                        <button type="submit" class="btn btn-primary builder-action-btn" onclick="setLoadingState(this, 'Evaluating Health…')">
+                        <button type="submit" class="btn btn-primary builder-action-btn" onclick="setLoadingState(this, 'Evaluating Performance…')">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-                            <span>Evaluate Campaign Health</span>
+                            <span>Evaluate Event Performance</span>
                         </button>
                     </div>
                 </div>
@@ -147,18 +147,13 @@
                                     </div>
                                     <div class="camp-data-notes-col">
                                         <span class="camp-data-notes-heading">Regional Peer Context</span>
-                                        <p class="camp-data-notes-text">Peer medians represent central tendencies across active national affiliates in the {{ region or 'Global' }} cluster, providing non-graded comparative perspective.</p>
+                                        <p class="camp-data-notes-text">Regional benchmarks represent central tendencies (median P₅₀ and arithmetic mean) across active national affiliates in the {{ region or 'Global' }} cluster, providing non-graded comparative perspective.</p>
                                     </div>
                                 </div>
                             </div>
                         </details>
                     </div>
                     <div class="camp-shell-right">
-                        {% if overall_report and overall_report.composite_score is not none %}
-                            <div class="stat-kpi-badge badge-positive" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 0; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">
-                                <span>Health Score: <strong>{{ overall_report.composite_score }} / 100</strong> ({{ overall_report.rating_label or overall_report.tier }})</span>
-                            </div>
-                        {% endif %}
                         <span class="camp-telemetry-badge">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                             <span>Executed in <strong>{{ execution_time_sec or '0.003' }}</strong> s</span>
@@ -173,7 +168,7 @@
                     </div>
                 </div>
 
-                <!-- Analytical Segmented View Switcher -->
+                <!-- Analytical Segmented View Switcher & Benchmark Mode Standard -->
                 <div class="segmented-control-bar">
                     <div class="segmented-control" role="tablist" aria-label="Analytical View Switcher">
                         <button type="button" id="health-tab-visual" class="segmented-btn active" onclick="switchCampView('visual', 'health')" role="tab" aria-selected="true">
@@ -186,11 +181,19 @@
                         </button>
                     </div>
                     <div class="segmented-actions">
-                        <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.openExportReportModal()" title="Generate detailed campaign evaluation report">
+                        <div class="segmented-control" role="radiogroup" aria-label="Benchmark Calculation Standard" style="margin-right: 4px;">
+                            <button type="button" id="bm-toggle-median" class="segmented-btn active" onclick="switchBenchmarkMode('median')" title="Evaluate against Regional Peer Median (P50)">
+                                <span>Median (P₅₀)</span>
+                            </button>
+                            <button type="button" id="bm-toggle-mean" class="segmented-btn" onclick="switchBenchmarkMode('mean')" title="Evaluate against Regional Peer Average (Mean)">
+                                <span>Average (Mean)</span>
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.openExportReportModal()" title="Generate campaign report">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                             <span>Export Report</span>
                         </button>
-                        <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_health_scorecard')" title="Export MediaWiki wikitext grant report table">
+                        <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_performance_dynamics')" title="Export MediaWiki wikitext table">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
                             <span>Export Wikitext</span>
                         </button>
@@ -212,7 +215,9 @@
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Scale']['raw'] if metrics['Scale'] else target_users_count ~ ' uploaders' }}</div>
-                            <div class="stat-kpi-subtext">Regional Peer Median: {% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}</div>
+                            <div class="stat-kpi-subtext" id="kpi-scale-subtext"
+                                 data-median="Regional Benchmark: {% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}"
+                                 data-mean="Regional Benchmark: {% if metrics['Scale'] and metrics['Scale']['regional_mean'] is not none %}{{ metrics['Scale']['regional_mean'] }} uploaders{% else %}—{% endif %}">Regional Benchmark: {% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}</div>
                         </div>
 
                         <div class="stat-kpi-card">
@@ -221,9 +226,17 @@
                                 {% if metrics['Retention']['is_inaugural'] %}
                                     <span class="stat-kpi-badge badge-neutral">Inaugural</span>
                                 {% elif metrics['Retention']['is_positive'] %}
-                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-positive" id="kpi-retention-badge"
+                                          data-median-text="{{ metrics['Retention']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-positive"
+                                          data-mean-text="{{ metrics['Retention']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Retention']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
                                 {% else %}
-                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-negative" id="kpi-retention-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
+                                          data-median-text="{{ metrics['Retention']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-negative"
+                                          data-mean-text="{{ metrics['Retention']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Retention']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Retention']['raw'] }}</div>
@@ -236,9 +249,17 @@
                                 {% if metrics['Growth']['is_inaugural'] %}
                                     <span class="stat-kpi-badge badge-neutral">Inaugural</span>
                                 {% elif metrics['Growth']['is_positive'] %}
-                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-positive" id="kpi-growth-badge"
+                                          data-median-text="{{ metrics['Growth']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-positive"
+                                          data-mean-text="{{ metrics['Growth']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Growth']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
                                 {% else %}
-                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-negative" id="kpi-growth-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
+                                          data-median-text="{{ metrics['Growth']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-negative"
+                                          data-mean-text="{{ metrics['Growth']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Growth']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Growth']['raw'] }}</div>
@@ -264,26 +285,46 @@
                             <div class="stat-kpi-label">
                                 <span>Content Utility</span>
                                 {% if metrics['Usage']['is_positive'] %}
-                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-positive" id="kpi-usage-badge"
+                                          data-median-text="{{ metrics['Usage']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-positive"
+                                          data-mean-text="{{ metrics['Usage']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Usage']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
                                 {% else %}
-                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-negative" id="kpi-usage-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
+                                          data-median-text="{{ metrics['Usage']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-negative"
+                                          data-mean-text="{{ metrics['Usage']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Usage']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Usage']['raw_formatted'] if metrics['Usage']['raw_formatted'] else ("%.1f"|format(metrics['Usage']['raw']) ~ '%') }}</div>
-                            <div class="stat-kpi-subtext">Regional Peer Median: {% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}% usage{% else %}—{% endif %}</div>
+                            <div class="stat-kpi-subtext" id="kpi-usage-subtext"
+                                 data-median="Regional Benchmark: {% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}% usage{% else %}—{% endif %}"
+                                 data-mean="Regional Benchmark: {% if metrics['Usage'] and metrics['Usage']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_mean']) }}% usage{% else %}—{% endif %}">Regional Benchmark: {% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}% usage{% else %}—{% endif %}</div>
                         </div>
 
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Quality Recognition</span>
                                 {% if metrics['Quality']['is_positive'] %}
-                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-positive" id="kpi-quality-badge"
+                                          data-median-text="{{ metrics['Quality']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-positive"
+                                          data-mean-text="{{ metrics['Quality']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Quality']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
                                 {% else %}
-                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-negative" id="kpi-quality-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
+                                          data-median-text="{{ metrics['Quality']['yoy_delta_formatted'] }}"
+                                          data-median-class="badge-negative"
+                                          data-mean-text="{{ metrics['Quality']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Quality']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Quality']['raw_formatted'] if metrics['Quality']['raw_formatted'] else ("%.1f"|format(metrics['Quality']['raw']) ~ '% QI') }}</div>
-                            <div class="stat-kpi-subtext">Regional Peer Median: {% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}% QI{% else %}—{% endif %}</div>
+                            <div class="stat-kpi-subtext" id="kpi-quality-subtext"
+                                 data-median="Regional Benchmark: {% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}% QI{% else %}—{% endif %}"
+                                 data-mean="Regional Benchmark: {% if metrics['Quality'] and metrics['Quality']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_mean']) }}% QI{% else %}—{% endif %}">Regional Benchmark: {% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}% QI{% else %}—{% endif %}</div>
                         </div>
                     </div>
 
@@ -370,15 +411,15 @@
                                 </div>
                                 <div class="table-toolbar-right">
                                     <div class="btn-export-group">
-                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'camptools_health_scorecard')">
+                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'camptools_performance_dynamics')">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                             <span>CSV</span>
                                         </button>
-                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_health_scorecard')">
+                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_performance_dynamics')">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
                                             <span>Wikitext</span>
                                         </button>
-                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'json', 'camptools_health_scorecard')">
+                                        <button type="button" class="btn-export" onclick="CampTableSuite.exportTable('health-data-table', 'json', 'camptools_performance_dynamics')">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
                                             <span>JSON</span>
                                         </button>
@@ -393,8 +434,8 @@
                                             <th>Observed (Current Edition)</th>
                                             <th>Baseline (Prior Edition)</th>
                                             <th>Year-over-Year Delta (Δ)</th>
-                                            <th>Regional Peer Median</th>
-                                            <th>Regional Delta (vs Peer)</th>
+                                            <th id="th-regional-benchmark">Regional Benchmark (Median)</th>
+                                            <th id="th-regional-delta">Regional Delta (vs Median)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -411,8 +452,16 @@
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
                                                 {% endif %}
                                             </td>
-                                            <td>{% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}</td>
-                                            <td>
+                                            <td class="cell-benchmark"
+                                                data-median="{% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Scale'] and metrics['Scale']['regional_mean'] is not none %}{{ metrics['Scale']['regional_mean'] }} uploaders{% else %}—{% endif %}">
+                                                {% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}
+                                            </td>
+                                            <td class="cell-delta"
+                                                data-median="{% if metrics['Scale'] and metrics['Scale']['regional_delta'] is not none %}{% if metrics['Scale']['regional_delta'] >= 0 %}+{{ metrics['Scale']['regional_delta'].toLocaleString() }}{% else %}{{ metrics['Scale']['regional_delta'].toLocaleString() }}{% endif %}{% else %}—{% endif %}"
+                                                data-median-pos="{% if metrics['Scale'] and metrics['Scale']['regional_delta'] is not none and metrics['Scale']['regional_delta'] >= 0 %}true{% else %}false{% endif %}"
+                                                data-mean="{% if metrics['Scale'] and metrics['Scale']['regional_mean_delta'] is not none %}{% if metrics['Scale']['regional_mean_delta'] >= 0 %}+{{ metrics['Scale']['regional_mean_delta'].toLocaleString() }}{% else %}{{ metrics['Scale']['regional_mean_delta'].toLocaleString() }}{% endif %}{% else %}—{% endif %}"
+                                                data-mean-pos="{% if metrics['Scale'] and metrics['Scale']['regional_mean_delta'] is not none and metrics['Scale']['regional_mean_delta'] >= 0 %}true{% else %}false{% endif %}">
                                                 {% if metrics['Scale'] and metrics['Scale']['regional_delta'] is not none %}
                                                     {% if metrics['Scale']['regional_delta'] >= 0 %}
                                                         <span style="color: #15803d; font-weight: 600;">+{{ metrics['Scale']['regional_delta'].toLocaleString() }}</span>
@@ -435,8 +484,16 @@
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
                                                 {% endif %}
                                             </td>
-                                            <td>{% if metrics['Retention'] and metrics['Retention']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Retention']['regional_median']) }}%{% else %}—{% endif %}</td>
-                                            <td>
+                                            <td class="cell-benchmark"
+                                                data-median="{% if metrics['Retention'] and metrics['Retention']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Retention']['regional_median']) }}%{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Retention'] and metrics['Retention']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Retention']['regional_mean']) }}%{% else %}—{% endif %}">
+                                                {% if metrics['Retention'] and metrics['Retention']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Retention']['regional_median']) }}%{% else %}—{% endif %}
+                                            </td>
+                                            <td class="cell-delta"
+                                                data-median="{% if metrics['Retention'] and metrics['Retention']['regional_delta'] is not none %}{% if metrics['Retention']['regional_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Retention']['regional_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Retention']['regional_delta']) }}%{% endif %}{% else %}—{% endif %}"
+                                                data-median-pos="{% if metrics['Retention'] and metrics['Retention']['regional_delta'] is not none and metrics['Retention']['regional_delta'] >= 0 %}true{% else %}false{% endif %}"
+                                                data-mean="{% if metrics['Retention'] and metrics['Retention']['regional_mean_delta'] is not none %}{% if metrics['Retention']['regional_mean_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Retention']['regional_mean_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Retention']['regional_mean_delta']) }}%{% endif %}{% else %}—{% endif %}"
+                                                data-mean-pos="{% if metrics['Retention'] and metrics['Retention']['regional_mean_delta'] is not none and metrics['Retention']['regional_mean_delta'] >= 0 %}true{% else %}false{% endif %}">
                                                 {% if metrics['Retention']['regional_delta'] is not none %}
                                                     {% if metrics['Retention']['regional_delta'] >= 0 %}
                                                         <span style="color: #15803d; font-weight: 600;">+{{ "%.1f"|format(metrics['Retention']['regional_delta']) }}%</span>
@@ -459,9 +516,17 @@
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
                                                 {% endif %}
                                             </td>
-                                            <td>{% if metrics['Growth'] and metrics['Growth']['regional_median'] is not none %}{{ metrics['Growth']['regional_median'] }} newcomers{% else %}—{% endif %}</td>
-                                            <td>
-                                                {% if metrics['Growth']['regional_delta'] is not none %}
+                                            <td class="cell-benchmark"
+                                                data-median="{% if metrics['Growth'] and metrics['Growth']['regional_median'] is not none %}{{ metrics['Growth']['regional_median'] }} newcomers{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Growth'] and metrics['Growth']['regional_mean'] is not none %}{{ metrics['Growth']['regional_mean'] }} newcomers{% else %}—{% endif %}">
+                                                {% if metrics['Growth'] and metrics['Growth']['regional_median'] is not none %}{{ metrics['Growth']['regional_median'] }} newcomers{% else %}—{% endif %}
+                                            </td>
+                                            <td class="cell-delta"
+                                                data-median="{% if metrics['Growth'] and metrics['Growth']['regional_delta'] is not none %}{% if metrics['Growth']['regional_delta'] >= 0 %}+{{ metrics['Growth']['regional_delta'].toLocaleString() }}{% else %}{{ metrics['Growth']['regional_delta'].toLocaleString() }}{% endif %}{% else %}—{% endif %}"
+                                                data-median-pos="{% if metrics['Growth'] and metrics['Growth']['regional_delta'] is not none and metrics['Growth']['regional_delta'] >= 0 %}true{% else %}false{% endif %}"
+                                                data-mean="{% if metrics['Growth'] and metrics['Growth']['regional_mean_delta'] is not none %}{% if metrics['Growth']['regional_mean_delta'] >= 0 %}+{{ metrics['Growth']['regional_mean_delta'].toLocaleString() }}{% else %}{{ metrics['Growth']['regional_mean_delta'].toLocaleString() }}{% endif %}{% else %}—{% endif %}"
+                                                data-mean-pos="{% if metrics['Growth'] and metrics['Growth']['regional_mean_delta'] is not none and metrics['Growth']['regional_mean_delta'] >= 0 %}true{% else %}false{% endif %}">
+                                                {% if metrics['Growth'] and metrics['Growth']['regional_delta'] is not none %}
                                                     {% if metrics['Growth']['regional_delta'] >= 0 %}
                                                         <span style="color: #15803d; font-weight: 600;">+{{ metrics['Growth']['regional_delta'].toLocaleString() }}</span>
                                                     {% else %}
@@ -483,8 +548,8 @@
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
                                                 {% endif %}
                                             </td>
-                                            <td>—</td>
-                                            <td>—</td>
+                                            <td class="cell-benchmark" data-median="—" data-mean="—">—</td>
+                                            <td class="cell-delta" data-median="—" data-mean="—">—</td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Content Utility</td>
@@ -493,8 +558,16 @@
                                             <td>
                                                 <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Usage']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
                                             </td>
-                                            <td>{% if metrics['Usage'] and metrics['Usage']['benchmark_count'] is not none and metrics['Usage']['regional_median'] is not none %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_median']) }}%){% elif metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% else %}—{% endif %}</td>
-                                            <td>
+                                            <td class="cell-benchmark"
+                                                data-median="{% if metrics['Usage'] and metrics['Usage']['benchmark_count'] is not none and metrics['Usage']['regional_median'] is not none %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_median']) }}%){% elif metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Usage'] and metrics['Usage']['mean_benchmark_count'] is not none and metrics['Usage']['regional_mean'] is not none %}{{ metrics['Usage']['mean_benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_mean']) }}%){% elif metrics['Usage'] and metrics['Usage']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_mean']) }}%{% else %}—{% endif %}">
+                                                {% if metrics['Usage'] and metrics['Usage']['benchmark_count'] is not none and metrics['Usage']['regional_median'] is not none %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_median']) }}%){% elif metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% else %}—{% endif %}
+                                            </td>
+                                            <td class="cell-delta"
+                                                data-median="{% if metrics['Usage'] and metrics['Usage']['regional_delta'] is not none %}{% if metrics['Usage']['regional_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Usage']['regional_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Usage']['regional_delta']) }}%{% endif %}{% else %}—{% endif %}"
+                                                data-median-pos="{% if metrics['Usage'] and metrics['Usage']['regional_delta'] is not none and metrics['Usage']['regional_delta'] >= 0 %}true{% else %}false{% endif %}"
+                                                data-mean="{% if metrics['Usage'] and metrics['Usage']['regional_mean_delta'] is not none %}{% if metrics['Usage']['regional_mean_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Usage']['regional_mean_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Usage']['regional_mean_delta']) }}%{% endif %}{% else %}—{% endif %}"
+                                                data-mean-pos="{% if metrics['Usage'] and metrics['Usage']['regional_mean_delta'] is not none and metrics['Usage']['regional_mean_delta'] >= 0 %}true{% else %}false{% endif %}">
                                                 {% if metrics['Usage']['regional_delta'] is not none %}
                                                     {% if metrics['Usage']['regional_delta'] >= 0 %}
                                                         <span style="color: #15803d; font-weight: 600;">+{{ "%.1f"|format(metrics['Usage']['regional_delta']) }}%</span>
@@ -511,9 +584,17 @@
                                             <td>
                                                 <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Quality']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
                                             </td>
-                                            <td>{% if metrics['Quality'] and metrics['Quality']['benchmark_count'] is not none and metrics['Quality']['regional_median'] is not none %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_median']) }}%){% elif metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% else %}—{% endif %}</td>
-                                            <td>
-                                                {% if metrics['Quality']['regional_delta'] is not none %}
+                                            <td class="cell-benchmark"
+                                                data-median="{% if metrics['Quality'] and metrics['Quality']['benchmark_count'] is not none and metrics['Quality']['regional_median'] is not none %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_median']) }}%){% elif metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Quality'] and metrics['Quality']['mean_benchmark_count'] is not none and metrics['Quality']['regional_mean'] is not none %}{{ metrics['Quality']['mean_benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_mean']) }}%){% elif metrics['Quality'] and metrics['Quality']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_mean']) }}%{% else %}—{% endif %}">
+                                                {% if metrics['Quality'] and metrics['Quality']['benchmark_count'] is not none and metrics['Quality']['regional_median'] is not none %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_median']) }}%){% elif metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% else %}—{% endif %}
+                                            </td>
+                                            <td class="cell-delta"
+                                                data-median="{% if metrics['Quality'] and metrics['Quality']['regional_delta'] is not none %}{% if metrics['Quality']['regional_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Quality']['regional_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Quality']['regional_delta']) }}%{% endif %}{% else %}—{% endif %}"
+                                                data-median-pos="{% if metrics['Quality'] and metrics['Quality']['regional_delta'] is not none and metrics['Quality']['regional_delta'] >= 0 %}true{% else %}false{% endif %}"
+                                                data-mean="{% if metrics['Quality'] and metrics['Quality']['regional_mean_delta'] is not none %}{% if metrics['Quality']['regional_mean_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Quality']['regional_mean_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Quality']['regional_mean_delta']) }}%{% endif %}{% else %}—{% endif %}"
+                                                data-mean-pos="{% if metrics['Quality'] and metrics['Quality']['regional_mean_delta'] is not none and metrics['Quality']['regional_mean_delta'] >= 0 %}true{% else %}false{% endif %}">
+                                                {% if metrics['Quality'] and metrics['Quality']['regional_delta'] is not none %}
                                                     {% if metrics['Quality']['regional_delta'] >= 0 %}
                                                         <span style="color: #15803d; font-weight: 600;">+{{ "%.1f"|format(metrics['Quality']['regional_delta']) }}%</span>
                                                     {% else %}
@@ -529,9 +610,17 @@
                                             <td>
                                                 <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Diversity']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Diversity']['yoy_delta_formatted'] }}</span>
                                             </td>
-                                            <td>{% if metrics['Diversity'] and metrics['Diversity']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Diversity']['regional_median']) }}%{% else %}—{% endif %}</td>
-                                            <td>
-                                                {% if metrics['Diversity']['regional_delta'] is not none %}
+                                            <td class="cell-benchmark"
+                                                data-median="{% if metrics['Diversity'] and metrics['Diversity']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Diversity']['regional_median']) }}%{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Diversity'] and metrics['Diversity']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Diversity']['regional_mean']) }}%{% else %}—{% endif %}">
+                                                {% if metrics['Diversity'] and metrics['Diversity']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Diversity']['regional_median']) }}%{% else %}—{% endif %}
+                                            </td>
+                                            <td class="cell-delta"
+                                                data-median="{% if metrics['Diversity'] and metrics['Diversity']['regional_delta'] is not none %}{% if metrics['Diversity']['regional_delta'] <= 0 %}{{ "%.1f"|format(metrics['Diversity']['regional_delta']) }}% broader{% else %}+{{ "%.1f"|format(metrics['Diversity']['regional_delta']) }}% conc.{% endif %}{% else %}—{% endif %}"
+                                                data-median-pos="{% if metrics['Diversity'] and metrics['Diversity']['regional_delta'] is not none and metrics['Diversity']['regional_delta'] <= 0 %}true{% else %}false{% endif %}"
+                                                data-mean="{% if metrics['Diversity'] and metrics['Diversity']['regional_mean_delta'] is not none %}{% if metrics['Diversity']['regional_mean_delta'] <= 0 %}{{ "%.1f"|format(metrics['Diversity']['regional_mean_delta']) }}% broader{% else %}+{{ "%.1f"|format(metrics['Diversity']['regional_mean_delta']) }}% conc.{% endif %}{% else %}—{% endif %}"
+                                                data-mean-pos="{% if metrics['Diversity'] and metrics['Diversity']['regional_mean_delta'] is not none and metrics['Diversity']['regional_mean_delta'] <= 0 %}true{% else %}false{% endif %}">
+                                                {% if metrics['Diversity'] and metrics['Diversity']['regional_delta'] is not none %}
                                                     {% if metrics['Diversity']['regional_delta'] <= 0 %}
                                                         <span style="color: #15803d; font-weight: 600;">{{ "%.1f"|format(metrics['Diversity']['regional_delta']) }}% broader</span>
                                                     {% else %}
@@ -558,15 +647,15 @@
                         </div>
                     </div>
                     <div class="camp-footer-actions">
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.openExportReportModal()" title="Generate detailed campaign evaluation report">
+                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.openExportReportModal()" title="Generate campaign report">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                             <span>Export Report</span>
                         </button>
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'camptools_health_{{ target_event or 'evaluation' }}')" title="Download evaluation data as CSV">
+                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('health-data-table', 'csv', 'camptools_performance_{{ target_event or 'dynamics' }}')" title="Download dataset as CSV">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             <span>CSV</span>
                         </button>
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_health_{{ target_event or 'evaluation' }}')" title="Export MediaWiki wikitext grant report table">
+                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('health-data-table', 'wikitext', 'camptools_performance_{{ target_event or 'dynamics' }}')" title="Export MediaWiki wikitext table">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
                             <span>Wikitext</span>
                         </button>
@@ -587,6 +676,73 @@
                 window.HISTORICAL_SERIES = {{ (historical_series or [])|tojson }};
                 window.PEER_COMPARISONS = {{ (peer_comparisons or [])|tojson }};
                 window.TARGET_EVENT = "{{ target_event }}";
+
+                function switchBenchmarkMode(mode) {
+                    const isMean = mode === 'mean';
+                    const btnMedian = document.getElementById('bm-toggle-median');
+                    const btnMean = document.getElementById('bm-toggle-mean');
+                    if (btnMedian && btnMean) {
+                        btnMedian.classList.toggle('active', !isMean);
+                        btnMean.classList.toggle('active', isMean);
+                    }
+
+                    // 1. Update KPI Card Subtexts
+                    const subtextIds = ['kpi-scale-subtext', 'kpi-usage-subtext', 'kpi-quality-subtext'];
+                    subtextIds.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            const val = el.getAttribute(isMean ? 'data-mean' : 'data-median');
+                            if (val) el.textContent = val;
+                        }
+                    });
+
+                    // 2. Update KPI Badges
+                    const badgeIds = ['kpi-retention-badge', 'kpi-growth-badge', 'kpi-usage-badge', 'kpi-quality-badge'];
+                    badgeIds.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            const text = el.getAttribute(isMean ? 'data-mean-text' : 'data-median-text');
+                            const cls = el.getAttribute(isMean ? 'data-mean-class' : 'data-median-class');
+                            if (text) el.textContent = text;
+                            if (cls) {
+                                el.classList.remove('badge-positive', 'badge-negative');
+                                el.classList.add(cls);
+                                if (cls === 'badge-positive') {
+                                    el.style.background = '#f0fdf4';
+                                    el.style.color = '#15803d';
+                                    el.style.border = '1px solid #bbf7d0';
+                                } else if (cls === 'badge-negative') {
+                                    el.style.background = '#fef2f2';
+                                    el.style.color = '#b91c1c';
+                                    el.style.border = '1px solid #fecaca';
+                                }
+                            }
+                        }
+                    });
+
+                    // 3. Update Table Column Headers
+                    const thBenchmark = document.getElementById('th-regional-benchmark');
+                    const thDelta = document.getElementById('th-regional-delta');
+                    if (thBenchmark) thBenchmark.textContent = isMean ? 'Regional Benchmark (Average)' : 'Regional Benchmark (Median)';
+                    if (thDelta) thDelta.textContent = isMean ? 'Regional Delta (vs Average)' : 'Regional Delta (vs Median)';
+
+                    // 4. Update Table Benchmark Cells
+                    document.querySelectorAll('.cell-benchmark').forEach(cell => {
+                        const val = cell.getAttribute(isMean ? 'data-mean' : 'data-median');
+                        if (val) cell.textContent = val;
+                    });
+
+                    // 5. Update Table Delta Cells
+                    document.querySelectorAll('.cell-delta').forEach(cell => {
+                        const val = cell.getAttribute(isMean ? 'data-mean' : 'data-median');
+                        const isPos = cell.getAttribute(isMean ? 'data-mean-pos' : 'data-median-pos') === 'true';
+                        if (val && val !== '—') {
+                            cell.innerHTML = `<span style="color: ${isPos ? '#15803d' : '#b91c1c'}; font-weight: 600;">${val}</span>`;
+                        } else if (val === '—') {
+                            cell.textContent = '—';
+                        }
+                    });
+                }
 
                 function renderLongitudinalChart() {
                     const data = window.HISTORICAL_SERIES || [];

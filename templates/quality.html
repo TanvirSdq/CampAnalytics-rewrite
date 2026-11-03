@@ -261,7 +261,7 @@
                 <div class="camp-shell-header">
                     <div class="camp-shell-left">
                         <h2 class="camp-shell-title">Quality Recognition &amp; Top Photographers</h2>
-                        <div class="camp-shell-subtitle">Commons peer-reviewed awards (QI, FP, VI) and recognized photographer portfolios for {{ quality_result.code|upper }} ({{ quality_result.year }}).</div>
+                        <div class="camp-shell-subtitle">Commons community-reviewed distinctions (QI) and recognized photographer portfolios for {{ quality_result.code|upper }} ({{ quality_result.year }}).</div>
                         <details class="camp-data-notes">
                             <summary class="camp-data-notes-summary">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -271,7 +271,7 @@
                                 <div class="camp-data-notes-grid">
                                     <div class="camp-data-notes-col">
                                         <span class="camp-data-notes-heading">Quality Hierarchy</span>
-                                        <p class="camp-data-notes-text">Quality designations include <strong>Featured Pictures (FP)</strong>, <strong>Quality Images (QI)</strong>, and <strong>Valued Images (VI)</strong> determined via formal Wikimedia Commons community reviews.</p>
+                                        <p class="camp-data-notes-text">Quality designations track <strong>Featured Pictures (FP)</strong> and <strong>Quality Images (QI)</strong> assessed through Wikimedia Commons community reviews. <em>Note on Valued Images (VI):</em> Valued Images are excluded from automated tracking because Commons does not maintain campaign-level subcategory trees for VI, leading to non-uniform categorization across campaigns.</p>
                                     </div>
                                     <div class="camp-data-notes-col">
                                         <span class="camp-data-notes-heading">Assessment Timing &amp; Caveats</span>
@@ -308,7 +308,7 @@
                             </button>
                         </div>
                         <div class="segmented-actions">
-                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('quality-photographers-table', 'wikitext', 'camptools_quality_{{ quality_result.code }}')" title="Export MediaWiki wikitext grant report table">
+                            <button type="button" class="btn btn-sm btn-export" onclick="CampTableSuite.exportTable('quality-photographers-table', 'wikitext', 'camptools_quality_{{ quality_result.code }}')" title="Export MediaWiki wikitext table">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
                                 <span>Export Wikitext</span>
                             </button>
@@ -328,10 +328,10 @@
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Quality Images (QI)</span>
-                                <span class="stat-kpi-badge badge-positive">Peer Reviewed</span>
+                                <span class="stat-kpi-badge badge-positive">Community Reviewed</span>
                             </div>
                             <div class="stat-kpi-value">{{ quality_result.qi_count }}</div>
-                            <div class="stat-kpi-subtext">Assessed by Commons Quality committee</div>
+                            <div class="stat-kpi-subtext">Assessed by Commons Quality Image reviewers</div>
                         </div>
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
@@ -340,14 +340,6 @@
                             </div>
                             <div class="stat-kpi-value">{{ quality_result.fp_count }}</div>
                             <div class="stat-kpi-subtext">Featured media files on Commons</div>
-                        </div>
-                        <div class="stat-kpi-card">
-                            <div class="stat-kpi-label">
-                                <span>Valued Images (VI)</span>
-                                <span class="stat-kpi-badge badge-neutral">Valued</span>
-                            </div>
-                            <div class="stat-kpi-value">{{ quality_result.vi_count }}</div>
-                            <div class="stat-kpi-subtext">Subject-matter reference images</div>
                         </div>
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
@@ -363,7 +355,7 @@
 
                     <!-- VIEW 1: AWARDED FILES -->
                     <div id="quality-view-visual" class="camp-view-panel">
-                        {% set total_h = (quality_result.fp_count + quality_result.qi_count + quality_result.vi_count) %}
+                        {% set total_h = (quality_result.fp_count + quality_result.qi_count) %}
                         {% if total_h > 0 %}
                             <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 16px; margin-bottom: 20px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -377,9 +369,6 @@
                                     {% if quality_result.qi_count > 0 %}
                                         <div style="width: {{ (quality_result.qi_count / total_h * 100)|round(1) }}%; background: #0284c7;" title="Quality Images: {{ quality_result.qi_count }} ({{ (quality_result.qi_count / total_h * 100)|round(1) }}%)"></div>
                                     {% endif %}
-                                    {% if quality_result.vi_count > 0 %}
-                                        <div style="width: {{ (quality_result.vi_count / total_h * 100)|round(1) }}%; background: #8b5cf6;" title="Valued Images: {{ quality_result.vi_count }} ({{ (quality_result.vi_count / total_h * 100)|round(1) }}%)"></div>
-                                    {% endif %}
                                 </div>
                                 <div style="display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap;">
                                     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
@@ -389,10 +378,6 @@
                                     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
                                         <span style="width: 8px; height: 8px; border-radius: 0; background: #0284c7; display: inline-block;"></span>
                                         <span>Quality Images (QI): <strong>{{ quality_result.qi_count }}</strong></span>
-                                    </div>
-                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
-                                        <span style="width: 8px; height: 8px; border-radius: 0; background: #8b5cf6; display: inline-block;"></span>
-                                        <span>Valued Images (VI): <strong>{{ quality_result.vi_count }}</strong></span>
                                     </div>
                                 </div>
                             </div>
@@ -442,9 +427,6 @@
                                                     {% endif %}
                                                     {% if 'Quality Image' in row.honors %}
                                                         <span class="badge-qi" style="border-radius: 0;">✓ QI</span>
-                                                    {% endif %}
-                                                    {% if 'Valued Image' in row.honors %}
-                                                        <span class="badge-vi" style="border-radius: 0;">◆ VI</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
@@ -511,7 +493,6 @@
                                             <th style="text-align: right;">Total Awards</th>
                                             <th style="text-align: right;">QI Count</th>
                                             <th style="text-align: right;">FP Count</th>
-                                            <th style="text-align: right;">VI Count</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -526,11 +507,10 @@
                                                 <td style="text-align: right; font-weight: 700; color: #ca8a04;">{{ p.total_honors }}</td>
                                                 <td style="text-align: right; font-weight: 600; color: #0369a1;">{{ p.qi_count }}</td>
                                                 <td style="text-align: right; font-weight: 600; color: #92400e;">{{ p.fp_count }}</td>
-                                                <td style="text-align: right; font-weight: 600; color: #7c3aed;">{{ p.vi_count }}</td>
                                             </tr>
                                         {% else %}
                                             <tr>
-                                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
                                                     No individual contributor leaderboard records.
                                                 </td>
                                             </tr>
@@ -560,7 +540,7 @@
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             <span>CSV</span>
                         </button>
-                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('quality-photographers-table', 'wikitext', 'camptools_quality_{{ quality_result.code }}_top_photographers')" title="Export MediaWiki wikitext grant report table">
+                        <button type="button" class="camp-footer-btn" onclick="CampTableSuite.exportTable('quality-photographers-table', 'wikitext', 'camptools_quality_{{ quality_result.code }}_top_photographers')" title="Export MediaWiki wikitext table">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4"></rect></svg>
                             <span>Wikitext</span>
                         </button>

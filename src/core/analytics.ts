@@ -201,6 +201,90 @@ export function getCategoryCandidates(code: string): string[] {
   return candidates;
 }
 
+export function getQualityCategoryCandidates(code: string): string[] {
+  const clean = code.replace(/\s+/g, '').toLowerCase();
+  const match = CODE_RE.exec(clean);
+  const candidates = new Set<string>();
+
+  if (match) {
+    const [, event, cc, yr] = match;
+    const year = 2000 + parseInt(yr, 10);
+    const eventName = EVENT_MAP[event] || event;
+    const rawCountry = COUNTRY_MAP[cc] || '';
+    const countryName = rawCountry.replace(/_/g, ' ');
+
+    if (countryName) {
+      // 1. [Year] in [the] [Country] (Germany, France, Italy, Spain, etc.)
+      candidates.add(`Quality images from Wiki Loves ${eventName} ${year} in ${countryName}`);
+      candidates.add(`Quality images from Wiki Loves ${eventName} ${year} in the ${countryName}`);
+
+      // 2. [Country] [Year] (Sweden, Austria, etc.)
+      candidates.add(`Quality images from Wiki Loves ${eventName} ${countryName} ${year}`);
+      candidates.add(`Quality images from Wiki Loves ${eventName} in ${countryName} ${year}`);
+
+      // 3. Country aliases
+      if (cc === 'uk') {
+        candidates.add(`Quality images from Wiki Loves ${eventName} UK ${year}`);
+        candidates.add(`Quality images from Wiki Loves ${eventName} UK`);
+        candidates.add(`Quality images from Wiki Loves ${eventName} ${year} in the UK`);
+        candidates.add(`Quality images from Wiki Loves ${eventName} ${year} in the United Kingdom`);
+      } else if (cc === 'us') {
+        candidates.add(`Quality images from Wiki Loves ${eventName} USA ${year}`);
+        candidates.add(`Quality images from Wiki Loves ${eventName} in the United States ${year}`);
+      } else if (cc === 'cz') {
+        candidates.add(`Quality images from Wiki Loves ${eventName} Czech Republic ${year}`);
+      }
+    }
+  }
+
+  const stdCats = getCategoryCandidates(code);
+  for (const cat of stdCats) {
+    const catClean = cat.replace(/_/g, ' ');
+    candidates.add(catClean.replace('Images from ', 'Quality images from '));
+    candidates.add(`Quality images from ${catClean.replace('Images from ', '')}`);
+    candidates.add(`Quality images from ${catClean}`);
+  }
+
+  return Array.from(candidates);
+}
+
+export function getFeaturedCategoryCandidates(code: string): string[] {
+  const clean = code.replace(/\s+/g, '').toLowerCase();
+  const match = CODE_RE.exec(clean);
+  const candidates = new Set<string>();
+
+  if (match) {
+    const [, event, cc, yr] = match;
+    const year = 2000 + parseInt(yr, 10);
+    const eventName = EVENT_MAP[event] || event;
+    const rawCountry = COUNTRY_MAP[cc] || '';
+    const countryName = rawCountry.replace(/_/g, ' ');
+
+    if (countryName) {
+      candidates.add(`Featured pictures from Wiki Loves ${eventName} ${year} in ${countryName}`);
+      candidates.add(`Featured pictures from Wiki Loves ${eventName} ${year} in the ${countryName}`);
+      candidates.add(`Featured pictures from Wiki Loves ${eventName} ${countryName} ${year}`);
+      candidates.add(`Featured pictures from Wiki Loves ${eventName} in ${countryName} ${year}`);
+
+      if (cc === 'uk') {
+        candidates.add(`Featured pictures from Wiki Loves ${eventName} UK ${year}`);
+      } else if (cc === 'us') {
+        candidates.add(`Featured pictures from Wiki Loves ${eventName} USA ${year}`);
+      }
+    }
+  }
+
+  const stdCats = getCategoryCandidates(code);
+  for (const cat of stdCats) {
+    const catClean = cat.replace(/_/g, ' ');
+    candidates.add(catClean.replace('Images from ', 'Featured pictures from '));
+    candidates.add(`Featured pictures from ${catClean.replace('Images from ', '')}`);
+    candidates.add(`Featured pictures from ${catClean}`);
+  }
+
+  return Array.from(candidates);
+}
+
 export function getSubCampaignCodes(code: string): string[] {
   const clean = code.replace(/\s+/g, '').toLowerCase();
   const match = CODE_RE.exec(clean);
@@ -520,25 +604,17 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
     return metrics;
   }
 
+  const categories = getCategoryCandidates(clean);
+
   // Real Quality Images category discovery
   let qualityCount = 0;
-  const categories = getCategoryCandidates(clean);
-  for (const cat of categories) {
-    const catClean = cat.replace(/_/g, ' ');
-    const qiCandidates = [
-      catClean.replace('Images from ', 'Quality images from '),
-      `Quality images from ${catClean.replace('Images from ', '')}`,
-      `Quality images from ${catClean}`
-    ];
-    for (const qcat of qiCandidates) {
-      if (qcat === catClean || qcat === cat) continue;
-      const count = await fetchCategoryFileCount(qcat);
-      if (count > 0) {
-        qualityCount = count;
-        break;
-      }
+  const qiCandidates = getQualityCategoryCandidates(clean);
+  for (const qcat of qiCandidates) {
+    const count = await fetchCategoryFileCount(qcat);
+    if (count > 0) {
+      qualityCount = count;
+      break;
     }
-    if (qualityCount > 0) break;
   }
 
   const qualityShare = totalUploads > 0 ? parseFloat(((qualityCount / totalUploads) * 100).toFixed(1)) : 0.0;
@@ -1309,47 +1385,13 @@ export function computeEmpiricalMedian(arr: number[]): number | null {
   return parseFloat(med.toFixed(1));
 }
 
-export function calculateStars(score: number): [string, number] {
-  const norm = Math.min(Math.max(score / 100, 0), 1);
-  const stars = Math.min(5, Math.max(1, Math.round(norm * 5)));
-  return ['★'.repeat(stars) + '☆'.repeat(5 - stars), stars];
-}
-
-export function calculateRelativeScore(
-  metricValue: number,
-  benchmarkValue: number,
-  positiveIsHigher = true,
-  isScale = false
-): number {
-  if (positiveIsHigher) {
-    if (metricValue <= 0) return 0.0;
-    const bm = Math.max(benchmarkValue, 0.5);
-    if (metricValue <= bm) {
-      const exp = isScale ? 1.15 : 0.75;
-      return parseFloat((70.0 * Math.pow(metricValue / bm, exp)).toFixed(1));
-    }
-    const excess = (metricValue - bm) / bm;
-    const score = 70.0 + 30.0 * (1.0 - Math.exp(-1.5 * excess));
-    return parseFloat(Math.min(100.0, score).toFixed(1));
-  } else {
-    if (metricValue >= 100.0) return 15.0;
-    if (metricValue <= 10.0) return 100.0;
-    const bm = Math.min(Math.max(benchmarkValue, 20.0), 90.0);
-    if (metricValue > bm) {
-      const ratio = (metricValue - bm) / (100.0 - bm);
-      return parseFloat(Math.max(15.0, 70.0 - 55.0 * Math.pow(ratio, 0.85)).toFixed(1));
-    }
-    const ratio = (bm - metricValue) / (bm - 10.0);
-    return parseFloat(Math.min(100.0, 70.0 + 30.0 * Math.pow(ratio, 0.85)).toFixed(1));
-  }
-}
-
 export function generateHealthMetrics(
   targetUsers: Set<string>,
   baselineUsers: Set<string>,
   structuralMetrics: any,
   benchmarks: any,
-  baselineStructural?: any
+  baselineStructural?: any,
+  benchmarksMean?: any
 ): Record<string, any> {
   const metrics: Record<string, any> = {};
   const isInaugural = !baselineUsers || baselineUsers.size === 0;
@@ -1360,6 +1402,7 @@ export function generateHealthMetrics(
 
   // 1. Community Scale (Active Uploaders Volume)
   const scaleBm = typeof benchmarks.scale === 'number' ? benchmarks.scale : null;
+  const scaleMean = typeof benchmarksMean?.scale === 'number' ? benchmarksMean.scale : null;
   const scaleDelta = !isInaugural ? targetCount - baseCount : null;
   const scaleDeltaPct = !isInaugural && baseCount > 0 ? parseFloat((((targetCount - baseCount) / baseCount) * 100).toFixed(1)) : null;
   let scaleDeltaFormatted = 'Inaugural';
@@ -1367,6 +1410,7 @@ export function generateHealthMetrics(
     scaleDeltaFormatted = scaleDelta >= 0 ? `▲ +${scaleDelta.toLocaleString()} (+${scaleDeltaPct}%)` : `▼ -${Math.abs(scaleDelta).toLocaleString()} (${scaleDeltaPct}%)`;
   }
   const scaleRegDelta = scaleBm !== null ? Math.round(targetCount - scaleBm) : null;
+  const scaleMeanDelta = scaleMean !== null ? Math.round(targetCount - scaleMean) : null;
 
   metrics.Scale = {
     raw: `${targetCount.toLocaleString()} uploaders`,
@@ -1377,6 +1421,8 @@ export function generateHealthMetrics(
     yoy_delta_formatted: scaleDeltaFormatted,
     regional_median: scaleBm !== null ? Math.round(scaleBm) : null,
     regional_delta: scaleRegDelta,
+    regional_mean: scaleMean !== null ? Math.round(scaleMean) : null,
+    regional_mean_delta: scaleMeanDelta,
     is_positive: scaleDelta !== null ? scaleDelta >= 0 : true,
     benchmark: scaleBm !== null ? Math.round(scaleBm) : null,
     is_inaugural: isInaugural
@@ -1384,6 +1430,7 @@ export function generateHealthMetrics(
 
   // 2. Contributor Retention
   const retBm = typeof benchmarks.retention === 'number' ? benchmarks.retention : null;
+  const retMean = typeof benchmarksMean?.retention === 'number' ? benchmarksMean.retention : null;
   if (isInaugural) {
     metrics.Retention = {
       raw: 'Inaugural Baseline',
@@ -1394,6 +1441,10 @@ export function generateHealthMetrics(
       yoy_delta_formatted: 'Inaugural',
       regional_median: retBm,
       regional_delta: null,
+      regional_mean: retMean,
+      regional_mean_delta: null,
+      mean_delta_formatted: 'Inaugural',
+      mean_is_positive: true,
       benchmark: retBm,
       is_inaugural: true,
       is_positive: true
@@ -1405,8 +1456,10 @@ export function generateHealthMetrics(
     }
     const rawRate = parseFloat(((overlap / baseCount) * 100.0).toFixed(1));
     const regDelta = retBm !== null ? parseFloat((rawRate - retBm).toFixed(1)) : null;
+    const regMeanDelta = retMean !== null ? parseFloat((rawRate - retMean).toFixed(1)) : null;
     const retFormatted = `${overlap.toLocaleString()} / ${baseCount.toLocaleString()} (${rawRate.toFixed(1)}%)`;
-    const retDeltaFormatted = regDelta !== null ? (regDelta >= 0 ? `▲ +${regDelta.toFixed(1)}% vs peer norm` : `▼ ${regDelta.toFixed(1)}% vs peer norm`) : `${rawRate.toFixed(1)}% retained`;
+    const retDeltaFormatted = regDelta !== null ? (regDelta >= 0 ? `▲ +${regDelta.toFixed(1)}% vs regional norm` : `▼ ${regDelta.toFixed(1)}% vs regional norm`) : `${rawRate.toFixed(1)}% retained`;
+    const retMeanDeltaFormatted = regMeanDelta !== null ? (regMeanDelta >= 0 ? `▲ +${regMeanDelta.toFixed(1)}% vs regional norm` : `▼ ${regMeanDelta.toFixed(1)}% vs regional norm`) : `${rawRate.toFixed(1)}% retained`;
 
     metrics.Retention = {
       raw: `${rawRate.toFixed(1)}%`,
@@ -1418,6 +1471,10 @@ export function generateHealthMetrics(
       yoy_delta_formatted: retDeltaFormatted,
       regional_median: retBm,
       regional_delta: regDelta,
+      regional_mean: retMean,
+      regional_mean_delta: regMeanDelta,
+      mean_delta_formatted: retMeanDeltaFormatted,
+      mean_is_positive: regMeanDelta !== null ? regMeanDelta >= 0 : true,
       benchmark: retBm,
       is_inaugural: false,
       is_positive: regDelta !== null ? regDelta >= 0 : true
@@ -1430,10 +1487,13 @@ export function generateHealthMetrics(
     if (!baselineUsers || !baselineUsers.has(u)) newUsersCount++;
   }
   const expBm = typeof benchmarks.expansion === 'number' ? benchmarks.expansion : (typeof benchmarks.growth === 'number' ? benchmarks.growth : null);
+  const expMean = typeof benchmarksMean?.expansion === 'number' ? benchmarksMean.expansion : (typeof benchmarksMean?.growth === 'number' ? benchmarksMean.growth : null);
   const newcomerShare = targetCount > 0 ? parseFloat(((newUsersCount / targetCount) * 100).toFixed(1)) : 0.0;
   const expRegDelta = expBm !== null ? Math.round(newUsersCount - expBm) : null;
+  const expMeanDelta = expMean !== null ? Math.round(newUsersCount - expMean) : null;
   const expFormatted = `${newUsersCount.toLocaleString()} newcomers (${newcomerShare.toFixed(1)}%)`;
-  const expDeltaFormatted = expRegDelta !== null ? (expRegDelta >= 0 ? `▲ +${expRegDelta.toLocaleString()} vs peer norm` : `▼ ${expRegDelta.toLocaleString()} vs peer norm`) : `${newUsersCount.toLocaleString()} newcomers`;
+  const expDeltaFormatted = expRegDelta !== null ? (expRegDelta >= 0 ? `▲ +${expRegDelta.toLocaleString()} vs regional norm` : `▼ ${expRegDelta.toLocaleString()} vs regional norm`) : `${newUsersCount.toLocaleString()} newcomers`;
+  const expMeanDeltaFormatted = expMeanDelta !== null ? (expMeanDelta >= 0 ? `▲ +${expMeanDelta.toLocaleString()} vs regional norm` : `▼ ${expMeanDelta.toLocaleString()} vs regional norm`) : `${newUsersCount.toLocaleString()} newcomers`;
 
   metrics.Growth = {
     raw: `${newUsersCount.toLocaleString()} newcomers`,
@@ -1445,6 +1505,10 @@ export function generateHealthMetrics(
     yoy_delta_formatted: expDeltaFormatted,
     regional_median: expBm !== null ? Math.round(expBm) : null,
     regional_delta: expRegDelta,
+    regional_mean: expMean !== null ? Math.round(expMean) : null,
+    regional_mean_delta: expMeanDelta,
+    mean_delta_formatted: expMeanDeltaFormatted,
+    mean_is_positive: expMeanDelta !== null ? expMeanDelta >= 0 : true,
     benchmark: expBm !== null ? Math.round(expBm) : null,
     newcomers_count: newUsersCount,
     is_positive: expRegDelta !== null ? expRegDelta >= 0 : true,
@@ -1457,8 +1521,12 @@ export function generateHealthMetrics(
   const rawUsageCount = Math.round((totalUploads * rawUsage) / 100);
   const useRateBm = typeof benchmarks.usage === 'number' ? benchmarks.usage : null;
   const useCountBm = typeof benchmarks.usage_count === 'number' ? benchmarks.usage_count : null;
+  const useRateMean = typeof benchmarksMean?.usage === 'number' ? benchmarksMean.usage : null;
+  const useCountMean = typeof benchmarksMean?.usage_count === 'number' ? benchmarksMean.usage_count : null;
   const useRegDelta = useRateBm !== null ? parseFloat((rawUsage - useRateBm).toFixed(1)) : null;
-  const useDeltaFormatted = useRegDelta !== null ? (useRegDelta >= 0 ? `▲ +${useRegDelta.toFixed(1)}% vs peer norm` : `▼ ${useRegDelta.toFixed(1)}% vs peer norm`) : `${rawUsage.toFixed(1)}% usage`;
+  const useMeanDelta = useRateMean !== null ? parseFloat((rawUsage - useRateMean).toFixed(1)) : null;
+  const useDeltaFormatted = useRegDelta !== null ? (useRegDelta >= 0 ? `▲ +${useRegDelta.toFixed(1)}% vs regional norm` : `▼ ${useRegDelta.toFixed(1)}% vs regional norm`) : `${rawUsage.toFixed(1)}% usage`;
+  const useMeanDeltaFormatted = useMeanDelta !== null ? (useMeanDelta >= 0 ? `▲ +${useMeanDelta.toFixed(1)}% vs regional norm` : `▼ ${useMeanDelta.toFixed(1)}% vs regional norm`) : `${rawUsage.toFixed(1)}% usage`;
 
   metrics.Usage = {
     raw: rawUsage,
@@ -1470,6 +1538,11 @@ export function generateHealthMetrics(
     yoy_delta_formatted: useDeltaFormatted,
     regional_median: useRateBm,
     regional_delta: useRegDelta,
+    regional_mean: useRateMean,
+    regional_mean_delta: useMeanDelta,
+    mean_benchmark_count: useCountMean !== null ? Math.round(useCountMean) : null,
+    mean_delta_formatted: useMeanDeltaFormatted,
+    mean_is_positive: useMeanDelta !== null ? useMeanDelta >= 0 : true,
     benchmark: useRateBm,
     benchmark_count: useCountBm !== null ? Math.round(useCountBm) : null,
     is_positive: useRegDelta !== null ? useRegDelta >= 0 : true,
@@ -1481,8 +1554,12 @@ export function generateHealthMetrics(
   const rawQualityCount = Math.round((totalUploads * rawQuality) / 100);
   const qualRateBm = typeof benchmarks.quality === 'number' ? benchmarks.quality : null;
   const qualCountBm = typeof benchmarks.quality_count === 'number' ? benchmarks.quality_count : null;
+  const qualRateMean = typeof benchmarksMean?.quality === 'number' ? benchmarksMean.quality : null;
+  const qualCountMean = typeof benchmarksMean?.quality_count === 'number' ? benchmarksMean.quality_count : null;
   const qualRegDelta = qualRateBm !== null ? parseFloat((rawQuality - qualRateBm).toFixed(1)) : null;
-  const qualDeltaFormatted = qualRegDelta !== null ? (qualRegDelta >= 0 ? `▲ +${qualRegDelta.toFixed(1)}% vs peer norm` : `▼ ${qualRegDelta.toFixed(1)}% vs peer norm`) : `${rawQuality.toFixed(1)}% QI`;
+  const qualMeanDelta = qualRateMean !== null ? parseFloat((rawQuality - qualRateMean).toFixed(1)) : null;
+  const qualDeltaFormatted = qualRegDelta !== null ? (qualRegDelta >= 0 ? `▲ +${qualRegDelta.toFixed(1)}% vs regional norm` : `▼ ${qualRegDelta.toFixed(1)}% vs regional norm`) : `${rawQuality.toFixed(1)}% QI`;
+  const qualMeanDeltaFormatted = qualMeanDelta !== null ? (qualMeanDelta >= 0 ? `▲ +${qualMeanDelta.toFixed(1)}% vs regional norm` : `▼ ${qualMeanDelta.toFixed(1)}% vs regional norm`) : `${rawQuality.toFixed(1)}% QI`;
 
   metrics.Quality = {
     raw: rawQuality,
@@ -1494,6 +1571,11 @@ export function generateHealthMetrics(
     yoy_delta_formatted: qualDeltaFormatted,
     regional_median: qualRateBm,
     regional_delta: qualRegDelta,
+    regional_mean: qualRateMean,
+    regional_mean_delta: qualMeanDelta,
+    mean_benchmark_count: qualCountMean !== null ? Math.round(qualCountMean) : null,
+    mean_delta_formatted: qualMeanDeltaFormatted,
+    mean_is_positive: qualMeanDelta !== null ? qualMeanDelta >= 0 : true,
     benchmark: qualRateBm,
     benchmark_count: qualCountBm !== null ? Math.round(qualCountBm) : null,
     is_positive: qualRegDelta !== null ? qualRegDelta >= 0 : true,
@@ -1503,8 +1585,11 @@ export function generateHealthMetrics(
   // 6. Contributor Diversity (Top 10% Upload Share)
   const rawDiversity = targetCount > 0 ? parseFloat(structuralMetrics.top10_uploader_share ?? 0.0) : 0.0;
   const divBm = typeof benchmarks.diversity === 'number' ? benchmarks.diversity : null;
+  const divMean = typeof benchmarksMean?.diversity === 'number' ? benchmarksMean.diversity : null;
   const divRegDelta = divBm !== null ? parseFloat((rawDiversity - divBm).toFixed(1)) : null;
+  const divMeanDelta = divMean !== null ? parseFloat((rawDiversity - divMean).toFixed(1)) : null;
   const divDeltaFormatted = divRegDelta !== null ? (divRegDelta <= 0 ? `▲ ${Math.abs(divRegDelta).toFixed(1)}% broader` : `▼ +${divRegDelta.toFixed(1)}% concentrated`) : `${rawDiversity.toFixed(1)}% by top 10%`;
+  const divMeanDeltaFormatted = divMeanDelta !== null ? (divMeanDelta <= 0 ? `▲ ${Math.abs(divMeanDelta).toFixed(1)}% broader` : `▼ +${divMeanDelta.toFixed(1)}% concentrated`) : `${rawDiversity.toFixed(1)}% by top 10%`;
 
   metrics.Diversity = {
     raw: rawDiversity,
@@ -1516,6 +1601,10 @@ export function generateHealthMetrics(
     yoy_delta_formatted: divDeltaFormatted,
     regional_median: divBm,
     regional_delta: divRegDelta,
+    regional_mean: divMean,
+    regional_mean_delta: divMeanDelta,
+    mean_delta_formatted: divMeanDeltaFormatted,
+    mean_is_positive: divMeanDelta !== null ? divMeanDelta <= 0 : true,
     benchmark: divBm,
     is_positive: divRegDelta !== null ? divRegDelta <= 0 : true,
     is_inaugural: false
@@ -1541,154 +1630,6 @@ export function generateHealthMetrics(
   };
 
   return metrics;
-}
-
-export function generateInsights(
-  metrics: Record<string, any>,
-  regionName: string,
-  benchmarks: any,
-  counts?: { target: number; base: number; overlap: number }
-): string[] {
-  const insights: string[] = [];
-  const regionLabel = regionName ? `${regionName} regional norm` : 'regional benchmark';
-  const targetCount = counts?.target || 0;
-  const baseCount = counts?.base || 0;
-  const overlapCount = counts?.overlap || 0;
-  const newcomerCount = Math.max(0, targetCount - overlapCount);
-
-  // 1. Retention Insight
-  if (metrics.Retention?.is_inaugural) {
-    insights.push(
-      'Inaugural campaign edition: Volunteer retention cannot be evaluated without a prior baseline cycle. Evaluation index dynamically calibrated across newcomer recruitment, content utility, quality recognition, and participation equity.'
-    );
-  } else {
-    const rawRet = parseFloat(String(metrics.Retention?.raw || '0').replace('%', ''));
-    const retBm = typeof benchmarks.retention === 'number' ? benchmarks.retention : null;
-    if (retBm === null) {
-      insights.push(
-        `Retention is ${rawRet.toFixed(1)}%: retained ${overlapCount.toLocaleString()} out of ${baseCount.toLocaleString()} prior-edition contributors. Regional peer baseline unavailable (no concurrent regional peers).`
-      );
-    } else if (rawRet >= retBm) {
-      insights.push(
-        `Retention is strong (${rawRet.toFixed(1)}%): retained ${overlapCount.toLocaleString()} out of ${baseCount.toLocaleString()} prior-edition contributors (+${(rawRet - retBm).toFixed(1)}% above ${regionLabel} of ${retBm.toFixed(1)}%). Demonstrates high volunteer continuity.`
-      );
-    } else if (rawRet >= retBm * 0.6) {
-      insights.push(
-        `Retention is moderate (${rawRet.toFixed(1)}%): ${overlapCount.toLocaleString()} returning uploaders retained from ${baseCount.toLocaleString()} baseline. Tracking within typical range for annual photo contests (benchmark: ${retBm.toFixed(1)}%).`
-      );
-    } else {
-      insights.push(
-        `Retention indicates high turnover (${rawRet.toFixed(1)}%): retained ${overlapCount.toLocaleString()} of ${baseCount.toLocaleString()} baseline contributors (below ${regionLabel} of ${retBm.toFixed(1)}%). Characteristic of outreach drives where post-contest re-engagement is limited.`
-      );
-    }
-  }
-
-  // 2. Contributor Expansion Insight
-  const rawGrowth = metrics.Growth?.newcomers_count ?? newcomerCount;
-  const groBm = typeof benchmarks.expansion === 'number' ? benchmarks.expansion : (typeof benchmarks.growth === 'number' ? benchmarks.growth : null);
-  if (groBm === null) {
-    insights.push(
-      `Newcomer recruitment: ${rawGrowth.toLocaleString()} first-time contributors joined the campaign.`
-    );
-  } else if (rawGrowth >= groBm) {
-    insights.push(
-      `Newcomer recruitment is exceptional (${rawGrowth.toLocaleString()} newcomers): exceeded the ${regionLabel} (${Math.round(groBm).toLocaleString()} newcomers), driving substantial volunteer expansion.`
-    );
-  } else if (rawGrowth >= groBm * 0.6) {
-    insights.push(
-      `Newcomer recruitment is steady (${rawGrowth.toLocaleString()} newcomers): maintains healthy volunteer onboarding tracking within peer range (benchmark: ${Math.round(groBm).toLocaleString()} newcomers).`
-    );
-  } else {
-    insights.push(
-      `Newcomer recruitment is constrained (${rawGrowth.toLocaleString()} newcomers): first-time contributors joined below the ${regionLabel} (${Math.round(groBm).toLocaleString()} newcomers), suggesting an opportunity to expand outreach channels.`
-    );
-  }
-
-  // 3. Content Utility Insight
-  const rawUsage = parseFloat(String(metrics.Usage?.raw || '0'));
-  const useBm = typeof benchmarks.usage === 'number' ? benchmarks.usage : null;
-  if (useBm === null) {
-    insights.push(
-      rawUsage > 0.0
-        ? `Content Utility is ${rawUsage.toFixed(1)}%: uploaded files are active in Wikipedia article illustrations.`
-        : 'Content Utility is unindexed (0.0%): no uploaded files are currently recorded in active Wikipedia article use.'
-    );
-  } else if (rawUsage >= useBm) {
-    insights.push(
-      `Content Utility is robust (${rawUsage.toFixed(1)}%): file reuse across Wikipedia articles matches or exceeds the ${regionLabel} (${useBm.toFixed(1)}%), delivering direct encyclopedic value.`
-    );
-  } else if (rawUsage > 0.0) {
-    insights.push(
-      `Content Utility is emerging (${rawUsage.toFixed(1)}%): files have begun being deployed in Wikipedia articles (benchmark: ${useBm.toFixed(1)}%). Encyclopedic adoption typically expands over 6–12 months via edit-a-thons.`
-    );
-  } else {
-    insights.push(
-      'Content Utility is unindexed (0.0%): no uploaded files are currently recorded in active Wikipedia article use. Suggests an organizing opportunity for post-contest illustration drives.'
-    );
-  }
-
-  // 4. Diversity Insight
-  const rawDiv = parseFloat(String(metrics.Diversity?.raw || '70'));
-  const divBm = typeof benchmarks.diversity === 'number' ? benchmarks.diversity : null;
-  if (rawDiv <= 65.0) {
-    insights.push(
-      `Participation breadth is exceptionally distributed: top 10% uploaders contributed ${rawDiv.toFixed(1)}% of files, demonstrating broad grassroots participation beyond the power-user core.`
-    );
-  } else if (rawDiv <= 85.0) {
-    insights.push(
-      `Participation distribution (${rawDiv.toFixed(1)}% by top 10% uploaders) aligns with standard Wikimedia peer-production power laws${divBm !== null ? ` (regional norm: ${divBm.toFixed(1)}%)` : ''}.`
-    );
-  } else {
-    insights.push(
-      `Upload concentration is high: top 10% uploaders contributed ${rawDiv.toFixed(1)}% of all submissions, indicating heavy reliance on a small cluster of power uploaders.`
-    );
-  }
-
-  // 5. Quality Recognition Insight
-  const rawQual = parseFloat(String(metrics.Quality?.raw || '0'));
-  const qualBm = typeof benchmarks.quality === 'number' ? benchmarks.quality : null;
-  if (qualBm === null) {
-    insights.push(
-      rawQual > 0.0
-        ? `Quality Recognition: ${rawQual.toFixed(1)}% of submissions recognized as Commons Quality Images or Featured Pictures.`
-        : 'Quality Recognition is unindexed (0.0%): no files have formal Commons Quality Image designations.'
-    );
-  } else if (rawQual >= qualBm) {
-    insights.push(
-      `Quality Recognition is high (${rawQual.toFixed(1)}%): formal Commons Quality Image / Featured Picture nominations outperform the ${regionLabel} (${qualBm.toFixed(1)}%).`
-    );
-  } else if (rawQual > 0.0) {
-    insights.push(
-      `Quality Recognition is present (${rawQual.toFixed(1)}%): recognized Commons quality files have been logged (benchmark: ${qualBm.toFixed(1)}%).`
-    );
-  } else {
-    insights.push(
-      'Quality Recognition is unindexed (0.0%): no files have formal Commons Quality Image designations. (Note: Commons QI requires manual jury/volunteer nominations).'
-    );
-  }
-
-  // 6. Community Scale Insight
-  const rawScale = metrics.Scale?.count ?? targetCount;
-  const scaleBm = typeof benchmarks.scale === 'number' ? benchmarks.scale : null;
-  if (scaleBm === null) {
-    insights.push(
-      `Community Scale is ${rawScale.toLocaleString()} active uploaders participating in this edition.`
-    );
-  } else if (rawScale >= scaleBm) {
-    insights.push(
-      `Community Scale is substantial (${rawScale.toLocaleString()} uploaders): cohort volume matches or exceeds the ${regionLabel} (${Math.round(scaleBm).toLocaleString()} uploaders), demonstrating major mobilization reach.`
-    );
-  } else if (rawScale >= scaleBm * 0.6) {
-    insights.push(
-      `Community Scale is healthy (${rawScale.toLocaleString()} uploaders): participant cohort represents solid community mobilization within typical peer parameters (benchmark: ${Math.round(scaleBm).toLocaleString()} uploaders).`
-    );
-  } else {
-    insights.push(
-      `Community Scale reflects an emerging cohort (${rawScale.toLocaleString()} uploaders): active participant volume is below the ${regionLabel} (${Math.round(scaleBm).toLocaleString()} uploaders), indicating scale disparity relative to established regional chapters.`
-    );
-  }
-
-  return insights;
 }
 
 // =========================================================================
@@ -2014,23 +1955,14 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
     };
   }
 
-  const categories = getCategoryCandidates(clean);
   let qiCount = 0;
   let fpCount = 0;
   let viCount = 0;
   const recognizedFiles: any[] = [];
   const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
 
-  for (const cat of categories) {
-    const catClean = cat.replace(/_/g, ' ');
-    const qiCandidates = [
-      catClean.replace('Images from ', 'Quality images from '),
-      `Quality images from ${catClean.replace('Images from ', '')}`,
-      `Quality images from ${catClean}`
-    ];
-
-    for (const qcat of qiCandidates) {
-      if (qcat === catClean || qcat === cat) continue;
+  const qiCandidates = getQualityCategoryCandidates(clean);
+  for (const qcat of qiCandidates) {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
@@ -2094,9 +2026,37 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       } catch {
         // Fall through
       }
-      if (qiCount > 0) break;
-    }
     if (qiCount > 0) break;
+  }
+
+  const fpCandidates = getFeaturedCategoryCandidates(clean);
+  for (const fpCat of fpCandidates) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(
+        `https://commons.wikimedia.org/w/api.php?action=query&titles=Category:${encodeURIComponent(fpCat)}&prop=categoryinfo&format=json`,
+        {
+          headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        const pages = data?.query?.pages || {};
+        for (const pid of Object.keys(pages)) {
+          const cinfo = pages[pid]?.categoryinfo;
+          if (cinfo && cinfo.files > 0) {
+            fpCount = cinfo.files;
+            break;
+          }
+        }
+      }
+    } catch {
+      // Fall through
+    }
+    if (fpCount > 0) break;
   }
 
   const totalRecognized = fpCount + qiCount + viCount;
@@ -2209,19 +2169,36 @@ export async function computeHealthEvaluation(
     throw new Error(`Campaign '${targetEvent}' did not take place or has no recorded uploads on Wikimedia Commons. It cannot be evaluated.`);
   }
 
-  const heldPeers = regionalCountries
+  const heldRegional = regionalCountries
     .map((cc) => ({ cc, count: (allFetched[`${eventType}${cc}${yearStr}`] || new Set()).size }))
-    .filter((p) => p.count > 0 && p.cc.toLowerCase() !== targetCc.toLowerCase());
-  heldPeers.sort((a, b) => b.count - a.count);
-  const top3 = heldPeers.slice(0, 3).map((p) => p.cc);
+    .filter((p) => p.count > 0);
+  heldRegional.sort((a, b) => b.count - a.count);
 
-  const structuralCodes = top3.map((cc) => `${eventType}${cc}${yearStr}`);
-  structuralCodes.push(targetEvent.toLowerCase());
-  structuralCodes.push(baselineEvent.toLowerCase());
-  for (const y of pastYears) {
-    structuralCodes.push(`${eventType}${targetCc}${String(y % 100).padStart(2, '0')}`);
+  // Take up to 5 active regional campaigns to form the regional benchmark cohort (including target country)
+  const top5Regional = heldRegional.slice(0, 5).map((p) => p.cc);
+  if (!top5Regional.includes(targetCc.toLowerCase()) && targetUsers.size > 0) {
+    top5Regional.push(targetCc.toLowerCase());
   }
-  const structuralMetrics = await fetchStructuralMetricsConcurrently(Array.from(new Set(structuralCodes)));
+
+  // Peers to display alongside target country (up to 5 peer campaigns)
+  const peerList = heldRegional
+    .filter((p) => p.cc.toLowerCase() !== targetCc.toLowerCase())
+    .slice(0, 5)
+    .map((p) => p.cc);
+
+  const structuralCodes = new Set<string>();
+  for (const cc of top5Regional) {
+    structuralCodes.add(`${eventType}${cc}${yearStr}`);
+  }
+  for (const cc of peerList) {
+    structuralCodes.add(`${eventType}${cc}${yearStr}`);
+  }
+  structuralCodes.add(targetEvent.toLowerCase());
+  structuralCodes.add(baselineEvent.toLowerCase());
+  for (const y of pastYears) {
+    structuralCodes.add(`${eventType}${targetCc}${String(y % 100).padStart(2, '0')}`);
+  }
+  const structuralMetrics = await fetchStructuralMetricsConcurrently(Array.from(structuralCodes));
 
   const repRetentions: number[] = [];
   const repGrowths: number[] = [];
@@ -2232,7 +2209,7 @@ export async function computeHealthEvaluation(
   const repUsages: number[] = [];
   const repUsageCounts: number[] = [];
 
-  for (const cc of top3) {
+  for (const cc of top5Regional) {
     const tCode = `${eventType}${cc}${yearStr}`;
     const bCode = `${eventType}${cc}${prevYearStr}`;
     const tU = allFetched[tCode] || new Set<string>();
@@ -2269,7 +2246,7 @@ export async function computeHealthEvaluation(
     }
   }
 
-  const benchmarks: HealthBenchmarks = {
+  const benchmarks_median: HealthBenchmarks = {
     retention: computeEmpiricalMedian(repRetentions),
     growth: computeEmpiricalMedian(repGrowths),
     expansion: computeEmpiricalMedian(repGrowths),
@@ -2282,6 +2259,21 @@ export async function computeHealthEvaluation(
     scale: computeEmpiricalMedian(repScales)
   };
 
+  const benchmarks_mean: HealthBenchmarks = {
+    retention: repRetentions.length > 0 ? parseFloat(computeEmpiricalMean(repRetentions).toFixed(1)) : null,
+    growth: repGrowths.length > 0 ? Math.round(computeEmpiricalMean(repGrowths)) : null,
+    expansion: repGrowths.length > 0 ? Math.round(computeEmpiricalMean(repGrowths)) : null,
+    newcomers: repGrowths.length > 0 ? Math.round(computeEmpiricalMean(repGrowths)) : null,
+    quality: repQualityRates.length > 0 ? parseFloat(computeEmpiricalMean(repQualityRates).toFixed(1)) : null,
+    quality_count: repQualityCounts.length > 0 ? Math.round(computeEmpiricalMean(repQualityCounts)) : null,
+    diversity: repDiversities.length > 0 ? parseFloat(computeEmpiricalMean(repDiversities).toFixed(1)) : null,
+    usage: repUsages.length > 0 ? parseFloat(computeEmpiricalMean(repUsages).toFixed(1)) : null,
+    usage_count: repUsageCounts.length > 0 ? Math.round(computeEmpiricalMean(repUsageCounts)) : null,
+    scale: repScales.length > 0 ? Math.round(computeEmpiricalMean(repScales)) : null
+  };
+
+  const benchmarks = benchmarks_median;
+
   const targetStructural = structuralMetrics[targetEvent.toLowerCase()] || {
     quality_image_share: 0.0,
     top10_uploader_share: 100.0,
@@ -2290,7 +2282,7 @@ export async function computeHealthEvaluation(
   };
   const baseStructural = structuralMetrics[baselineEvent.toLowerCase()] || {};
 
-  const metrics = generateHealthMetrics(targetUsers, baseUsers, targetStructural, benchmarks, baseStructural);
+  const metrics = generateHealthMetrics(targetUsers, baseUsers, targetStructural, benchmarks, baseStructural, benchmarks_mean);
   let overlap = 0;
   for (const u of targetUsers) if (baseUsers.has(u)) overlap++;
 
@@ -2347,7 +2339,7 @@ export async function computeHealthEvaluation(
     usage_count: Math.round((targetUploads * (targetStructural.usage_share || 0)) / 100)
   });
 
-  for (const cc of top3) {
+  for (const cc of peerList) {
     const pCode = `${eventType}${cc}${yearStr}`;
     const pbCode = `${eventType}${cc}${prevYearStr}`;
     const pUsers = allFetched[pCode] || new Set<string>();
@@ -2378,42 +2370,6 @@ export async function computeHealthEvaluation(
   const usageShare = targetStructural.usage_share || 0;
   const qualityShare = targetStructural.quality_image_share || 0;
 
-  let compositeScore: number | null = null;
-  let tier: string | null = null;
-  let stars: [string, number] | null = null;
-  let ratingLabel: string | null = null;
-
-  const scoredDimensions: { score: number; weight: number }[] = [];
-  if (benchmarks.growth !== null && metrics.Growth?.count !== undefined) {
-    const groScore = calculateRelativeScore(metrics.Growth.count, benchmarks.growth, true, true);
-    scoredDimensions.push({ score: groScore, weight: 25 });
-  }
-  if (!metrics.Retention?.is_inaugural && benchmarks.retention !== null && typeof metrics.Retention?.yoy_delta_pct === 'number') {
-    const retScore = calculateRelativeScore(metrics.Retention.yoy_delta_pct, benchmarks.retention, true);
-    scoredDimensions.push({ score: retScore, weight: 25 });
-  }
-  if (benchmarks.usage !== null && typeof metrics.Usage?.raw === 'number') {
-    const useScore = calculateRelativeScore(metrics.Usage.raw, benchmarks.usage, true);
-    scoredDimensions.push({ score: useScore, weight: 20 });
-  }
-  if (benchmarks.quality !== null && typeof metrics.Quality?.raw === 'number') {
-    const qualScore = calculateRelativeScore(metrics.Quality.raw, benchmarks.quality, true);
-    scoredDimensions.push({ score: qualScore, weight: 15 });
-  }
-  if (benchmarks.diversity !== null && typeof metrics.Diversity?.raw === 'number') {
-    const divScore = calculateRelativeScore(metrics.Diversity.raw, benchmarks.diversity, false);
-    scoredDimensions.push({ score: divScore, weight: 15 });
-  }
-
-  if (scoredDimensions.length > 0) {
-    const totalWeight = scoredDimensions.reduce((sum, d) => sum + d.weight, 0);
-    const weightedSum = scoredDimensions.reduce((sum, d) => sum + d.score * d.weight, 0);
-    compositeScore = Math.round(weightedSum / totalWeight);
-    tier = compositeScore >= 80 ? 'Tier 1' : compositeScore >= 60 ? 'Tier 2' : 'Tier 3';
-    stars = calculateStars(compositeScore);
-    ratingLabel = compositeScore >= 85 ? 'Outstanding' : compositeScore >= 70 ? 'Strong' : compositeScore >= 50 ? 'Moderate' : compositeScore >= 30 ? 'Emerging' : 'Critical / Low';
-  }
-
   const overallReport: OverallCampaignReport = {
     campaign_code: targetEvent.toLowerCase(),
     campaign_name: EVENT_MAP[eventType] ? `Wiki Loves ${EVENT_MAP[eventType]}` : eventType.toUpperCase(),
@@ -2422,10 +2378,6 @@ export async function computeHealthEvaluation(
     edition_year: 2000 + yearInt,
     region,
     generated_date: new Date().toISOString().split('T')[0],
-    composite_score: compositeScore,
-    tier: tier ?? undefined,
-    rating_label: ratingLabel ?? undefined,
-    stars: stars ?? undefined,
     total_uploaders: targetUsers.size,
     newcomer_uploaders: newcomerCount,
     returning_uploaders: overlap,
@@ -2442,6 +2394,8 @@ export async function computeHealthEvaluation(
     top10_uploader_share_pct: targetUsers.size > 0 ? (targetStructural.top10_uploader_share ?? 0) : 0,
     dimensions: metrics,
     benchmarks,
+    benchmarks_median,
+    benchmarks_mean,
     historical_series: historicalSeries,
     peer_comparisons: peerComparisons,
     insights: []
@@ -2456,6 +2410,8 @@ export async function computeHealthEvaluation(
     overlap_users_count: overlap,
     dimensions: metrics,
     benchmarks,
+    benchmarks_median,
+    benchmarks_mean,
     historical_series: historicalSeries,
     peer_comparisons: peerComparisons,
     overall_report: overallReport
@@ -2860,19 +2816,19 @@ export async function computeComparativeAnalytics(
       indicator_id: isRate ? 'quality_rate' : 'quality_honors',
       title: isRate ? 'Quality Recognition Rate' : 'Quality-Recognized Contributions',
       definition: isRate
-        ? 'Percentage of campaign media uploads designated as Quality Images, Featured Pictures, or Valued Images.'
-        : 'Total count of campaign media uploads designated as Quality Images (QI), Featured Pictures (FP), or Valued Images (VI) on Wikimedia Commons.',
+        ? 'Percentage of campaign media uploads designated as Quality Images or Featured Pictures.'
+        : 'Total count of campaign media uploads designated as Quality Images (QI) or Featured Pictures (FP) on Wikimedia Commons.',
       data_source: 'Wikimedia Commons Assessment Categories & Picture of the Year Archives',
       metric_unit: isRate ? '%' : 'Recognized Works',
       coverage: 'Annual national campaign editions (2010–present)',
       license: 'CC BY-SA 4.0',
       methodology_notes: [
-        'Recognized media aggregates peer-reviewed distinctions: Featured Pictures (FP), Quality Images (QI), and Valued Images (VI).',
+        'Recognized media aggregates community-reviewed distinctions: Featured Pictures (FP) and Quality Images (QI).',
         'Honors are tracked per media file and attributed back to the national campaign edition of original upload.',
         'Quality rate expresses the proportion of recognized images relative to total campaign submissions.'
       ],
       caveats: [
-        'Commons quality nominations occur post-campaign through open community peer review, introducing natural evaluation lag for recent editions.',
+        'Commons quality nominations occur post-campaign through open community review, introducing natural evaluation lag for recent editions.',
         'Certain national campaigns have higher community participation in Commons nomination processes.'
       ]
     };

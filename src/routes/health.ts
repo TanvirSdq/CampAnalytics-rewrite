@@ -18,8 +18,8 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
   if (req.method === 'GET' && Object.keys(req.query).length === 0) {
     res.render('health.html', {
       ...getGlobalContext(req),
-      PAGE_TITLE: 'CampTools - Event Evaluation',
-      mode: 'Health Evaluation',
+      PAGE_TITLE: 'CampTools - Event Performance',
+      mode: 'Event Performance',
       target_event: '',
       comp_mode: 'Previous Year Baseline',
       baseline_event: '',
@@ -50,8 +50,8 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
   if (!targetEvent) {
     res.render('health.html', {
       ...getGlobalContext(req),
-      PAGE_TITLE: 'CampTools - Event Evaluation',
-      mode: 'Health Evaluation',
+      PAGE_TITLE: 'CampTools - Event Performance',
+      mode: 'Event Performance',
       target_event: '',
       comp_mode: compMode,
       baseline_event: baselineEventInput,
@@ -177,8 +177,8 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
 
   res.render('health.html', {
     ...getGlobalContext(req),
-    PAGE_TITLE: `CampTools - Dynamics: ${targetEvent.toUpperCase()}`,
-    mode: 'Campaign Dynamics',
+    PAGE_TITLE: `CampTools - Event Performance: ${targetEvent.toUpperCase()}`,
+    mode: 'Event Performance',
     target_event: targetEvent,
     health_event_type: healthEvt,
     health_country: healthCc,
@@ -188,6 +188,8 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     region: result ? result.region : region,
     error,
     metrics: result ? result.dimensions : null,
+    benchmarks_median: result ? result.benchmarks_median : null,
+    benchmarks_mean: result ? result.benchmarks_mean : null,
     benchmark_comparisons: benchmarkComparisons,
     historical_series: result ? result.historical_series : [],
     peer_comparisons: result ? result.peer_comparisons : [],

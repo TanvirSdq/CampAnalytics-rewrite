@@ -50,6 +50,11 @@ export interface HealthMetricDimension {
   yoy_delta_formatted?: string;
   regional_median?: number | null;
   regional_delta?: number | null;
+  regional_mean?: number | null;
+  regional_mean_delta?: number | null;
+  mean_benchmark_count?: number | null;
+  mean_delta_formatted?: string;
+  mean_is_positive?: boolean;
   is_positive?: boolean;
   is_inaugural?: boolean;
   stars?: string;
@@ -94,7 +99,8 @@ export interface OverallCampaignReport {
   top10_uploader_share_pct: number;
   dimensions: Record<string, HealthMetricDimension>;
   benchmarks: HealthBenchmarks;
-  insights?: string[];
+  benchmarks_mean?: HealthBenchmarks;
+  benchmarks_median?: HealthBenchmarks;
   historical_series?: HistoricalEditionPoint[];
   peer_comparisons?: PeerComparisonPoint[];
 }
@@ -134,7 +140,8 @@ export interface HealthEvaluationResult {
   stars?: [string, number];
   dimensions: Record<string, HealthMetricDimension>;
   benchmarks: HealthBenchmarks;
-  insights?: string[];
+  benchmarks_mean?: HealthBenchmarks;
+  benchmarks_median?: HealthBenchmarks;
   historical_series?: HistoricalEditionPoint[];
   peer_comparisons?: PeerComparisonPoint[];
   overall_report?: OverallCampaignReport;

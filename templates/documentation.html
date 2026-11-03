@@ -29,7 +29,7 @@
                     <li><strong>Target Campaign Code:</strong> Enter the official identifier for the campaign edition you want to evaluate (e.g. <code>wlmbd24</code> for Wiki Loves Monuments 2024 Bangladesh, or <code>wlede23</code> for Wiki Loves Earth Germany).</li>
                     <li><strong>Baseline Reference Edition:</strong> Select <em>Previous Year Baseline</em> to measure trajectory shifts against the immediately preceding year (e.g. 2023 vs 2024), or specify a custom baseline edition for multi-year comparisons.</li>
                     <li><strong>Regional Peer Calibration:</strong> The tool automatically identifies your country's regional cluster (e.g. South Asia, Northern &amp; Western Europe, ESEAP). Regional peer medians are computed across active campaigns to provide context without artificial rankings.</li>
-                    <li><strong>Empirical KPIs &amp; Velocity Badges:</strong> Review the 6 core observational cards showing live totals alongside Year-over-Year velocity pills (\(\Delta = X_t - X_{t-1}\)) indicating exact net shifts and percentage progression.</li>
+                    <li><strong>Empirical KPIs &amp; Velocity Badges:</strong> Review the 6 core observational cards showing live totals alongside Year-over-Year velocity badges indicating exact net shifts (+/-) and percentage progression.</li>
                     <li><strong>Interactive Manipulative Charts (Plotly.js):</strong> Explore three dynamic visualizers:
                         <ul style="margin-top: 4px; padding-left: 18px;">
                             <li><strong>Multi-Year Longitudinal Trajectory:</strong> Dual-axis interactive chart tracking active uploaders, Commons submissions, and quality honors across up to 5 consecutive editions.</li>
@@ -37,34 +37,35 @@
                             <li><strong>Regional Peer Context Comparison:</strong> Interactive bar chart comparing your campaign against active regional peers across selectable metrics.</li>
                         </ul>
                     </li>
-                    <li><strong>Export Empirical Report:</strong> Export raw, non-graded observational records in Wikitext, Markdown, or CSV formats for Wikimedia grant reports and affiliate documentation.</li>
+                    <li><strong>Export Empirical Report:</strong> Export raw, non-graded observational records in Wikitext, Markdown, or CSV formats for community reports and affiliate documentation.</li>
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year (YoY) Velocity Vector Formulation</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year Progression</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0 0 10px 0;">
-                        Rather than grading affiliates with subjective points, the platform calculates empirical progression vectors between consecutive campaign editions:
+                        Rather than grading affiliates with subjective scores, the platform tracks simple, observable changes between consecutive campaign editions:
                     </p>
                     <div class="math-formula" style="margin: 10px 0 14px 0;">
-                        \[ \Delta X = X_t - X_{t-1}, \quad \Delta X\% = \frac{X_t - X_{t-1}}{X_{t-1}} \times 100\% \]
+                        \[ \text{Year-over-Year Net Shift} = \text{Target Edition Count} - \text{Baseline Edition Count} \]
+                        \[ \text{Year-over-Year Change (\%)} = \frac{\text{Target Edition Count} - \text{Baseline Edition Count}}{\text{Baseline Edition Count}} \times 100\% \]
                     </div>
                     <ul style="color: var(--text-ink); font-size: 0.88rem; line-height: 1.7; margin: 0; padding-left: 20px;">
-                        <li><strong>Community Scale:</strong> Net shift in unique human uploaders submitting \(\ge 1\) eligible photograph.</li>
-                        <li><strong>Contributor Retention:</strong> Percentage of baseline cohort participants who returned to upload in the target edition (\(\frac{|U_t \cap U_{t-1}|}{|U_{t-1}|} \times 100\%\)).</li>
-                        <li><strong>Contributor Expansion:</strong> Direct newcomer influx yield (\(|U_t \setminus \bigcup_{k < t} U_k|\)) alongside net community size progression.</li>
-                        <li><strong>Content Utility:</strong> Active encyclopedic deployment footprint across Wikipedia language editions and Wikidata via <code>prop=globalusage</code>.</li>
-                        <li><strong>Quality Recognition:</strong> Movement-wide peer-reviewed curatorial honors (Quality Images, Featured Pictures, Valued Images).</li>
-                        <li><strong>Contributor Diversity:</strong> Participation equity measured by the inverse Pareto concentration of the top-10% uploader cohort.</li>
+                        <li><strong>Community Scale:</strong> Net change in unique photographers submitting at least one eligible photograph.</li>
+                        <li><strong>Contributor Retention:</strong> Percentage of previous-year participants who returned to upload in the current edition.</li>
+                        <li><strong>Newcomer Recruitment:</strong> Number of first-time participants who had not uploaded in earlier recorded editions.</li>
+                        <li><strong>Content Utility:</strong> Number and percentage of submitted photographs actively illustrating Wikipedia articles or Wikidata items.</li>
+                        <li><strong>Quality Recognition:</strong> Number and percentage of photos receiving formal community honors (Quality Images and Featured Pictures).</li>
+                        <li><strong>Contributor Diversity:</strong> Distribution of submissions across participants, tracked via the share of photos from the top 10% most prolific uploaders.</li>
                     </ul>
                 </div>
 
                 <div class="math-panel" style="margin-bottom: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Regional Peer Context &amp; Zero-Synthetic Invariant</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Regional Benchmark &amp; Zero-Synthetic Invariant</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0; line-height: 1.6;">
-                        Regional context medians (\(P_{50}\)) provide unranked perspective across active national affiliates in the same geographic cluster, capturing authentic operational diversity.
+                        Regional peer medians provide context across up to 5 active national campaigns within the same geographic cluster, including the target country when held.
                     </p>
                     <div class="math-formula" style="margin: 8px 0;">
-                        \[ \Delta_{\text{peer}} = X_{\text{target}} - \text{Median}(X_{\text{peers}}) \]
+                        \[ \text{Regional Comparison Shift} = \text{Target Value} - \text{Regional Median (Top 5 Active Campaigns)} \]
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin: 8px 0 0 0; line-height: 1.5;">
                         <strong>Zero-Synthetic Invariant &amp; Unheld Campaign Policy:</strong> The engine evaluates 100% empirical Wikimedia Commons data without synthetic imputation or mock fallbacks. Unheld editions (e.g. <code>wlmbd21</code>, <code>wlmfr23</code>) are explicitly flagged as unheld and excluded from peer benchmarks rather than being assigned artificial zeros or regional averages.
@@ -104,15 +105,15 @@
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Directional Longitudinal Retention</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Contributor Retention Rate</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        Directional retention from a baseline campaign cohort \(A\) to a subsequent target cohort \(B\) is defined as the proportion of unique contributors in cohort \(A\) who also submitted media in cohort \(B\):
+                        Retention measures what fraction of contributors from an earlier baseline edition returned to participate in a subsequent target edition:
                     </p>
                     <div class="math-formula">
-                        \[ \text{Retention}(A \to B) = \frac{|U_A \cap U_B|}{|U_A|} \times 100\% \]
+                        \[ \text{Retention Rate} = \frac{\text{Returning Contributors from Baseline}}{\text{Total Contributors in Baseline Edition}} \times 100\% \]
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        Where \(U_A\) and \(U_B\) denote the discrete sets of verified upload accounts in each respective category. Retention is non-symmetric: \(\text{Retention}(A \to B) \neq \text{Retention}(B \to A)\) when total cohort sizes differ.
+                        Retention is directional: comparing baseline participants who returned in a later year yields a different percentage than evaluating the later year against the earlier baseline, because total community sizes differ across years.
                     </p>
                 </div>
 
@@ -152,7 +153,7 @@
                     <li><strong>Trend Visualizations &amp; Outputs:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
                             <li><strong>Summary KPI Cards:</strong> Cumulative Contributor Pool, Peak Influx Year, Peak Overall Edition, and Contributor Longevity (recurring participants).</li>
-                            <li><strong>Visual Influx Dynamics:</strong> Dual-axis stacked bar chart showing first-time newcomers (\(I_t\)) stacked with returning veterans (\(R_t\)) alongside the cumulative pool trajectory.</li>
+                            <li><strong>Visual Influx Dynamics:</strong> Dual-axis stacked bar chart showing first-time newcomers stacked with returning participants alongside the cumulative pool trajectory.</li>
                             <li><strong>Cohort Lifecycle Segmentation:</strong> Categorization into 1-Time Entrants (one-off contributors), Repeaters (2–3 editions), and Core Veterans (4+ editions).</li>
                             <li><strong>Detailed Data Table:</strong> Comprehensive table with YoY Net Growth, Newcomer Share, Direct Retention, and CSV export capability.</li>
                         </ul>
@@ -160,38 +161,40 @@
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year Newcomer Influx &amp; Retention</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Year-over-Year Newcomers &amp; Retention</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        For edition \(C_t\) in a chronological series, newcomer influx isolates contributors not seen in any prior recorded edition \(U_{&lt; t}\):
+                        In each edition of a campaign series, contributors are divided into two distinct groups: first-time newcomers and returning participants:
                     </p>
                     <div class="math-formula">
-                        \[ \text{Influx}(C_t) = |U_t \setminus U_{&lt; t}|, \quad \text{Newcomer Share} = \left(\frac{\text{Influx}(C_t)}{|U_t|}\right) \times 100\% \]
+                        \[ \text{Newcomer Share} = \frac{\text{First-Time Contributors}}{\text{Total Active Contributors in Edition}} \times 100\% \]
+                        \[ \text{Direct Retention Rate} = \frac{\text{Returning Contributors from Prior Edition}}{\text{Total Contributors in Prior Edition}} \times 100\% \]
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        Returning veterans are defined as \(R_t = |U_t \cap U_{&lt; t}|\), and direct retention from the immediate prior edition is given by \(\text{Retention}(C_{t-1} \to C_t) = \frac{|U_t \cap U_{t-1}|}{|U_{t-1}|} \times 100\%\).
+                        <strong>First-Time Contributors:</strong> Photographers who have never uploaded to any prior recorded edition in the series.<br>
+                        <strong>Returning Contributors:</strong> Photographers who previously uploaded in at least one earlier recorded edition.
                     </p>
                 </div>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Multi-Campaign Ecosystem Influx &amp; De-duplication</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">All-Campaigns De-duplication</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        When analyzing all campaigns together (<code>all[country][year]</code>), participant sets across all active Wiki Loves photography contests in edition year \(t\) are aggregated into a unified ecosystem cohort \(U_t\):
+                        When analyzing all campaigns together (using the <code>all[country][year]</code> option), participants across all active photography contests (such as Monuments, Earth, Folklore, Africa, and Bangla) in a given year are combined into a single ecosystem pool:
                     </p>
                     <div class="math-formula">
-                        \[ U_t = \bigcup_{e \in E} U_{e, t}, \quad I_t = U_t \setminus \bigcup_{j &lt; t} U_j, \quad R_t = U_t \cap \bigcup_{j &lt; t} U_j \]
+                        \[ \text{Annual Active Community} = \text{Count of Unique Individuals Active Across Any Contest in that Year} \]
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        Where \(E = \{\text{WLM}, \text{WLE}, \text{WLF}, \text{WLA}, \text{WLB}\}\). Contributor cross-participation across contests is de-duplicated, measuring the total net new individuals brought into the Wikimedia movement annually.
+                        Each volunteer username is counted once per year, eliminating double-counting when a photographer submits images to multiple contests during the same calendar year.
                     </p>
                 </div>
 
                 <div class="math-panel">
                     <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Cumulative Contributor Pool</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        The cumulative community pool milestone measures the total distinct individuals who have engaged across the evaluated series up to edition year \(t\):
+                        The cumulative community pool tracks the total number of distinct individuals who have contributed at least one photo across the entire evaluated series up to that edition year:
                     </p>
                     <div class="math-formula">
-                        \[ \text{Cumulative Pool}_t = \left|\bigcup_{j \le t} U_j\right| \]
+                        \[ \text{Cumulative Contributor Pool} = \text{Total Unique Photographers Mobilized Across All Editions to Date} \]
                     </div>
                 </div>
             </div>
@@ -216,41 +219,41 @@
                 </p>
                 <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
                     <li><strong>Country &amp; Year Selection:</strong> Select a target nation and campaign year. The tool identifies all active competitions configured for that country (e.g. WLM, WLE, WLF, WLA, WLB) respecting regional scopes.</li>
-                    <li><strong>Directional Conversion Matrix:</strong> An \(N \times N\) matrix displaying the percentage of contributors from each source campaign who transitioned into participating in a target campaign.</li>
-                    <li><strong>Community Similarity (Jaccard Index):</strong> Calculates bidirectional community cohesion, measuring the shared contributor core relative to the joint participant union.</li>
+                    <li><strong>Cross-Campaign Matrix:</strong> A multi-contest matrix displaying the percentage of contributors from each source campaign who transitioned into participating in a target campaign.</li>
+                    <li><strong>Community Similarity (Jaccard Index):</strong> Calculates bidirectional community cohesion, measuring the shared contributor core relative to the joint participant pool.</li>
                     <li><strong>Deduplicated Ecosystem Pool:</strong> Measures the true net distinct volunteer photographers mobilized across all campaigns in that country during the year.</li>
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Directional Conversion Rate Formulation</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Cross-Campaign Conversion Rate</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        Directional conversion from source campaign cohort \(A\) to target campaign cohort \(B\) measures the proportion of contributors in \(A\) who also submitted media in \(B\):
+                        Measures the proportion of contributors from a source contest who also participated in a target contest in the same country:
                     </p>
                     <div class="math-formula">
-                        \[ \text{Mobility}(A \to B) = \left(\frac{|U_A \cap U_B|}{|U_A|}\right) \times 100\% \]
+                        \[ \text{Conversion Rate} = \frac{\text{Contributors Participating in Both Contests}}{\text{Total Contributors in Source Contest}} \times 100\% \]
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        Because cohort sizes typically differ (\(|U_A| \neq |U_B|\)), directional conversion is non-symmetric: \(\text{Mobility}(A \to B) \neq \text{Mobility}(B \to A)\).
+                        Conversion is directional: the percentage of Earth contributors who entered Monuments is usually different from the percentage of Monuments contributors who entered Earth.
                     </p>
                 </div>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Jaccard Community Similarity</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Shared Community Overlap (Jaccard Index)</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        Symmetrical community overlap between two campaigns is quantified using the Jaccard similarity coefficient:
+                        Quantifies how closely aligned two contributor communities are by comparing shared participants to the total combined group:
                     </p>
                     <div class="math-formula">
-                        \[ J(A, B) = \left(\frac{|U_A \cap U_B|}{|U_A \cup U_B|}\right) \times 100\% \]
+                        \[ \text{Community Overlap (\%)} = \frac{\text{Shared Contributors Active in Both Contests}}{\text{Total Unique Contributors Across Either Contest}} \times 100\% \]
                     </div>
                 </div>
 
                 <div class="math-panel" style="margin-bottom: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Deduplicated Ecosystem Union</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">National Ecosystem Reach</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        Total distinct volunteer photographers active across any contest within the evaluated country is given by:
+                        The total net number of unique photographers mobilized across all active photography contests within the country during that year:
                     </p>
                     <div class="math-formula">
-                        \[ U_{\text{ecosystem}} = \left| \bigcup_{e \in E_{\text{scoped}}} U_e \right| \]
+                        \[ \text{Total National Ecosystem Reach} = \text{Unique Individuals Participating in At Least One National Contest} \]
                     </div>
                 </div>
             </div>
@@ -277,39 +280,40 @@
                     <li><strong>Campaign &amp; Year Range:</strong> Select campaign type (or All Campaigns), target country, and chronological year range.</li>
                     <li><strong>Normalized Tier Segmentation:</strong> Groups participants into four empirical volume tiers: Casual (1–4 uploads), Regular (5–24 uploads), Active (25–99 uploads), and Power (100+ uploads).</li>
                     <li><strong>Interactive Concentration Trajectory:</strong> An interactive line chart plotting the multi-year upload share for any selected top contributor percentile (1%–100%) with automated playback.</li>
-                    <li><strong>Empirical Equality Metrics:</strong> Computes the discrete Gini coefficient (\(G \in [0, 1]\)) and Pareto decile shares (\(P_{10}\), \(P_{20}\)).</li>
+                    <li><strong>Empirical Equality Metrics:</strong> Computes the Gini inequality coefficient (0.0 to 1.0) and top-decile shares (top 10% and top 20%).</li>
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Discrete Gini Inequality Formulation</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Contribution Equality (Gini Scale)</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        For \(n\) active contributors whose individual upload counts \(x_1 \le x_2 \le \dots \le x_n\) are ordered ascendingly, the discrete Gini coefficient is computed as:
+                        The Gini coefficient measures how evenly photo submissions are distributed across all participating uploaders, mapped on a scale from 0.0 to 1.0:
                     </p>
                     <div class="math-formula">
-                        \[ G = \frac{2 \sum_{i=1}^n i x_i}{n \sum_{i=1}^n x_i} - \frac{n + 1}{n} \]
+                        \[ \text{Gini Index} = \text{Distribution inequality of submissions on a scale from 0.0 (equal) to 1.0 (concentrated)} \]
                     </div>
-                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        \(G = 0\) indicates perfect equality (all participants uploaded identical photo counts), whereas \(G \to 1\) signifies extreme upload concentration among a small cluster of power users.
-                    </p>
+                    <ul style="color: var(--text-ink); font-size: 0.85rem; line-height: 1.6; margin: 8px 0 0 0; padding-left: 20px;">
+                        <li><strong>0.0 (Perfect Equality):</strong> Every participant submitted exactly the same number of photos.</li>
+                        <li><strong>Close to 1.0 (High Concentration):</strong> A small group of prolific power uploaders submitted the vast majority of files.</li>
+                    </ul>
                 </div>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Pareto Top-Decile Upload Share</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Top 10% Contributor Share</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        The top-decile concentration metric \(P_{10}\) quantifies the percentage of total media submissions uploaded by the top 10% most prolific participants:
+                        Quantifies what percentage of all contest submissions were uploaded by the top 10% most prolific participants:
                     </p>
                     <div class="math-formula">
-                        \[ P_{10} = \left(\frac{\sum_{i = n - k_{10} + 1}^n x_i}{\sum_{i=1}^n x_i}\right) \times 100\%, \quad k_{10} = \max(1, \text{round}(0.10 n)) \]
+                        \[ \text{Top 10\% Share} = \frac{\text{Photos Uploaded by Top 10\% Most Prolific Contributors}}{\text{Total Contest Submissions}} \times 100\% \]
                     </div>
                 </div>
 
                 <div class="math-panel" style="margin-bottom: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Longitudinal Percentile Concentration</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Percentile Concentration</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        For any percentile threshold \(p \in [1, 100]\), the cumulative upload share \(S_p\) contributed by the top \(p\%\) of uploaders in edition year \(t\) is given by:
+                        For any selected tier (such as the top 1%, 5%, or 20%), the platform calculates the exact proportion of submissions generated by that cohort:
                     </p>
                     <div class="math-formula">
-                        \[ S_p(t) = \left(\frac{\sum_{i = n - k_p + 1}^n x_i}{\sum_{i=1}^n x_i}\right) \times 100\%, \quad k_p = \max(1, \text{round}(p \cdot n / 100)) \]
+                        \[ \text{Percentile Share} = \frac{\text{Photos Uploaded by Top Selected Group}}{\text{Total Contest Submissions}} \times 100\% \]
                     </div>
                 </div>
             </div>
@@ -337,7 +341,7 @@
                     <li><strong>Usage Harvesting &amp; Namespace Filtering:</strong> Analyzes uploaded files to identify whether they are embedded in encyclopedic articles (Mainspace 0) or user/discussion pages.</li>
                     <li><strong>Analytics &amp; Output Breakdown:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
-                            <li><strong>Overall Utility Rate (\(U_r\)):</strong> Percentage of uploaded files actively utilized in at least one Wikimedia project.</li>
+                            <li><strong>Overall Utility Rate (%):</strong> Percentage of uploaded files actively utilized in at least one Wikimedia project.</li>
                             <li><strong>Article Inclusions:</strong> Cumulative count of live article instances illustrating encyclopedic knowledge.</li>
                             <li><strong>Cross-Wiki Distribution:</strong> Distribution across Wikipedia language editions (e.g. English, German, French, Bengali), Wikidata, Wikivoyage, and Commons galleries.</li>
                             <li><strong>Contributor Impact Leaderboard:</strong> Top photographers ranked by total downstream article usage.</li>
@@ -346,16 +350,14 @@
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Encyclopedic Utility Rate Formulation</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Content Utility Rate</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        For campaign file collection \(F\), let \(P(f)\) denote the set of pages where file \(f\) is actively integrated:
+                        Tracks how effectively campaign submissions are put to use across Wikipedia articles, Wikidata, and sister projects:
                     </p>
                     <div class="math-formula">
-                        \[ F_{\text{in-use}} = \{ f \in F \mid |P(f)| > 0 \}, \quad \text{Utility Rate } U_r = \left(\frac{|F_{\text{in-use}}|}{|F|}\right) \times 100\% \]
+                        \[ \text{Content Utility Rate} = \frac{\text{Uploaded Photos in Active Use}}{\text{Total Contest Submissions}} \times 100\% \]
+                        \[ \text{Total Article Inclusions} = \text{Cumulative Count of Live Embeddings Across All Wikimedia Projects} \]
                     </div>
-                    <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">
-                        Total article deployment volume is given by \(I_{\text{total}} = \sum_{f \in F} |P(f)|\).
-                    </p>
                 </div>
             </div>
         </div>
@@ -375,15 +377,15 @@
             </div>
             <div class="display-panel-body">
                 <p style="color: var(--text-muted); line-height: 1.6;">
-                    The Quality Recognition module audits formal community quality designations awarded to campaign submissions by Wikimedia Commons peer-review committees:
+                    The Quality Recognition module audits formal community quality designations awarded to campaign submissions through Wikimedia Commons community review processes:
                 </p>
                 <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
                     <li><strong>Campaign Query:</strong> Select target event, country, and year (e.g. <code>wlmde24</code>, <code>wleua21</code>).</li>
-                    <li><strong>Commons Category Tree Harvesting:</strong> Traverses structured subcategories including <code>Quality images from [Campaign]</code>, <code>Featured pictures from [Campaign]</code>, and <code>Valued images from [Campaign]</code>.</li>
+                    <li><strong>Commons Category Tree Harvesting:</strong> Traverses structured subcategories including <code>Quality images from [Campaign]</code> and <code>Featured pictures from [Campaign]</code>. <em>(Category Mapping Limitation):</em> Valued Images (VI) are excluded from automated campaign harvesting because Wikimedia Commons does not maintain standardized campaign-level subcategory trees for VI, resulting in non-uniform categorization across contests.</li>
                     <li><strong>Quality Recognition Outputs:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
-                            <li><strong>Overall Quality Rate (\(Q_r\)):</strong> Percentage of submissions achieving formal quality recognition.</li>
-                            <li><strong>Awards Breakdown:</strong> Itemized counts of Quality Images (QI), Featured Pictures (FP), and Valued Images (VI).</li>
+                            <li><strong>Overall Quality Rate (%):</strong> Percentage of submissions achieving formal quality recognition.</li>
+                            <li><strong>Awards Breakdown:</strong> Itemized counts of Quality Images (QI) and Featured Pictures (FP).</li>
                             <li><strong>Recognized Media Files:</strong> Interactive media gallery with lazy-loaded thumbnails, file titles, badge tags, and direct Commons links.</li>
                             <li><strong>Top Contributing Photographers:</strong> Distinct accredited photographers whose works received quality designations.</li>
                         </ul>
@@ -391,12 +393,13 @@
                 </ol>
 
                 <div class="math-panel">
-                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Quality Rate Formulation</h4>
+                    <h4 style="margin: 0 0 8px 0; color: var(--text-ink);">Quality Recognition Rate</h4>
                     <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
-                        For campaign upload portfolio \(F\), let \(F_{\text{honored}}\) denote files awarded QI, FP, or VI status:
+                        Measures the proportion of submitted photographs that earned formal community quality designations:
                     </p>
                     <div class="math-formula">
-                        \[ Q_r = \left(\frac{|F_{\text{honored}}|}{|F|}\right) \times 100\%, \quad \text{Recognized Photographers } H = |\{ \text{uploader}(f) \mid f \in F_{\text{honored}} \}| \]
+                        \[ \text{Quality Recognition Rate} = \frac{\text{Awarded Photos (Quality Images or Featured Pictures)}}{\text{Total Contest Submissions}} \times 100\% \]
+                        \[ \text{Recognized Photographers} = \text{Distinct Count of Photographers with At Least One Honored Photo} \]
                     </div>
                 </div>
             </div>
@@ -427,66 +430,66 @@
                     <table class="camp-data-table" style="font-size: 0.82rem; margin-top: 8px;">
                         <thead>
                             <tr>
-                                <th style="width: 24%;">Metric / Symbol</th>
-                                <th style="width: 28%;">Formal Definition</th>
+                                <th style="width: 24%;">Metric Name</th>
+                                <th style="width: 32%;">Simple Definition / Ratio</th>
                                 <th>Operational Description &amp; Scope</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>Evaluation Index</strong></td>
-                                <td>\(0.30 S_{\text{scale}} + 0.20 S_{\text{ret}} + 0.20 S_{\text{util}} + 0.10 S_{\text{qual}} + 0.10 S_{\text{exp}} + 0.10 S_{\text{div}}\)</td>
-                                <td>Composite 0–100 campaign evaluation score regularized with Empirical Bayesian shrinkage against regional peers.</td>
+                                <td><strong>YoY Shift &amp; Progression</strong></td>
+                                <td>\(\text{Target Count} - \text{Baseline Count}\)<br>\(\frac{\text{Target} - \text{Baseline}}{\text{Baseline}} \times 100\%\)</td>
+                                <td>Unweighted observational trajectory measuring annual momentum, growth increments, or community contraction without subjective composite scoring.</td>
                             </tr>
                             <tr>
-                                <td><strong>Directional Retention (\(R_{A \to B}\))</strong></td>
-                                <td>\(\frac{|U_A \cap U_B|}{|U_A|} \times 100\%\)</td>
-                                <td>Percentage of distinct uploaders from cohort \(A\) who returned to submit at least one file in subsequent edition \(B\).</td>
+                                <td><strong>Contributor Retention</strong></td>
+                                <td>\(\frac{\text{Returning Contributors}}{\text{Baseline Contributors}} \times 100\%\)</td>
+                                <td>Percentage of distinct uploaders from a baseline edition who returned to submit at least one file in a subsequent edition.</td>
                             </tr>
                             <tr>
-                                <td><strong>Directional Mobility (\(M_{A \to B}\))</strong></td>
-                                <td>\(\frac{|U_A \cap U_B|}{|U_A|} \times 100\%\)</td>
-                                <td>Percentage of contributors from a source contest \(A\) who also participated in a target contest \(B\) in the same country.</td>
+                                <td><strong>Cross-Campaign Mobility</strong></td>
+                                <td>\(\frac{\text{Contributors in Both}}{\text{Source Contest Contributors}} \times 100\%\)</td>
+                                <td>Percentage of contributors from a source contest who also participated in a target contest in the same country.</td>
                             </tr>
                             <tr>
-                                <td><strong>Jaccard Similarity (\(J\))</strong></td>
-                                <td>\(\frac{|U_A \cap U_B|}{|U_A \cup U_B|} \times 100\%\)</td>
+                                <td><strong>Community Overlap (Jaccard)</strong></td>
+                                <td>\(\frac{\text{Shared Contributors}}{\text{Total Unique Contributors Across Both}} \times 100\%\)</td>
                                 <td>Bidirectional community overlap measuring shared participants relative to the joint participant pool.</td>
                             </tr>
                             <tr>
-                                <td><strong>Discrete Gini Index (\(G\))</strong></td>
-                                <td>\(\frac{2 \sum i x_i}{n \sum x_i} - \frac{n + 1}{n}\)</td>
-                                <td>Distribution inequality of media contributions across active photographers on a 0 (equal) to 1 (monopoly) scale.</td>
+                                <td><strong>Equality Index (Gini)</strong></td>
+                                <td>Scale from 0.0 (equal) to 1.0 (concentrated)</td>
+                                <td>Distribution inequality of media contributions across active photographers on an empirical 0 to 1 scale.</td>
                             </tr>
                             <tr>
-                                <td><strong>Top-10% Share (\(P_{10}\))</strong></td>
-                                <td>\(\frac{\sum_{\text{Top } 10\%} x_i}{\sum x_i} \times 100\%\)</td>
+                                <td><strong>Top 10% Contributor Share</strong></td>
+                                <td>\(\frac{\text{Uploads by Top 10\% Photographers}}{\text{Total Submissions}} \times 100\%\)</td>
                                 <td>Share of total submissions uploaded by the most prolific decile of participants (Pareto concentration).</td>
                             </tr>
                             <tr>
-                                <td><strong>Growth Capacity (\(S_{\text{grow}}\))</strong></td>
-                                <td>\(\frac{|U_{\text{target}} \setminus U_{\text{base}}|}{|U_{\text{target}}|} \times 100\%\)</td>
-                                <td>Proportion of target edition uploaders who are first-time entrants relative to the baseline edition.</td>
+                                <td><strong>Newcomer Intake Share</strong></td>
+                                <td>\(\frac{\text{First-Time Contributors}}{\text{Total Active Contributors}} \times 100\%\)</td>
+                                <td>Proportion of target edition uploaders who are first-time entrants relative to earlier recorded editions.</td>
                             </tr>
                             <tr>
-                                <td><strong>Content Utility (\(U_r\))</strong></td>
-                                <td>\(\frac{|F_{\text{in-use}}|}{|F_{\text{total}}|} \times 100\%\)</td>
+                                <td><strong>Content Utility Rate</strong></td>
+                                <td>\(\frac{\text{Uploaded Photos in Active Use}}{\text{Total Submissions}} \times 100\%\)</td>
                                 <td>Proportion of campaign uploads embedded across Wikipedia articles, Wikidata, Wikivoyage, or sister projects.</td>
                             </tr>
                             <tr>
-                                <td><strong>Quality Recognition (\(Q_r\))</strong></td>
-                                <td>\(\frac{|F_{\text{honored}}|}{|F_{\text{total}}|} \times 100\%\)</td>
-                                <td>Proportion of submissions receiving formal Commons designations (Quality Images, Featured Pictures, Valued Images).</td>
+                                <td><strong>Quality Recognition Rate</strong></td>
+                                <td>\(\frac{\text{Awarded Photos (QI or FP)}}{\text{Total Submissions}} \times 100\%\)</td>
+                                <td>Proportion of submissions receiving formal Commons designations (Quality Images, Featured Pictures).</td>
                             </tr>
                             <tr>
-                                <td><strong>Newcomer Influx (\(I_t\))</strong></td>
-                                <td>\(U_t \setminus \bigcup_{j < t} U_j\)</td>
-                                <td>First-time participants in edition \(t\) with no prior upload history in any previous edition of the evaluated contest series.</td>
+                                <td><strong>Newcomer Influx</strong></td>
+                                <td>First-time participants with no prior upload history</td>
+                                <td>First-time participants in an edition with no prior upload history in any previous edition of the evaluated contest series.</td>
                             </tr>
                             <tr>
-                                <td><strong>Cumulative Pool</strong></td>
-                                <td>\(\left|\bigcup_{j \le t} U_j\right|\)</td>
-                                <td>Total unique contributors ever mobilized by the campaign series through edition year \(t\).</td>
+                                <td><strong>Cumulative Contributor Pool</strong></td>
+                                <td>Total unique photographers across all editions</td>
+                                <td>Total distinct individuals ever mobilized by the campaign series through the evaluated edition year.</td>
                             </tr>
                         </tbody>
                     </table>

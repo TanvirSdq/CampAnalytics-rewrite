@@ -49,7 +49,7 @@ Provides empirical, non-imputed visibility into volunteer mobilization, multi-ye
 * **Contributor Retention**: Percentage of baseline-edition participants who returned in the target edition ($R = \frac{|U_t \cap U_{t-1}|}{|U_{t-1}|} \times 100\%$).
 * **Contributor Expansion**: Direct first-time newcomer recruitment yield ($N_t = |U_t \setminus \bigcup_{k < t} U_k|$) alongside net community size progression.
 * **Content Utility**: Downstream encyclopedic utilization across Wikipedia language editions and Wikidata via `prop=globalusage`.
-* **Quality Recognition**: Peer-reviewed Wikimedia Commons distinctions (Quality Images, Featured Pictures, Valued Images).
+* **Quality Recognition**: Community-reviewed Wikimedia Commons distinctions (Quality Images and Featured Pictures).
 * **Contributor Diversity**: Grassroots participation equity measured by inverse top-10% uploader volume concentration.
 
 **Zero-Synthetic Data & Unheld Campaign Policy**:
@@ -97,18 +97,17 @@ Provides empirical, non-imputed visibility into volunteer mobilization, multi-ye
 ### 6. Content Utility (`/utility`, `/api/utility`, `/api/comparative`)
 * **Live Encyclopedic Reuse**: Measures media integration across all Wikipedia language editions, Wikidata, Wikivoyage, and Commons galleries via `prop=globalusage`.
 * **Multi-Country Comparative Reuse**: Compare global utility rates and embed counts across campaign countries over time.
-* **Summary Scorecards**: Displays Global Utility Rate, Total Global Embeds, Unique Articles Reached, and Top Consuming Project.
+* **Summary Indicators**: Displays Global Utility Rate, Total Global Embeds, Unique Articles Reached, and Top Consuming Project.
 * **Live Media Articles Table**: Interactive table with search, column sorting, pagination, and multi-format exporters (CSV, Wikitext, JSON).
 * **Photographer Utilization Leaderboard**: Ranks contributors whose uploads achieve the highest encyclopedic integration.
 
 ### 7. Quality Recognition (`/quality`, `/api/quality`, `/api/comparative`)
-* **Curatorial Peer-Reviewed Status**: Audits uploads for community distinction badges:
+* **Curatorial Distinction Status**: Audits uploads for community distinction badges:
   * **Quality Images (QI)**: Technical excellence verified by Commons reviewers.
   * **Featured Pictures (FP)**: Finest photographic achievements chosen by community consensus.
-  * **Valued Images (VI)**: Most valuable illustrations for encyclopedic subjects.
 * **Multi-Country Comparative Honors**: Longitudinal line charts tracking quality image counts and rates across nations.
 * **Documented Works Gallery**: Gallery with quality badges, contributor attribution, and direct Commons links.
-* **Top Contributing Photographers**: Contributor leaderboard tracking individual award counts (QI, FP, VI).
+* **Top Contributing Photographers**: Contributor leaderboard tracking individual award counts (QI, FP).
 
 ---
 
@@ -146,7 +145,7 @@ All analytical modules provide direct RESTful JSON endpoints for programmatic in
 | `/api/retention` | `GET` | `target_campaigns` (e.g. `wlmde22 wlmde23 wlmde24`) | Computes full pairwise directional retention matrix and participant sets. |
 | `/api/influx` | `GET` | `influx_codes` (e.g. `wlmde20 wlmde21 wlmde22 wlmde23 wlmde24`) | Returns newcomer influx, veteran counts, cumulative pool, and lifecycle profiles. |
 | `/api/utility` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns global usage rates, article embed counts, wiki breakdown, and top utilized photographers. |
-| `/api/quality` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns QI/FP/VI counts, quality rates, documented files, and top photographers leaderboard. |
+| `/api/quality` | `GET` | `target_campaign` (e.g. `wlmde24`) | Returns QI/FP counts, quality rates, documented files, and top photographers leaderboard. |
 
 ### Example Comparative API Request
 
@@ -186,7 +185,7 @@ curl -s "http://localhost:3000/api/comparative?module=influx&event=wlm&countries
        │  • Dual-Axis Influx & Cumulative Pool Generator            │
        │  • Directional Retention Matrix & Cohort Intersections     │
        │  • Content Utility & Quality Recognition Evaluators        │
-       │  • Empirical Bayesian Regional Benchmark Models            │
+       │  • Empirical Regional Peer Benchmark Models (P50 Medians)  │
        │  • In-Memory TTL Cache Layer & Bot Filter                  │
        └──────────────────────────────┬─────────────────────────────┘
                                       │

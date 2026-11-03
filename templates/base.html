@@ -82,7 +82,7 @@
             </div>
             <nav class="site-desktop-nav" aria-label="Main Navigation">
                 <ul class="site-nav-list">
-                    <li><a href="/health" class="site-nav-link {% if mode == 'Health Evaluation' or mode == 'Evaluation' or mode == 'Health' or request.path == '/health' %}active{% endif %}">Evaluation</a></li>
+                    <li><a href="/health" class="site-nav-link {% if mode == 'Event Performance' or mode == 'Performance' or mode == 'Health Evaluation' or mode == 'Evaluation' or mode == 'Health' or request.path == '/health' %}active{% endif %}">Performance</a></li>
                     <li><a href="/retention" class="site-nav-link {% if mode == 'Retention Analytics' or mode == 'Retention' or request.path == '/retention' %}active{% endif %}">Retention</a></li>
                     <li><a href="/influx" class="site-nav-link {% if mode == 'Participant Influx' or mode == 'Influx' or mode == 'New User Influx' or request.path == '/influx' %}active{% endif %}">Influx</a></li>
                     <li><a href="/mobility" class="site-nav-link {% if mode == 'Contributor Mobility' or mode == 'Mobility' or request.path == '/mobility' %}active{% endif %}">Mobility</a></li>
@@ -125,13 +125,13 @@
         </div>
         <div class="mobile-nav-section-label">Analytical Tools Suite</div>
         <nav class="mobile-nav-menu">
-            <a href="/health" class="mobile-nav-item {% if mode == 'Health Evaluation' or mode == 'Evaluation' or mode == 'Health' or request.path == '/health' %}active{% endif %}">
+            <a href="/health" class="mobile-nav-item {% if mode == 'Event Performance' or mode == 'Performance' or mode == 'Health Evaluation' or mode == 'Evaluation' or mode == 'Health' or request.path == '/health' %}active{% endif %}">
                 <div class="mobile-nav-item-icon icon-eval">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
                 </div>
                 <div class="mobile-nav-item-content">
-                    <div class="mobile-nav-item-title">Evaluation</div>
-                    <div class="mobile-nav-item-desc">Campaign vitality &amp; peer benchmarks</div>
+                    <div class="mobile-nav-item-title">Performance</div>
+                    <div class="mobile-nav-item-desc">Campaign performance dynamics &amp; peer baselines</div>
                 </div>
                 <span class="mobile-nav-tag tag-01">01</span>
             </a>
@@ -2017,7 +2017,7 @@
             </div>
             <div class="wikitext-modal-body">
                 <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0 0 10px 0;">
-                    Formatted MediaWiki sortable table markup. Copy and paste directly into Wikimedia grant reports, talk pages, or project dashboards:
+                    Formatted MediaWiki sortable table markup. Copy and paste directly into talk pages, community reports, or project dashboards:
                 </p>
                 <textarea id="wikitext-modal-textarea" class="wikitext-textarea" readonly spellcheck="false"></textarea>
             </div>
@@ -2097,7 +2097,7 @@
             </div>
             <div class="wikitext-modal-body" style="padding: 18px 20px;">
                 <p style="font-size: 0.85rem; color: #54595d; margin: 0 0 14px 0; line-height: 1.5;">
-                    CampTools research data and analytical metrics are open and reusable under CC BY-SA 4.0. Please cite this tool in grant reports, academic publications, or community documentation:
+                    CampTools research data and analytical metrics are open and reusable under CC BY-SA 4.0. Please cite this tool in community reports, academic research, or project documentation:
                 </p>
                 <div class="citation-group" style="margin-bottom: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
