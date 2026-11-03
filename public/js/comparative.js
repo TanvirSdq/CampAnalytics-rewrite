@@ -76,11 +76,11 @@ var CampComparativeSuite = (function () {
       };
     });
 
-    // Check URL hash for initial view (#line, #table, #map)
+    // Check URL hash for initial view (#line, #table)
     var initialView = config.initialView || 'line';
     if (typeof window !== 'undefined' && window.location.hash) {
       var hash = window.location.hash.replace('#', '').toLowerCase();
-      if (hash === 'line' || hash === 'table' || hash === 'map') {
+      if (hash === 'line' || hash === 'table') {
         initialView = hash;
       }
     }
@@ -97,7 +97,7 @@ var CampComparativeSuite = (function () {
     if (typeof window !== 'undefined') {
       window.addEventListener('hashchange', function () {
         var h = window.location.hash.replace('#', '').toLowerCase();
-        if (h === 'line' || h === 'table' || h === 'map') {
+        if (h === 'line' || h === 'table') {
           switchView(h, true);
         }
       });
@@ -125,7 +125,7 @@ var CampComparativeSuite = (function () {
 
   function switchView(viewMode, skipHashUpdate) {
     state.currentView = viewMode;
-    var views = ['line', 'table', 'map'];
+    var views = ['line', 'table'];
     views.forEach(function (v) {
       var container = document.getElementById('comparative-view-' + v);
       var tabBtn = document.getElementById('tab-view-' + v);
