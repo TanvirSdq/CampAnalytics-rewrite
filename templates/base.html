@@ -1422,149 +1422,96 @@
             renderExportReport() {
                 const ta = document.getElementById('export-report-textarea');
                 const rep = window.OVERALL_REPORT_DATA;
-                const d = window.EVALUATION_REPORT_DATA;
-                if (!ta || (!rep && !d)) return;
+                if (!ta || !rep) return;
 
                 const today = new Date().toISOString().split('T')[0];
 
-                if (rep) {
-                    const codeUpper = rep.campaign_code.toUpperCase();
-                    const baseCodeUpper = rep.baseline_code.toUpperCase();
-                    const dims = rep.dimensions || {};
-                    const b = rep.benchmarks || {};
-
-                    if (this.currentReportFormat === 'wikitext') {
-                        let w = `== CampTools Detailed Campaign Report: ${codeUpper} ==\n\n`;
-                        w += `'''Executive Summary:'''\n`;
-                        w += `* '''Target Campaign:''' ${rep.campaign_name} (${codeUpper})\n`;
-                        w += `* '''Country / Territory:''' ${rep.country_name} (${rep.country_code})\n`;
-                        w += `* '''Edition Year:''' ${rep.edition_year}\n`;
-                        w += `* '''Baseline Reference:''' ${baseCodeUpper}\n`;
-                        w += `* '''Regional Benchmark Context:''' ${rep.region}\n`;
-                        w += `* '''Report Date:''' ${today}\n\n`;
-
-                        w += `=== 1. Multi-Dimensional Performance & Velocity Summary ===\n`;
-                        w += `{| class="wikitable sortable"\n`;
-                        w += `! Dimension !! Observed Value !! Baseline (${baseCodeUpper}) !! YoY Delta (Δ) !! Regional Peer Median\n`;
-                        w += `|-\n| Community Scale || ${dims.Scale ? dims.Scale.raw : rep.total_uploaders + ' uploaders'} || ${(dims.Scale && dims.Scale.baseline_val) ? dims.Scale.baseline_val + ' uploaders' : '—'} || ${dims.Scale ? dims.Scale.yoy_delta_formatted : '—'} || ${(dims.Scale && dims.Scale.regional_median) ? dims.Scale.regional_median + ' uploaders' : (b.scale ? Math.round(b.scale) + ' uploaders' : '—')}\n`;
-                        w += `|-\n| Contributor Retention || ${dims.Retention ? (dims.Retention.raw_formatted || dims.Retention.raw) : '—'} || ${(dims.Retention && dims.Retention.baseline_val) ? dims.Retention.baseline_val + ' uploaders' : '—'} || ${dims.Retention ? dims.Retention.yoy_delta_formatted : '—'} || ${b.retention || '—'}%\n`;
-                        w += `|-\n| Newcomer Recruitment || ${dims.Growth ? (dims.Growth.raw_formatted || dims.Growth.raw) : '—'} || ${(dims.Growth && dims.Growth.baseline_val) ? dims.Growth.baseline_val + ' newcomers' : '—'} || ${dims.Growth ? dims.Growth.yoy_delta_formatted : '—'} || ${(dims.Growth && dims.Growth.regional_median) ? dims.Growth.regional_median + ' newcomers' : (b.expansion || b.growth || '—') + ' newcomers'}\n`;
-                        w += `|-\n| Upload Volume || ${dims.Uploads ? dims.Uploads.raw : rep.total_uploads + ' files'} || ${(dims.Uploads && dims.Uploads.baseline_val) ? dims.Uploads.baseline_val + ' files' : '—'} || ${dims.Uploads ? dims.Uploads.yoy_delta_formatted : '—'} || —\n`;
-                        w += `|-\n| Content Utility || ${dims.Usage ? (dims.Usage.raw_formatted || dims.Usage.raw + '%') : '—'} || ${(dims.Usage && dims.Usage.baseline_val) ? dims.Usage.baseline_val + '%' : '—'} || ${dims.Usage ? dims.Usage.yoy_delta_formatted : '—'} || ${b.usage_count ? Math.round(b.usage_count) + ' usages (' + b.usage + '%)' : b.usage + '%'}\n`;
-                        w += `|-\n| Quality Recognition || ${dims.Quality ? (dims.Quality.raw_formatted || dims.Quality.raw + '%') : '—'} || ${(dims.Quality && dims.Quality.baseline_val) ? dims.Quality.baseline_val + '%' : '—'} || ${dims.Quality ? dims.Quality.yoy_delta_formatted : '—'} || ${b.quality_count ? Math.round(b.quality_count) + ' works (' + b.quality + '%)' : b.quality + '%'}\n`;
-                        w += `|-\n| Contributor Diversity || ${dims.Diversity ? (dims.Diversity.raw_formatted || dims.Diversity.raw + '%') : '—'} || ${(dims.Diversity && dims.Diversity.baseline_val) ? dims.Diversity.baseline_val + '%' : '—'} || ${dims.Diversity ? dims.Diversity.yoy_delta_formatted : '—'} || ${b.diversity || '—'}%\n`;
-                        w += `|}\n\n`;
-
-                        w += `=== 2. Participant Influx & Demographic Continuity ===\n`;
-                        w += `* '''Total Evaluated Uploaders:''' ${rep.total_uploaders.toLocaleString()}\n`;
-                        w += `* '''First-Time Newcomers:''' ${rep.newcomer_uploaders.toLocaleString()} (${rep.newcomer_share_pct}% of cohort)\n`;
-                        w += `* '''Returning Contributors:''' ${rep.returning_uploaders.toLocaleString()}\n`;
-                        w += `* '''Prior Baseline Cohort (${baseCodeUpper}):''' ${rep.baseline_uploaders.toLocaleString()} uploaders\n`;
-                        w += `* '''1-Year Contributor Retention Rate:''' '''${rep.retention_rate_pct}%''' (Regional Peer Median: ${b.retention || '—'}%)\n\n`;
-
-                        w += `=== 3. Content Utility & Photographic Quality Footprint ===\n`;
-                        w += `* '''Total Campaign Media Submissions:''' ~${rep.total_uploads.toLocaleString()} files\n`;
-                        w += `* '''Wikipedia Article Usage Rate:''' '''${rep.usage_share_pct}%''' (Regional Peer Median: ${b.usage || '—'}%)\n`;
-                        w += `* '''Estimated Wikipedia Articles Illustrated:''' ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
-                        w += `* '''Quality Images (QI) Share:''' '''${rep.quality_image_share_pct}%''' (Regional Peer Median: ${b.quality || '—'}%)\n`;
-                        w += `* '''Estimated Curated Quality Assets:''' ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
-
-                        w += `=== 4. Contributor Diversity & Production Equity ===\n`;
-                        w += `* '''Top 10% Uploader Share:''' '''${rep.top10_uploader_share_pct}%''' of total volume (Regional Peer Median: ${b.diversity || '—'}%)\n`;
-                        w += `* '''Production Concentration:''' ${rep.top10_uploader_share_pct > 75 ? 'Highly Concentrated' : rep.top10_uploader_share_pct > 50 ? 'Moderately Concentrated' : 'Equitably Distributed'}\n\n`;
-
-                        w += `----\n`;
-                        w += `''Compiled with [https://camptools.toolforge.org CampTools] · Empirical Campaign Analytics on Wikimedia Toolforge.''`;
-                        ta.value = w;
-                    } else {
-                        let m = `# CampTools Detailed Campaign Report: ${codeUpper}\n\n`;
-                        m += `### Executive Summary\n\n`;
-                        m += `- **Target Campaign:** ${rep.campaign_name} (${codeUpper})\n`;
-                        m += `- **Country / Territory:** ${rep.country_name} (${rep.country_code})\n`;
-                        m += `- **Edition Year:** ${rep.edition_year}\n`;
-                        m += `- **Baseline Reference:** ${baseCodeUpper}\n`;
-                        m += `- **Regional Benchmark Context:** ${rep.region}\n`;
-                        m += `- **Report Date:** ${today}\n\n`;
-
-                        m += `### 1. Multi-Dimensional Performance & Velocity Summary\n\n`;
-                        m += `| Dimension | Observed Value | Baseline (${baseCodeUpper}) | YoY Delta (Δ) | Regional Peer Median |\n`;
-                        m += `| :--- | :--- | :--- | :--- | :--- |\n`;
-                        m += `| Community Scale | ${dims.Scale ? dims.Scale.raw : rep.total_uploaders + ' uploaders'} | ${(dims.Scale && dims.Scale.baseline_val) ? dims.Scale.baseline_val + ' uploaders' : '—'} | ${dims.Scale ? dims.Scale.yoy_delta_formatted : '—'} | ${(dims.Scale && dims.Scale.regional_median) ? dims.Scale.regional_median + ' uploaders' : (b.scale ? Math.round(b.scale) + ' uploaders' : '—')} |\n`;
-                        m += `| Contributor Retention | ${dims.Retention ? (dims.Retention.raw_formatted || dims.Retention.raw) : '—'} | ${(dims.Retention && dims.Retention.baseline_val) ? dims.Retention.baseline_val + ' uploaders' : '—'} | ${dims.Retention ? dims.Retention.yoy_delta_formatted : '—'} | ${b.retention || '—'}% |\n`;
-                        m += `| Newcomer Recruitment | ${dims.Growth ? (dims.Growth.raw_formatted || dims.Growth.raw) : '—'} | ${(dims.Growth && dims.Growth.baseline_val) ? dims.Growth.baseline_val + ' newcomers' : '—'} | ${dims.Growth ? dims.Growth.yoy_delta_formatted : '—'} | ${(dims.Growth && dims.Growth.regional_median) ? dims.Growth.regional_median + ' newcomers' : (b.expansion || b.growth || '—') + ' newcomers'} |\n`;
-                        m += `| Upload Volume | ${dims.Uploads ? dims.Uploads.raw : rep.total_uploads + ' files'} | ${(dims.Uploads && dims.Uploads.baseline_val) ? dims.Uploads.baseline_val + ' files' : '—'} | ${dims.Uploads ? dims.Uploads.yoy_delta_formatted : '—'} | — |\n`;
-                        m += `| Content Utility | ${dims.Usage ? (dims.Usage.raw_formatted || dims.Usage.raw + '%') : '—'} | ${(dims.Usage && dims.Usage.baseline_val) ? dims.Usage.baseline_val + '%' : '—'} | ${dims.Usage ? dims.Usage.yoy_delta_formatted : '—'} | ${b.usage_count ? Math.round(b.usage_count) + ' usages (' + b.usage + '%)' : b.usage + '%'} |\n`;
-                        m += `| Quality Recognition | ${dims.Quality ? (dims.Quality.raw_formatted || dims.Quality.raw + '%') : '—'} | ${(dims.Quality && dims.Quality.baseline_val) ? dims.Quality.baseline_val + '%' : '—'} | ${dims.Quality ? dims.Quality.yoy_delta_formatted : '—'} | ${b.quality_count ? Math.round(b.quality_count) + ' works (' + b.quality + '%)' : b.quality + '%'} |\n`;
-                        m += `| Contributor Diversity | ${dims.Diversity ? (dims.Diversity.raw_formatted || dims.Diversity.raw + '%') : '—'} | ${(dims.Diversity && dims.Diversity.baseline_val) ? dims.Diversity.baseline_val + '%' : '—'} | ${dims.Diversity ? dims.Diversity.yoy_delta_formatted : '—'} | ${b.diversity || '—'}% |\n\n`;
-
-                        m += `### 2. Participant Influx & Demographic Continuity\n\n`;
-                        m += `- **Total Evaluated Uploaders:** ${rep.total_uploaders.toLocaleString()}\n`;
-                        m += `- **First-Time Newcomers:** ${rep.newcomer_uploaders.toLocaleString()} (${rep.newcomer_share_pct}% of cohort)\n`;
-                        m += `- **Returning Contributors:** ${rep.returning_uploaders.toLocaleString()}\n`;
-                        m += `- **Prior Baseline Cohort (${baseCodeUpper}):** ${rep.baseline_uploaders.toLocaleString()} uploaders\n`;
-                        m += `- **1-Year Contributor Retention Rate:** **${rep.retention_rate_pct}%** (Regional Peer Median: ${b.retention || '—'}%)\n\n`;
-
-                        m += `### 3. Content Utility & Photographic Quality Footprint\n\n`;
-                        m += `- **Total Campaign Media Submissions:** ~${rep.total_uploads.toLocaleString()} files\n`;
-                        m += `- **Wikipedia Article Usage Rate:** **${rep.usage_share_pct}%** (Regional Peer Median: ${b.usage || '—'}%)\n`;
-                        m += `- **Estimated Wikipedia Articles Illustrated:** ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
-                        m += `- **Quality Images (QI) Share:** **${rep.quality_image_share_pct}%** (Regional Peer Median: ${b.quality || '—'}%)\n`;
-                        m += `- **Estimated Curated Quality Assets:** ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
-
-                        m += `### 4. Contributor Diversity & Production Equity\n\n`;
-                        m += `- **Top 10% Uploader Share:** **${rep.top10_uploader_share_pct}%** of total volume (Regional Peer Median: ${b.diversity || '—'}%)\n`;
-                        m += `- **Production Concentration:** ${rep.top10_uploader_share_pct > 75 ? 'Highly Concentrated' : rep.top10_uploader_share_pct > 50 ? 'Moderately Concentrated' : 'Equitably Distributed'}\n\n`;
-
-                        m += `---\n`;
-                        m += `*Compiled with [CampTools](https://camptools.toolforge.org) · Empirical Campaign Analytics on Wikimedia Toolforge.*`;
-                        ta.value = m;
-                    }
-                    return;
-                }
-
-                // Fallback to minimal report data
-                const targetUpper = d.targetEvent ? d.targetEvent.toUpperCase() : 'CAMPAIGN';
-                const baseStr = d.baselineEvent ? d.baselineEvent.toUpperCase() : 'Prior Year Baseline';
+                const codeUpper = rep.campaign_code.toUpperCase();
+                const baseCodeUpper = rep.baseline_code.toUpperCase();
+                const dims = rep.dimensions || {};
+                const b = rep.benchmarks || {};
 
                 if (this.currentReportFormat === 'wikitext') {
-                    let w = `== CampTools Detailed Campaign Report: ${targetUpper} ==\n\n`;
+                    let w = `== CampTools Detailed Campaign Report: ${codeUpper} ==\n\n`;
                     w += `'''Executive Summary:'''\n`;
-                    w += `* '''Target Campaign:''' ${targetUpper}\n`;
-                    w += `* '''Baseline Reference:''' ${baseStr}\n`;
-                    w += `* '''Regional Framework:''' ${d.region}\n`;
-                    w += `* '''Generated On:''' ${today}\n\n`;
+                    w += `* '''Target Campaign:''' ${rep.campaign_name} (${codeUpper})\n`;
+                    w += `* '''Country / Territory:''' ${rep.country_name} (${rep.country_code})\n`;
+                    w += `* '''Edition Year:''' ${rep.edition_year}\n`;
+                    w += `* '''Baseline Reference:''' ${baseCodeUpper}\n`;
+                    w += `* '''Regional Benchmark Context:''' ${rep.region}\n`;
+                    w += `* '''Report Date:''' ${today}\n\n`;
 
-                    w += `=== Performance Dimensions ===\n`;
+                    w += `=== 1. Multi-Dimensional Performance & Velocity Summary ===\n`;
                     w += `{| class="wikitable sortable"\n`;
-                    w += `! Dimension !! Observed !! Regional Norm !! YoY Delta\n`;
-                    w += `|-\n| Retention Index || ${d.metrics.retention.raw} || ${d.metrics.retention.benchmark}% || ${d.metrics.retention.yoy_delta_formatted || '—'}\n`;
-                    w += `|-\n| Contributor Expansion || ${d.metrics.growth.raw} || ${d.metrics.growth.benchmark} newcomers || ${d.metrics.growth.yoy_delta_formatted || '—'}\n`;
-                    w += `|-\n| Community Scale || ${d.metrics.scale ? d.metrics.scale.raw : d.total_uploaders + ' uploaders'} || ${d.benchmarks.scale ? Math.round(d.benchmarks.scale) + ' uploaders' : '—'} || ${d.metrics.scale ? d.metrics.scale.yoy_delta_formatted : '—'}\n`;
-                    w += `|-\n| Content Utility || ${d.metrics.usage.raw_formatted || d.metrics.usage.raw} || ${d.metrics.usage.benchmark}% || ${d.metrics.usage.yoy_delta_formatted || '—'}\n`;
-                    w += `|-\n| Quality Recognition || ${d.metrics.quality.raw_formatted || d.metrics.quality.raw} || ${d.metrics.quality.benchmark}% || ${d.metrics.quality.yoy_delta_formatted || '—'}\n`;
-                    w += `|-\n| Contributor Diversity || ${d.metrics.diversity.raw} || ${d.metrics.diversity.benchmark}% || ${d.metrics.diversity.yoy_delta_formatted || '—'}\n`;
+                    w += `! Dimension !! Observed Value !! Baseline (${baseCodeUpper}) !! YoY Delta (Δ) !! Regional Peer Median\n`;
+                    w += `|-\n| Community Scale || ${dims.Scale ? dims.Scale.raw : rep.total_uploaders + ' uploaders'} || ${(dims.Scale && dims.Scale.baseline_val) ? dims.Scale.baseline_val + ' uploaders' : '—'} || ${dims.Scale ? dims.Scale.yoy_delta_formatted : '—'} || ${(dims.Scale && dims.Scale.regional_median) ? dims.Scale.regional_median + ' uploaders' : (b.scale ? Math.round(b.scale) + ' uploaders' : '—')}\n`;
+                    w += `|-\n| Contributor Retention || ${dims.Retention ? (dims.Retention.raw_formatted || dims.Retention.raw) : '—'} || ${(dims.Retention && dims.Retention.baseline_val) ? dims.Retention.baseline_val + ' uploaders' : '—'} || ${dims.Retention ? dims.Retention.yoy_delta_formatted : '—'} || ${b.retention || '—'}%\n`;
+                    w += `|-\n| Newcomer Recruitment || ${dims.Growth ? (dims.Growth.raw_formatted || dims.Growth.raw) : '—'} || ${(dims.Growth && dims.Growth.baseline_val) ? dims.Growth.baseline_val + ' newcomers' : '—'} || ${dims.Growth ? dims.Growth.yoy_delta_formatted : '—'} || ${(dims.Growth && dims.Growth.regional_median) ? dims.Growth.regional_median + ' newcomers' : (b.expansion || b.growth || '—') + ' newcomers'}\n`;
+                    w += `|-\n| Upload Volume || ${dims.Uploads ? dims.Uploads.raw : rep.total_uploads + ' files'} || ${(dims.Uploads && dims.Uploads.baseline_val) ? dims.Uploads.baseline_val + ' files' : '—'} || ${dims.Uploads ? dims.Uploads.yoy_delta_formatted : '—'} || —\n`;
+                    w += `|-\n| Content Utility || ${dims.Usage ? (dims.Usage.raw_formatted || dims.Usage.raw + '%') : '—'} || ${(dims.Usage && dims.Usage.baseline_val) ? dims.Usage.baseline_val + '%' : '—'} || ${dims.Usage ? dims.Usage.yoy_delta_formatted : '—'} || ${b.usage_count ? Math.round(b.usage_count) + ' usages (' + b.usage + '%)' : b.usage + '%'}\n`;
+                    w += `|-\n| Quality Recognition || ${dims.Quality ? (dims.Quality.raw_formatted || dims.Quality.raw + '%') : '—'} || ${(dims.Quality && dims.Quality.baseline_val) ? dims.Quality.baseline_val + '%' : '—'} || ${dims.Quality ? dims.Quality.yoy_delta_formatted : '—'} || ${b.quality_count ? Math.round(b.quality_count) + ' works (' + b.quality + '%)' : b.quality + '%'}\n`;
+                    w += `|-\n| Contributor Diversity || ${dims.Diversity ? (dims.Diversity.raw_formatted || dims.Diversity.raw + '%') : '—'} || ${(dims.Diversity && dims.Diversity.baseline_val) ? dims.Diversity.baseline_val + '%' : '—'} || ${dims.Diversity ? dims.Diversity.yoy_delta_formatted : '—'} || ${b.diversity || '—'}%\n`;
                     w += `|}\n\n`;
+
+                    w += `=== 2. Participant Influx & Demographic Continuity ===\n`;
+                    w += `* '''Total Evaluated Uploaders:''' ${rep.total_uploaders.toLocaleString()}\n`;
+                    w += `* '''First-Time Newcomers:''' ${rep.newcomer_uploaders.toLocaleString()} (${rep.newcomer_share_pct}% of cohort)\n`;
+                    w += `* '''Returning Contributors:''' ${rep.returning_uploaders.toLocaleString()}\n`;
+                    w += `* '''Prior Baseline Cohort (${baseCodeUpper}):''' ${rep.baseline_uploaders.toLocaleString()} uploaders\n`;
+                    w += `* '''1-Year Contributor Retention Rate:''' '''${rep.retention_rate_pct}%''' (Regional Peer Median: ${b.retention || '—'}%)\n\n`;
+
+                    w += `=== 3. Content Utility & Photographic Quality Footprint ===\n`;
+                    w += `* '''Total Campaign Media Submissions:''' ~${rep.total_uploads.toLocaleString()} files\n`;
+                    w += `* '''Wikipedia Article Usage Rate:''' '''${rep.usage_share_pct}%''' (Regional Peer Median: ${b.usage || '—'}%)\n`;
+                    w += `* '''Estimated Wikipedia Articles Illustrated:''' ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
+                    w += `* '''Quality Images (QI) Share:''' '''${rep.quality_image_share_pct}%''' (Regional Peer Median: ${b.quality || '—'}%)\n`;
+                    w += `* '''Estimated Curated Quality Assets:''' ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
+
+                    w += `=== 4. Contributor Diversity & Production Equity ===\n`;
+                    w += `* '''Top 10% Uploader Share:''' '''${rep.top10_uploader_share_pct}%''' of total volume (Regional Peer Median: ${b.diversity || '—'}%)\n`;
+                    w += `* '''Production Concentration:''' ${rep.top10_uploader_share_pct > 75 ? 'Highly Concentrated' : rep.top10_uploader_share_pct > 50 ? 'Moderately Concentrated' : 'Equitably Distributed'}\n\n`;
 
                     w += `----\n`;
                     w += `''Compiled with [https://camptools.toolforge.org CampTools] · Empirical Campaign Analytics on Wikimedia Toolforge.''`;
                     ta.value = w;
                 } else {
-                    let m = `# CampTools Detailed Campaign Report: ${targetUpper}\n\n`;
+                    let m = `# CampTools Detailed Campaign Report: ${codeUpper}\n\n`;
                     m += `### Executive Summary\n\n`;
-                    m += `- **Target Campaign:** ${targetUpper}\n`;
-                    m += `- **Baseline Reference:** ${baseStr}\n`;
-                    m += `- **Regional Framework:** ${d.region}\n`;
-                    m += `- **Generated On:** ${today}\n\n`;
+                    m += `- **Target Campaign:** ${rep.campaign_name} (${codeUpper})\n`;
+                    m += `- **Country / Territory:** ${rep.country_name} (${rep.country_code})\n`;
+                    m += `- **Edition Year:** ${rep.edition_year}\n`;
+                    m += `- **Baseline Reference:** ${baseCodeUpper}\n`;
+                    m += `- **Regional Benchmark Context:** ${rep.region}\n`;
+                    m += `- **Report Date:** ${today}\n\n`;
 
-                    m += `### Performance Dimensions\n\n`;
-                    m += `| Dimension | Observed | Regional Norm | YoY Delta |\n`;
-                    m += `| :--- | :--- | :--- | :--- |\n`;
-                    m += `| Retention Index | ${d.metrics.retention.raw} | ${d.metrics.retention.benchmark}% | ${d.metrics.retention.yoy_delta_formatted || '—'} |\n`;
-                    m += `| Contributor Expansion | ${d.metrics.growth.raw} | ${d.metrics.growth.benchmark} newcomers | ${d.metrics.growth.yoy_delta_formatted || '—'} |\n`;
-                    m += `| Community Scale | ${d.metrics.scale ? d.metrics.scale.raw : d.total_uploaders + ' uploaders'} | ${d.benchmarks.scale ? Math.round(d.benchmarks.scale) + ' uploaders' : '—'} | ${d.metrics.scale ? d.metrics.scale.yoy_delta_formatted : '—'} |\n`;
-                    m += `| Content Utility | ${d.metrics.usage.raw_formatted || d.metrics.usage.raw} | ${d.metrics.usage.benchmark}% | ${d.metrics.usage.yoy_delta_formatted || '—'} |\n`;
-                    m += `| Quality Recognition | ${d.metrics.quality.raw_formatted || d.metrics.quality.raw} | ${d.metrics.quality.benchmark}% | ${d.metrics.quality.yoy_delta_formatted || '—'} |\n`;
-                    m += `| Contributor Diversity | ${d.metrics.diversity.raw} | ${d.metrics.diversity.benchmark}% | ${d.metrics.diversity.yoy_delta_formatted || '—'} |\n\n`;
+                    m += `### 1. Multi-Dimensional Performance & Velocity Summary\n\n`;
+                    m += `| Dimension | Observed Value | Baseline (${baseCodeUpper}) | YoY Delta (Δ) | Regional Peer Median |\n`;
+                    m += `| :--- | :--- | :--- | :--- | :--- |\n`;
+                    m += `| Community Scale | ${dims.Scale ? dims.Scale.raw : rep.total_uploaders + ' uploaders'} | ${(dims.Scale && dims.Scale.baseline_val) ? dims.Scale.baseline_val + ' uploaders' : '—'} | ${dims.Scale ? dims.Scale.yoy_delta_formatted : '—'} | ${(dims.Scale && dims.Scale.regional_median) ? dims.Scale.regional_median + ' uploaders' : (b.scale ? Math.round(b.scale) + ' uploaders' : '—')} |\n`;
+                    m += `| Contributor Retention | ${dims.Retention ? (dims.Retention.raw_formatted || dims.Retention.raw) : '—'} | ${(dims.Retention && dims.Retention.baseline_val) ? dims.Retention.baseline_val + ' uploaders' : '—'} | ${dims.Retention ? dims.Retention.yoy_delta_formatted : '—'} | ${b.retention || '—'}% |\n`;
+                    m += `| Newcomer Recruitment | ${dims.Growth ? (dims.Growth.raw_formatted || dims.Growth.raw) : '—'} | ${(dims.Growth && dims.Growth.baseline_val) ? dims.Growth.baseline_val + ' newcomers' : '—'} | ${dims.Growth ? dims.Growth.yoy_delta_formatted : '—'} | ${(dims.Growth && dims.Growth.regional_median) ? dims.Growth.regional_median + ' newcomers' : (b.expansion || b.growth || '—') + ' newcomers'} |\n`;
+                    m += `| Upload Volume | ${dims.Uploads ? dims.Uploads.raw : rep.total_uploads + ' files'} | ${(dims.Uploads && dims.Uploads.baseline_val) ? dims.Uploads.baseline_val + ' files' : '—'} | ${dims.Uploads ? dims.Uploads.yoy_delta_formatted : '—'} | — |\n`;
+                    m += `| Content Utility | ${dims.Usage ? (dims.Usage.raw_formatted || dims.Usage.raw + '%') : '—'} | ${(dims.Usage && dims.Usage.baseline_val) ? dims.Usage.baseline_val + '%' : '—'} | ${dims.Usage ? dims.Usage.yoy_delta_formatted : '—'} | ${b.usage_count ? Math.round(b.usage_count) + ' usages (' + b.usage + '%)' : b.usage + '%'} |\n`;
+                    m += `| Quality Recognition | ${dims.Quality ? (dims.Quality.raw_formatted || dims.Quality.raw + '%') : '—'} | ${(dims.Quality && dims.Quality.baseline_val) ? dims.Quality.baseline_val + '%' : '—'} | ${dims.Quality ? dims.Quality.yoy_delta_formatted : '—'} | ${b.quality_count ? Math.round(b.quality_count) + ' works (' + b.quality + '%)' : b.quality + '%'} |\n`;
+                    m += `| Contributor Diversity | ${dims.Diversity ? (dims.Diversity.raw_formatted || dims.Diversity.raw + '%') : '—'} | ${(dims.Diversity && dims.Diversity.baseline_val) ? dims.Diversity.baseline_val + '%' : '—'} | ${dims.Diversity ? dims.Diversity.yoy_delta_formatted : '—'} | ${b.diversity || '—'}% |\n\n`;
+
+                    m += `### 2. Participant Influx & Demographic Continuity\n\n`;
+                    m += `- **Total Evaluated Uploaders:** ${rep.total_uploaders.toLocaleString()}\n`;
+                    m += `- **First-Time Newcomers:** ${rep.newcomer_uploaders.toLocaleString()} (${rep.newcomer_share_pct}% of cohort)\n`;
+                    m += `- **Returning Contributors:** ${rep.returning_uploaders.toLocaleString()}\n`;
+                    m += `- **Prior Baseline Cohort (${baseCodeUpper}):** ${rep.baseline_uploaders.toLocaleString()} uploaders\n`;
+                    m += `- **1-Year Contributor Retention Rate:** **${rep.retention_rate_pct}%** (Regional Peer Median: ${b.retention || '—'}%)\n\n`;
+
+                    m += `### 3. Content Utility & Photographic Quality Footprint\n\n`;
+                    m += `- **Total Campaign Media Submissions:** ~${rep.total_uploads.toLocaleString()} files\n`;
+                    m += `- **Wikipedia Article Usage Rate:** **${rep.usage_share_pct}%** (Regional Peer Median: ${b.usage || '—'}%)\n`;
+                    m += `- **Estimated Wikipedia Articles Illustrated:** ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
+                    m += `- **Quality Images (QI) Share:** **${rep.quality_image_share_pct}%** (Regional Peer Median: ${b.quality || '—'}%)\n`;
+                    m += `- **Estimated Curated Quality Assets:** ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
+
+                    m += `### 4. Contributor Diversity & Production Equity\n\n`;
+                    m += `- **Top 10% Uploader Share:** **${rep.top10_uploader_share_pct}%** of total volume (Regional Peer Median: ${b.diversity || '—'}%)\n`;
+                    m += `- **Production Concentration:** ${rep.top10_uploader_share_pct > 75 ? 'Highly Concentrated' : rep.top10_uploader_share_pct > 50 ? 'Moderately Concentrated' : 'Equitably Distributed'}\n\n`;
 
                     m += `---\n`;
                     m += `*Compiled with [CampTools](https://camptools.toolforge.org) · Empirical Campaign Analytics on Wikimedia Toolforge.*`;
@@ -1938,57 +1885,6 @@
                 });
             }
 
-            {% if metrics %}
-            window.EVALUATION_REPORT_DATA = {
-                targetEvent: {{ target_event|tojson }},
-                compMode: {{ comp_mode|tojson }},
-                region: {{ region|tojson }},
-                overallScore: {{ metrics['Overall']|tojson }},
-                metrics: {
-                    retention: {
-                        raw: {{ metrics['Retention']['raw']|tojson }},
-                        benchmark: {{ ("%.1f"|format(metrics['Retention']['benchmark']))|tojson }},
-                        score: {{ ("%.1f"|format(metrics['Retention']['score']))|tojson }},
-                        stars: {{ metrics['Retention']['stars']|tojson }},
-                        weight: '25%'
-                    },
-                    growth: {
-                        raw: {{ metrics['Growth']['raw']|tojson }},
-                        benchmark: {{ ("%.1f"|format(metrics['Growth']['benchmark']))|tojson }},
-                        score: {{ ("%.1f"|format(metrics['Growth']['score']))|tojson }},
-                        stars: {{ metrics['Growth']['stars']|tojson }},
-                        weight: '25%'
-                    },
-                    usage: {
-                        raw: {{ ("%.1f"|format(metrics['Usage']['raw']))|tojson }} + '%',
-                        benchmark: {{ ("%.1f"|format(metrics['Usage']['benchmark']))|tojson }} + '%',
-                        score: {{ ("%.1f"|format(metrics['Usage']['score']))|tojson }},
-                        stars: {{ metrics['Usage']['stars']|tojson }},
-                        weight: '20%'
-                    },
-                    quality: {
-                        raw: {{ ("%.1f"|format(metrics['Quality']['raw']))|tojson }} + '%',
-                        benchmark: {{ ("%.1f"|format(metrics['Quality']['benchmark']))|tojson }} + '%',
-                        score: {{ ("%.1f"|format(metrics['Quality']['score']))|tojson }},
-                        stars: {{ metrics['Quality']['stars']|tojson }},
-                        weight: '15%'
-                    },
-                    diversity: {
-                        raw: {{ ("%.1f"|format(metrics['Diversity']['raw']))|tojson }} + '%',
-                        benchmark: {{ ("%.1f"|format(metrics['Diversity']['benchmark']))|tojson }} + '%',
-                        score: {{ ("%.1f"|format(metrics['Diversity']['score']))|tojson }},
-                        stars: {{ metrics['Diversity']['stars']|tojson }},
-                        weight: '15%'
-                    }
-                },
-                counts: {
-                    target: {{ target_users_count|tojson }},
-                    base: {{ base_users_count|tojson }},
-                    overlap: {{ intersect_users_count|tojson }}
-                },
-                insights: {{ insights|tojson if insights else []|tojson }}
-            };
-            {% endif %}
 
             // Attach dynamic URL sync to form input changes
             document.querySelectorAll('form input, form select').forEach(input => {
@@ -2077,57 +1973,6 @@
         </div>
     </div>
 
-    <!-- Publication Citation Generator Modal -->
-    <div id="citation-modal-overlay" class="wikitext-modal-overlay" style="display: none;" onclick="if(event.target === this) closeCitationModal()">
-        <div class="wikitext-modal" role="dialog" aria-modal="true" aria-labelledby="citation-modal-title" style="max-width: 680px; border-radius: 0;">
-            <div class="wikitext-modal-header" style="border-radius: 0;">
-                <div class="wikitext-modal-title" id="citation-modal-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>
-                    <span>Cite this work</span>
-                </div>
-                <button type="button" class="wikitext-modal-close" onclick="closeCitationModal()" aria-label="Close dialog" style="border-radius: 0;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            <div class="wikitext-modal-body" style="padding: 18px 20px;">
-                <p style="font-size: 0.85rem; color: #54595d; margin: 0 0 14px 0; line-height: 1.5;">
-                    CampTools research data and analytical metrics are open and reusable under CC BY-SA 4.0. Please cite this tool in community reports, academic research, or project documentation:
-                </p>
-                <div class="citation-group" style="margin-bottom: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);">MediaWiki Wikitext</span>
-                        <button type="button" class="btn btn-sm" onclick="copyCitation('wikitext')" style="padding: 2px 8px; font-size: 0.74rem; background: #fff; border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">Copy Wikitext</button>
-                    </div>
-                    <textarea id="citation-wikitext" class="wikitext-textarea" readonly spellcheck="false" style="height: 68px; font-size: 0.8rem;"></textarea>
-                </div>
-                <div class="citation-group" style="margin-bottom: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);">APA (7th Edition)</span>
-                        <button type="button" class="btn btn-sm" onclick="copyCitation('apa')" style="padding: 2px 8px; font-size: 0.74rem; background: #fff; border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">Copy APA</button>
-                    </div>
-                    <textarea id="citation-apa" class="wikitext-textarea" readonly spellcheck="false" style="height: 58px; font-size: 0.8rem;"></textarea>
-                </div>
-                <div class="citation-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);">BibTeX</span>
-                        <button type="button" class="btn btn-sm" onclick="copyCitation('bibtex')" style="padding: 2px 8px; font-size: 0.74rem; background: #fff; border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">Copy BibTeX</button>
-                    </div>
-                    <textarea id="citation-bibtex" class="wikitext-textarea" readonly spellcheck="false" style="height: 90px; font-size: 0.78rem;"></textarea>
-                </div>
-            </div>
-            <div class="wikitext-modal-footer" style="border-radius: 0;">
-                <button type="button" class="btn btn-sm" onclick="closeCitationModal()" style="background: #ffffff; border: 1px solid var(--border-color); color: var(--text-ink); cursor: pointer; border-radius: 0;">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Toast Notification -->
     <div id="camp-toast" class="camp-toast" role="status" aria-live="polite">
@@ -2151,44 +1996,6 @@
             }, 2800);
         }
 
-        function openCitationModal(toolName, path) {
-            const overlay = document.getElementById('citation-modal-overlay');
-            if (!overlay) return;
-            const fullUrl = window.location.origin + (path || window.location.pathname);
-            const today = new Date().toISOString().split('T')[0];
-            const cleanTool = toolName || 'Wikimedia Campaign Analytics';
-
-            const wikitext = '{' + '{cite web |url=' + fullUrl + ' |title=CampTools: ' + cleanTool + ' |publisher=Project Korikath / Toolforge |author=CampTools Contributors |year=2026 |access-date=' + today + '}' + '}';
-            const apa = 'Project Korikath. (2026). CampTools: ' + cleanTool + ' [Interactive data platform]. Wikimedia Toolforge. ' + fullUrl;
-            const bibKey = 'camptools2026_' + cleanTool.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const bibtex = '@misc{' + bibKey + ',\n  author = {Project Korikath},\n  title = {CampTools: ' + cleanTool + '},\n  year = {2026},\n  publisher = {Wikimedia Toolforge},\n  url = {' + fullUrl + '}\n}';
-
-            const elWiki = document.getElementById('citation-wikitext');
-            const elApa = document.getElementById('citation-apa');
-            const elBib = document.getElementById('citation-bibtex');
-            if (elWiki) elWiki.value = wikitext;
-            if (elApa) elApa.value = apa;
-            if (elBib) elBib.value = bibtex;
-
-            overlay.style.display = 'flex';
-        }
-
-        function closeCitationModal() {
-            const overlay = document.getElementById('citation-modal-overlay');
-            if (overlay) overlay.style.display = 'none';
-        }
-
-        function copyCitation(format) {
-            const ta = document.getElementById('citation-' + format);
-            if (!ta) return;
-            navigator.clipboard.writeText(ta.value).then(() => {
-                showCampToast('Citation copied to clipboard');
-            }).catch(() => {
-                ta.select();
-                document.execCommand('copy');
-                showCampToast('Citation copied');
-            });
-        }
 
         function copyPermalink() {
             const url = window.location.href;

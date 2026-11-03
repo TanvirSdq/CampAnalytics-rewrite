@@ -67,7 +67,7 @@ Provides empirical, non-imputed visibility into volunteer mobilization, multi-ye
   $$\text{Retention}(A \to B) = \left( \frac{|U_A \cap U_B|}{|U_A|} \right) \times 100\%$$
 * **Multi-Country Longitudinal Comparison**: Compare retention trajectories across multiple countries side-by-side.
 * **Multi-Cohort Matrices**: Compares multi-year editions across campaigns and countries with color-coded retention cells.
-* **Interactive Views**: Switch seamlessly between **Line** (multi-country time series), **Table** (sortable cohort tables with CSV/Wikitext export), and **Map** (global choropleth projection).
+* **Interactive Views**: Switch seamlessly between **Line** (multi-country time series) and **Table** (sortable cohort tables with CSV/Wikitext export), alongside global choropleth projection and regional heatmap matrices.
 * **Pairwise Heatmaps**: Embedded SVG heatmaps illustrating cross-edition retention transitions.
 
 ### 3. Participant Influx (`/influx`, `/api/influx`, `/api/comparative`)

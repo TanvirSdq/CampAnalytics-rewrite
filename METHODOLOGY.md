@@ -282,7 +282,7 @@ To prevent category fragmentation across international campaigns, CampAnalytics 
 
 ## 11. Boundary & Bias Disclosures
 
-To uphold academic integrity and transparency, the following systemic boundaries and methodological trade-offs are explicitly disclosed:
+To uphold analytical integrity and empirical transparency, the following systemic boundaries and operational trade-offs are explicitly disclosed:
 
 ### 11.1 Retentional Taxonomy Breakage (Organizational Fragmentation)
 Directional retention $R(A \to B)$ relies on the macroscopic categorization topology of Wikimedia Commons as ground truth. If organizers alter target geographic boundaries or campaign naming conventions between editions, trackable cohort continuity is broken. While the framework utilizes linguistic normalization and explicit aliases, undocumented taxonomy breakage is intentionally treated as organizational fragmentation rather than an algorithmic failure.
@@ -296,12 +296,3 @@ While automated *uploader* bots are strictly excluded, algorithmic *consumer* em
 ### 11.4 Valued Images (VI) Category Non-Uniformity
 While Quality Images benefit from standardized, bot-assisted category trees across national campaign editions (e.g., `Category:Quality images from Wiki Loves Monuments 2023 in Germany`), the Commons Valued Images project does not maintain campaign-specific subcategory structures. Empirical verification across major national editions confirms that `Category:Valued images from [Campaign]` yields zero indexed files on Wikimedia Commons. Because Valued Images lack uniform per-campaign category taxonomy, they are excluded from automated campaign harvesting to prevent severe undercounting and false negatives.
 
----
-
-## 12. References and Literature
-
-1. **OECD / European Commission JRC (2008)**. *Handbook on Constructing Composite Indicators: Methodology and User Guide*. OECD Publishing, Paris.
-2. **Halfaker, A., Geiger, R. S., Morgan, J. T., & Riedl, J. (2013)**. The Rise and Decline of an Open Collaboration System: How Wikipedia’s reaction to popularity is causing its decline. *American Behavioral Scientist*, 57(5), 664–688.
-3. **Morgan, J. T., & Halfaker, A. (2018)**. Evaluating the Impact of Wikimedia Community Health Interventions: Methodological Frameworks and Quantitative Models. *Proceedings of the ACM on Human-Computer Interaction (CSCW)*.
-4. **Kittur, A., Chi, E., Pendleton, B. A., Suh, B., & Mytkowicz, T. (2007)**. Power of the Few vs. Wisdom of the Crowd: Wikipedia and the Rise of the Bourgeoisie. *ACM Conference on Human Factors in Computing Systems (CHI)*.
-5. **Wikimedia Foundation Research & Grants Committee (2020–2024)**. *Community Metrics and Impact Reporting Guidelines for Movement Organizers*. Wikimedia Meta-Wiki.

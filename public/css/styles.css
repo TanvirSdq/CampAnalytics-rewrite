@@ -1558,55 +1558,6 @@ table.data-table tfoot td:first-child {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.health-formula-title {
-    font-size: 0.98rem;
-    font-weight: 600;
-    color: var(--nav-teal);
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.health-formula-desc {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 14px;
-    line-height: 1.5;
-}
-
-.health-composite-math {
-    background: var(--card-subtle);
-    border: 1px solid #e2e8f0;
-    border-radius: 0;
-    padding: 14px 18px;
-    text-align: center;
-    font-size: 1.05rem;
-    overflow-x: auto;
-    margin-bottom: 14px;
-}
-
-.health-dimensions-math-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 12px;
-    margin-top: 12px;
-}
-
-.health-dimension-math-item {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: 10px 14px;
-    font-size: 0.82rem;
-}
-
-.health-dimension-math-item strong {
-    display: block;
-    color: var(--text-ink);
-    margin-bottom: 4px;
-    font-size: 0.82rem;
-}
 
 .chart-container {
     background: var(--bg-surface);
@@ -1695,17 +1646,6 @@ table.data-table tfoot td:first-child {
     margin: 8px 0 4px 0;
 }
 
-.scorecard-card-stars {
-    color: var(--star-gold);
-    font-size: 1.1rem;
-    letter-spacing: 2px;
-}
-
-.scorecard-card-score {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: 4px;
-}
 
 /* Diagnostic Insights Callouts */
 .insight-callout {
@@ -3611,15 +3551,6 @@ select.form-control {
     line-height: 1.35;
 }
 
-.scorecard-card-weight {
-    background: #edf2f8 !important;
-    color: #51657d !important;
-}
-
-.scorecard-card-stars {
-    font-size: .92rem;
-    letter-spacing: 1px;
-}
 
 .footprint-strip {
     gap: 8px !important;

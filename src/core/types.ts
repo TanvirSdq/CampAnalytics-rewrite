@@ -65,9 +65,6 @@ export interface HealthMetricDimension {
 }
 
 export interface HealthMetrics {
-  composite_score?: number | null;
-  tier?: string;
-  stars?: [string, number];
   dimensions: Record<string, HealthMetricDimension>;
 }
 
@@ -79,10 +76,6 @@ export interface OverallCampaignReport {
   edition_year: number;
   region: string;
   generated_date: string;
-  composite_score?: number | null;
-  tier?: string;
-  rating_label?: string;
-  stars?: [string, number];
   total_uploaders: number;
   newcomer_uploaders: number;
   returning_uploaders: number;
@@ -136,9 +129,6 @@ export interface HealthEvaluationResult {
   target_users_count: number;
   baseline_users_count: number;
   overlap_users_count: number;
-  composite_score?: number | null;
-  tier?: string;
-  stars?: [string, number];
   dimensions: Record<string, HealthMetricDimension>;
   benchmarks: HealthBenchmarks;
   benchmarks_mean?: HealthBenchmarks;
