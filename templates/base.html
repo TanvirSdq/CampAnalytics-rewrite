@@ -242,27 +242,6 @@
                     if (typeof CampTableSuite.closeExportReportModal === 'function') CampTableSuite.closeExportReportModal();
                     if (typeof CampTableSuite.closeWikitextModal === 'function') CampTableSuite.closeWikitextModal();
                 }
-            } else if (e.key === '/' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName) && !document.activeElement?.isContentEditable) {
-                e.preventDefault();
-                const codeToggle = document.getElementById('health-code-toggle') || document.getElementById('retention-code-toggle');
-                let targetInput = null;
-                if (codeToggle && codeToggle.hasAttribute('open')) {
-                    targetInput = document.getElementById('target_event') || document.getElementById('target_campaigns');
-                }
-                if (!targetInput) {
-                    targetInput = document.getElementById('health_country') ||
-                                  document.getElementById('builder_country') ||
-                                  document.getElementById('influx_country') ||
-                                  document.getElementById('target_event') ||
-                                  document.getElementById('target_campaigns') ||
-                                  document.querySelector('.table-search-input');
-                }
-                if (targetInput) {
-                    targetInput.focus();
-                    if (targetInput.tagName === 'INPUT' && targetInput.type === 'text') {
-                        targetInput.select();
-                    }
-                }
             }
         });
     </script>

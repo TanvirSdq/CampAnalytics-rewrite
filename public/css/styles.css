@@ -6949,19 +6949,7 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     border-color: var(--border-input);
 }
 
-/* Keyboard Shortcut Badge */
-.shortcut-hint {
-    display: inline-block;
-    padding: 1px 5px;
-    font-size: 0.7rem;
-    font-family: monospace;
-    color: var(--text-muted);
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    margin-left: 6px;
-    vertical-align: middle;
-}
+
 
 /* ==========================================================================
    Publication-Grade Executive Print Stylesheet (@media print)
