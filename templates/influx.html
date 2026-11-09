@@ -11,6 +11,7 @@
             <div class="display-panel">
                 <div class="display-panel-header">
                     <span>Influx Parameters</span>
+                    <span class="shortcut-hint" title="Press / to focus selector">/</span>
                 </div>
                 <div class="display-panel-body">
                     <div class="preset-rail">
@@ -391,6 +392,20 @@
                                 </div>
                                 <div style="text-align: center;">
                                     <img id="influx-chart-img" src="{% if chart_b64 and chart_b64.startsWith('data:') %}{{ chart_b64 }}{% else %}data:image/svg+xml;base64,{{ chart_b64 }}{% endif %}" alt="Year-over-Year Contributor Influx Chart" class="chart-img" style="max-height: 480px; width: auto; max-width: 100%; border-radius: 0;">
+                                </div>
+                                <div class="card-provenance-footer">
+                                    <div class="provenance-left">
+                                        <span>Data Provenance:</span>
+                                        <span class="provenance-source">Wikimedia Commons Contributor Influx Log</span>
+                                    </div>
+                                    <div class="provenance-right">
+                                        <button type="button" class="provenance-action-btn" onclick="CampChartSuite.downloadChart('influx-chart-img', 'camptools_influx_{{ influx_country or 'overview' }}{% if influx_yr_start %}_{{ influx_yr_start }}{% if influx_yr_end %}-{{ influx_yr_end }}{% endif %}{% endif %}', 'svg')" title="Download vector SVG">
+                                            <span>Download SVG</span>
+                                        </button>
+                                        <button type="button" class="provenance-action-btn" onclick="CampChartSuite.downloadChart('influx-chart-img', 'camptools_influx_{{ influx_country or 'overview' }}{% if influx_yr_start %}_{{ influx_yr_start }}{% if influx_yr_end %}-{{ influx_yr_end }}{% endif %}{% endif %}', 'png')" title="Download high-resolution PNG">
+                                            <span>Download PNG</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         {% endif %}

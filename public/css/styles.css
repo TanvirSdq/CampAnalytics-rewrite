@@ -6870,6 +6870,100 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
 }
 
 /* ==========================================================================
+   Tabular Numerics & Metric Alignment
+   ========================================================================== */
+.stat-kpi-value,
+.stat-kpi-badge,
+.benchmark-delta-pill,
+.cell-delta,
+.cell-benchmark,
+.camp-telemetry-badge,
+.table-row-counter,
+.table-counter-text,
+.div-pct-chip,
+.scrubber-badge-year,
+.mobility-matrix-val,
+.mobility-matrix-cell,
+.data-table td,
+.wikitable td,
+.camp-data-table td,
+.retention-matrix td {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}
+
+/* ==========================================================================
+   Standardized Data Provenance Footer (Zero Gradients, Square Corners)
+   ========================================================================== */
+.card-provenance-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    margin-top: 14px;
+    background-color: var(--bg-canvas);
+    border-top: 1px solid var(--border-color);
+    border-radius: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.provenance-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.provenance-source {
+    color: var(--text-ink);
+    font-family: var(--font-sans);
+}
+
+.provenance-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.provenance-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-ink);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 0;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.provenance-action-btn:hover {
+    background: var(--bg-subtle);
+    border-color: var(--border-input);
+}
+
+/* Keyboard Shortcut Badge */
+.shortcut-hint {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 0.7rem;
+    font-family: monospace;
+    color: var(--text-muted);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: 0;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* ==========================================================================
    Publication-Grade Executive Print Stylesheet (@media print)
    ========================================================================== */
 @media print {

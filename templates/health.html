@@ -11,6 +11,7 @@
     <div class="display-panel">
         <div class="display-panel-header">
             <span>Campaign Benchmark Parameters</span>
+            <span class="shortcut-hint" title="Press / to focus selector">/</span>
         </div>
                 <div class="display-panel-body">
                     <div class="builder-layout single-column-builder">
@@ -339,6 +340,18 @@
                                 <span style="font-size: 0.75rem; color: #64748b; background: #f8fafc; padding: 3px 8px; border: 1px solid #e2e8f0;">Hover / Click legend to toggle series</span>
                             </div>
                             <div id="chart-longitudinal" style="width: 100%; height: 380px;"></div>
+                            <div class="card-provenance-footer">
+                                <div class="provenance-left">
+                                    <span>Data Provenance:</span>
+                                    <span class="provenance-source">Wikimedia Commons Category API (action=query)</span>
+                                </div>
+                                <div class="provenance-right">
+                                    <button type="button" class="provenance-action-btn" onclick="CampChartSuite.downloadPlotly('chart-longitudinal', 'camptools_longitudinal_trajectory')" title="Download chart image">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        <span>Download PNG</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 2-Column Grid: Cohort Waterfall & Regional Peer Context -->
@@ -352,6 +365,18 @@
                                     </div>
                                 </div>
                                 <div id="chart-cohort-waterfall" style="width: 100%; height: 340px;"></div>
+                                <div class="card-provenance-footer">
+                                    <div class="provenance-left">
+                                        <span>Data Provenance:</span>
+                                        <span class="provenance-source">Cohort Intersection Registry</span>
+                                    </div>
+                                    <div class="provenance-right">
+                                        <button type="button" class="provenance-action-btn" onclick="CampChartSuite.downloadPlotly('chart-cohort-waterfall', 'camptools_cohort_waterfall')" title="Download chart image">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            <span>Download PNG</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Chart 3: Regional Peer Context -->
@@ -371,6 +396,18 @@
                                     </div>
                                 </div>
                                 <div id="chart-peer-context" style="width: 100%; height: 340px;"></div>
+                                <div class="card-provenance-footer">
+                                    <div class="provenance-left">
+                                        <span>Data Provenance:</span>
+                                        <span class="provenance-source">Regional Peer Cluster Medians</span>
+                                    </div>
+                                    <div class="provenance-right">
+                                        <button type="button" class="provenance-action-btn" onclick="CampChartSuite.downloadPlotly('chart-peer-context', 'camptools_regional_peers')" title="Download chart image">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            <span>Download PNG</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
