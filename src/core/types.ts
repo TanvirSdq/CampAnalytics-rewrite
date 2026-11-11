@@ -45,6 +45,7 @@ export interface HealthMetricDimension {
   benchmark?: number;
   benchmark_count?: number;
   baseline_val?: number | null;
+  baseline_count?: number | null;
   yoy_delta?: number | null;
   yoy_delta_pct?: number | null;
   yoy_delta_formatted?: string;
@@ -59,6 +60,7 @@ export interface HealthMetricDimension {
   is_inaugural?: boolean;
   stars?: string;
   count?: number;
+  sampled_count?: number;
   raw_formatted?: string;
   newcomers_count?: number;
   yoy_ratio?: number;
