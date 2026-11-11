@@ -1,9 +1,27 @@
-import test, { describe, it } from 'node:test';
+import test, { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeMobilityAnalytics, isEventScopedForCountry } from '../src/core/analytics.js';
+import { computeMobilityAnalytics, isEventScopedForCountry, primeParticipantCache } from '../src/core/analytics.js';
 import type { MobilityResult } from '../src/core/types.js';
 
 describe('Contributor Mobility Analytics Engine', () => {
+  before(() => {
+    // Germany 2023
+    primeParticipantCache('wlmde23', new Set(['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10']));
+    primeParticipantCache('wlede23', new Set(['u1', 'u2', 'u3', 'u11', 'u12', 'u13']));
+    primeParticipantCache('wlfde23', new Set(['u2', 'u3', 'u4', 'u14', 'u15']));
+
+    // Bangladesh 2023
+    primeParticipantCache('wlmbd23', new Set(['b1', 'b2', 'b3', 'b4']));
+    primeParticipantCache('wlebd23', new Set(['b1', 'b2', 'b5']));
+    primeParticipantCache('wlfbd23', new Set(['b2', 'b6']));
+    primeParticipantCache('wlbbd23', new Set(['b1', 'b2', 'b3', 'b7']));
+
+    // Nigeria 2023
+    primeParticipantCache('wlmng23', new Set(['n1', 'n2', 'n3']));
+    primeParticipantCache('wleng23', new Set(['n1', 'n4']));
+    primeParticipantCache('wlfng23', new Set(['n2', 'n5']));
+    primeParticipantCache('wlang23', new Set(['n1', 'n2', 'n3', 'n6']));
+  });
   it('computes directional mobility matrix for scoped campaigns in Germany', async () => {
     const result: MobilityResult = await computeMobilityAnalytics({
       year: 2023,

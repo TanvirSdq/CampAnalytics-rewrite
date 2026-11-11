@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CampTools</title>
+    <title>{{ PAGE_TITLE | default('CampTools — Campaign Analytics for Wikimedia Commons') }}</title>
     <meta name="description" content="Longitudinal contributor retention, participant influx dynamics, and encyclopedic content utility for Wikimedia campaigns.">
     <meta name="application-name" content="CampTools">
     <meta name="apple-mobile-web-app-title" content="CampTools">
@@ -13,7 +13,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://camptools.toolforge.org/">
     <meta property="og:site_name" content="CampTools">
-    <meta property="og:title" content="CampTools">
+    <meta property="og:title" content="{{ PAGE_TITLE | default('CampTools') }}">
     <meta property="og:description" content="Longitudinal contributor retention, participant influx dynamics, and encyclopedic content utility for Wikimedia campaigns.">
     <meta name="image" content="https://camptools.toolforge.org/images/og-preview.png">
     <meta property="og:image" content="https://camptools.toolforge.org/images/og-preview.png">
@@ -25,7 +25,7 @@
     <meta property="og:image:alt" content="CampTools">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://camptools.toolforge.org/">
-    <meta name="twitter:title" content="CampTools">
+    <meta name="twitter:title" content="{{ PAGE_TITLE | default('CampTools') }}">
     <meta name="twitter:description" content="Longitudinal contributor retention, participant influx dynamics, and encyclopedic content utility for Wikimedia campaigns.">
     <meta name="twitter:image" content="https://camptools.toolforge.org/images/og-preview.png">
     <meta name="twitter:image:alt" content="CampTools">
@@ -345,17 +345,37 @@
             const container = document.getElementById('active-campaign-tokens');
             const targetInput = document.getElementById('target_campaigns');
             if (!container || !targetInput) return;
+            container.textContent = '';
             const codes = targetInput.value.trim().split(/\s+/).filter(Boolean);
             if (codes.length === 0) {
-                container.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">No cohorts selected</span>';
+                const emptySpan = document.createElement('span');
+                emptySpan.style.fontSize = '0.8rem';
+                emptySpan.style.color = 'var(--text-muted)';
+                emptySpan.style.fontStyle = 'italic';
+                emptySpan.textContent = 'No cohorts selected';
+                container.appendChild(emptySpan);
                 return;
             }
-            container.innerHTML = codes.map(c => `
-                <span class="campaign-token" title="Cohort: ${c}">
-                    <span>${c}</span>
-                    <button type="button" class="campaign-token-remove" onclick="removeCampaignToken('${c}')" title="Remove ${c}" aria-label="Remove ${c}">×</button>
-                </span>
-            `).join('');
+            codes.forEach(c => {
+                const token = document.createElement('span');
+                token.className = 'campaign-token';
+                token.title = 'Cohort: ' + c;
+
+                const label = document.createElement('span');
+                label.textContent = c;
+                token.appendChild(label);
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'campaign-token-remove';
+                btn.title = 'Remove ' + c;
+                btn.setAttribute('aria-label', 'Remove ' + c);
+                btn.textContent = '×';
+                btn.onclick = () => removeCampaignToken(c);
+                token.appendChild(btn);
+
+                container.appendChild(token);
+            });
         }
 
         function removeCampaignToken(codeToRemove) {
@@ -1057,11 +1077,13 @@
             state: {},
 
             init() {
-                document.querySelectorAll('.table-interactive-wrapper').forEach((wrap, wrapIdx) => {
-                    const table = wrap.querySelector('table.data-table');
+                const tables = document.querySelectorAll('table.data-table[data-sortable="true"], table.camp-data-table, .table-interactive-wrapper table.data-table');
+                tables.forEach((table, wrapIdx) => {
                     if (!table) return;
                     if (!table.id) table.id = 'camp-table-' + wrapIdx;
                     const tid = table.id;
+                    if (this.state[tid]) return;
+                    const wrap = table.closest('.table-interactive-wrapper') || table.parentElement;
 
                     this.state[tid] = {
                         table: table,
@@ -1090,22 +1112,24 @@
                     });
 
                     // Search input
-                    const searchInput = wrap.querySelector('.table-search-input');
-                    if (searchInput) {
-                        searchInput.addEventListener('input', (e) => {
-                            this.handleSearch(tid, e.target.value);
-                        });
-                    }
+                    if (wrap) {
+                        const searchInput = wrap.querySelector('.table-search-input');
+                        if (searchInput) {
+                            searchInput.addEventListener('input', (e) => {
+                                this.handleSearch(tid, e.target.value);
+                            });
+                        }
 
-                    // Page size selector
-                    const sizeSelect = wrap.querySelector('.table-page-size');
-                    if (sizeSelect) {
-                        sizeSelect.addEventListener('change', (e) => {
-                            const val = e.target.value;
-                            this.state[tid].pageSize = (val === 'all') ? 999999 : parseInt(val, 10);
-                            this.state[tid].currentPage = 1;
-                            this.render(tid);
-                        });
+                        // Page size selector
+                        const sizeSelect = wrap.querySelector('.table-page-size');
+                        if (sizeSelect) {
+                            sizeSelect.addEventListener('change', (e) => {
+                                const val = e.target.value;
+                                this.state[tid].pageSize = (val === 'all') ? 999999 : parseInt(val, 10);
+                                this.state[tid].currentPage = 1;
+                                this.render(tid);
+                            });
+                        }
                     }
 
                     this.render(tid);
@@ -1127,6 +1151,57 @@
                         }
                     });
                 }
+            },
+
+            initTable(tid) {
+                const table = document.getElementById(tid);
+                if (!table) return;
+                const wrap = table.closest('.table-interactive-wrapper') || table.parentElement;
+                this.state[tid] = {
+                    table: table,
+                    wrapper: wrap,
+                    pageSize: 25,
+                    currentPage: 1,
+                    searchQuery: '',
+                    sortCol: null,
+                    sortDir: 'asc',
+                    allRows: Array.from(table.querySelectorAll('tbody tr')),
+                    filteredRows: []
+                };
+                this.state[tid].filteredRows = [...this.state[tid].allRows];
+
+                const headers = table.querySelectorAll('thead th');
+                headers.forEach((th, colIdx) => {
+                    th.setAttribute('data-sortable-col', 'true');
+                    if (!th.querySelector('.sort-indicator')) {
+                        const ind = document.createElement('span');
+                        ind.className = 'sort-indicator';
+                        ind.textContent = ' ⇅';
+                        th.appendChild(ind);
+                    }
+                    th.onclick = () => this.handleSort(tid, colIdx, th);
+                });
+
+                if (wrap) {
+                    const searchInput = wrap.querySelector('.table-search-input');
+                    if (searchInput && !searchInput._bound) {
+                        searchInput._bound = true;
+                        searchInput.addEventListener('input', (e) => {
+                            this.handleSearch(tid, e.target.value);
+                        });
+                    }
+                    const sizeSelect = wrap.querySelector('.table-page-size');
+                    if (sizeSelect && !sizeSelect._bound) {
+                        sizeSelect._bound = true;
+                        sizeSelect.addEventListener('change', (e) => {
+                            const val = e.target.value;
+                            this.state[tid].pageSize = (val === 'all') ? 999999 : parseInt(val, 10);
+                            this.state[tid].currentPage = 1;
+                            this.render(tid);
+                        });
+                    }
+                }
+                this.render(tid);
             },
 
             handleSort(tid, colIdx, th) {
@@ -1411,11 +1486,11 @@
                     ['Cohort Mechanics', 'Prior Baseline Uploaders', rep.baseline_uploaders, 'Photographers', '—', '—', '—'],
                     ['Cohort Mechanics', 'Retained Uploaders', rep.retained_uploaders, 'Photographers', '—', '—', '—'],
                     ['Cohort Mechanics', '1-Year Retention Rate', rep.retention_rate_pct, '%', '—', '—', (b.retention || '—') + '%'],
-                    ['Content Utility', 'Total Campaign Submissions (Est.)', rep.total_uploads, 'Media Files', '—', '—', '—'],
+                    ['Content Utility', 'Total Campaign Submissions', rep.total_uploads, 'Media Files', '—', '—', '—'],
                     ['Content Utility', 'Wikipedia Article Usage Rate', rep.usage_share_pct, '%', '—', '—', (b.usage || '—') + '%'],
-                    ['Content Utility', 'Articles Illustrated (Est.)', rep.articles_illustrated_estimate, 'Articles', '—', '—', '—'],
+                    ['Content Utility', 'Sampled In-Use Images', rep.articles_illustrated_estimate, 'Files', '—', '—', '—'],
                     ['Quality Recognition', 'Quality Images Share', rep.quality_image_share_pct, '%', '—', '—', (b.quality || '—') + '%'],
-                    ['Quality Recognition', 'Curated Quality Assets (Est.)', rep.quality_images_estimate, 'Files', '—', '—', '—'],
+                    ['Quality Recognition', 'Curated Quality Assets', rep.quality_images_estimate, 'Files', '—', '—', '—'],
                     ['Contributor Diversity', 'Top 10% Upload Share', rep.top10_uploader_share_pct, '%', '—', '—', (b.diversity || '—') + '%']
                 ];
 
@@ -1465,11 +1540,11 @@
                     w += `* '''1-Year Contributor Retention Rate:''' '''${rep.retention_rate_pct}%''' (Regional Peer Median: ${b.retention || '—'}%)\n\n`;
 
                     w += `=== 3. Content Utility & Photographic Quality Footprint ===\n`;
-                    w += `* '''Total Campaign Media Submissions:''' ~${rep.total_uploads.toLocaleString()} files\n`;
+                    w += `* '''Total Campaign Media Submissions:''' ${rep.total_uploads.toLocaleString()} files\n`;
                     w += `* '''Wikipedia Article Usage Rate:''' '''${rep.usage_share_pct}%''' (Regional Peer Median: ${b.usage || '—'}%)\n`;
-                    w += `* '''Estimated Wikipedia Articles Illustrated:''' ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
+                    w += `* '''Sampled In-Use Images:''' ${rep.articles_illustrated_estimate.toLocaleString()} files\n`;
                     w += `* '''Quality Images (QI) Share:''' '''${rep.quality_image_share_pct}%''' (Regional Peer Median: ${b.quality || '—'}%)\n`;
-                    w += `* '''Estimated Curated Quality Assets:''' ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
+                    w += `* '''Curated Quality Assets:''' ${rep.quality_images_estimate.toLocaleString()} files\n\n`;
 
                     w += `=== 4. Contributor Diversity & Production Equity ===\n`;
                     w += `* '''Top 10% Uploader Share:''' '''${rep.top10_uploader_share_pct}%''' of total volume (Regional Peer Median: ${b.diversity || '—'}%)\n`;
@@ -1507,11 +1582,11 @@
                     m += `- **1-Year Contributor Retention Rate:** **${rep.retention_rate_pct}%** (Regional Peer Median: ${b.retention || '—'}%)\n\n`;
 
                     m += `### 3. Content Utility & Photographic Quality Footprint\n\n`;
-                    m += `- **Total Campaign Media Submissions:** ~${rep.total_uploads.toLocaleString()} files\n`;
+                    m += `- **Total Campaign Media Submissions:** ${rep.total_uploads.toLocaleString()} files\n`;
                     m += `- **Wikipedia Article Usage Rate:** **${rep.usage_share_pct}%** (Regional Peer Median: ${b.usage || '—'}%)\n`;
-                    m += `- **Estimated Wikipedia Articles Illustrated:** ~${rep.articles_illustrated_estimate.toLocaleString()} articles\n`;
+                    m += `- **Sampled In-Use Images:** ${rep.articles_illustrated_estimate.toLocaleString()} files\n`;
                     m += `- **Quality Images (QI) Share:** **${rep.quality_image_share_pct}%** (Regional Peer Median: ${b.quality || '—'}%)\n`;
-                    m += `- **Estimated Curated Quality Assets:** ~${rep.quality_images_estimate.toLocaleString()} files\n\n`;
+                    m += `- **Curated Quality Assets:** ${rep.quality_images_estimate.toLocaleString()} files\n\n`;
 
                     m += `### 4. Contributor Diversity & Production Equity\n\n`;
                     m += `- **Top 10% Uploader Share:** **${rep.top10_uploader_share_pct}%** of total volume (Regional Peer Median: ${b.diversity || '—'}%)\n`;

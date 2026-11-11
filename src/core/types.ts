@@ -68,6 +68,18 @@ export interface HealthMetrics {
   dimensions: Record<string, HealthMetricDimension>;
 }
 
+export interface GlobalRetentionDataRow {
+  code: string;
+  name: string;
+  occurrences: number;
+  forwardRetention: number;
+  avgRetention: number;
+  medianRetention: number;
+  maxRetention: number;
+  totalParticipants: number;
+  events: string[];
+}
+
 export interface OverallCampaignReport {
   campaign_code: string;
   campaign_name: string;
@@ -313,13 +325,13 @@ export interface MobilityResult {
 // =========================================================================
 
 export interface ContributorTierBreakdown {
-  casual_count: number;      // 1-4 uploads
+  casual_count: number;      // 1 upload
   casual_share: number;
-  regular_count: number;     // 5-24 uploads
+  regular_count: number;     // 2-5 uploads
   regular_share: number;
-  active_count: number;      // 25-99 uploads
+  active_count: number;      // 6-20 uploads
   active_share: number;
-  power_count: number;       // 100+ uploads
+  power_count: number;       // 21+ uploads
   power_share: number;
 }
 

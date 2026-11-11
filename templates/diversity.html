@@ -88,12 +88,6 @@
     </div>
 </form>
 
-{% if error %}
-    <div class="alert alert-danger" style="margin-top: 16px; border-radius: 0;">
-        <strong>Error:</strong> {{ error }}
-    </div>
-{% endif %}
-
 {% if not diversity_result and not error and not comparative_result %}
     <div class="empty-state-panel" style="margin-top: 20px; padding: 32px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 0;">
         <div class="empty-state-text">Configure campaign type, country, and year range above to evaluate contributor diversity and upload concentration</div>
@@ -188,22 +182,22 @@
                     </div>
                     <div class="tier-bar-track">
                         {% if rec.tiers.casual_share > 0 %}
-                            <div class="tier-bar-seg tier-casual" style="width: {{ rec.tiers.casual_share }}%;" title="Casual (1–4 uploads): {{ rec.tiers.casual_count }} users ({{ rec.tiers.casual_share }}%)">
+                            <div class="tier-bar-seg tier-casual" style="width: {{ rec.tiers.casual_share }}%;" title="Casual (1 upload): {{ rec.tiers.casual_count }} users ({{ rec.tiers.casual_share }}%)">
                                 {% if rec.tiers.casual_share >= 10 %}{{ rec.tiers.casual_share }}%{% endif %}
                             </div>
                         {% endif %}
                         {% if rec.tiers.regular_share > 0 %}
-                            <div class="tier-bar-seg tier-regular" style="width: {{ rec.tiers.regular_share }}%;" title="Regular (5–24 uploads): {{ rec.tiers.regular_count }} users ({{ rec.tiers.regular_share }}%)">
+                            <div class="tier-bar-seg tier-regular" style="width: {{ rec.tiers.regular_share }}%;" title="Regular (2–5 uploads): {{ rec.tiers.regular_count }} users ({{ rec.tiers.regular_share }}%)">
                                 {% if rec.tiers.regular_share >= 8 %}{{ rec.tiers.regular_share }}%{% endif %}
                             </div>
                         {% endif %}
                         {% if rec.tiers.active_share > 0 %}
-                            <div class="tier-bar-seg tier-active" style="width: {{ rec.tiers.active_share }}%;" title="Active (25–99 uploads): {{ rec.tiers.active_count }} users ({{ rec.tiers.active_share }}%)">
+                            <div class="tier-bar-seg tier-active" style="width: {{ rec.tiers.active_share }}%;" title="Active (6–20 uploads): {{ rec.tiers.active_count }} users ({{ rec.tiers.active_share }}%)">
                                 {% if rec.tiers.active_share >= 8 %}{{ rec.tiers.active_share }}%{% endif %}
                             </div>
                         {% endif %}
                         {% if rec.tiers.power_share > 0 %}
-                            <div class="tier-bar-seg tier-power" style="width: {{ rec.tiers.power_share }}%;" title="Power (100+ uploads): {{ rec.tiers.power_count }} users ({{ rec.tiers.power_share }}%)">
+                            <div class="tier-bar-seg tier-power" style="width: {{ rec.tiers.power_share }}%;" title="Power (21+ uploads): {{ rec.tiers.power_count }} users ({{ rec.tiers.power_share }}%)">
                                 {% if rec.tiers.power_share >= 6 %}{{ rec.tiers.power_share }}%{% endif %}
                             </div>
                         {% endif %}
@@ -215,19 +209,19 @@
             <div class="tier-legend">
                 <div class="tier-legend-item">
                     <div class="tier-legend-color tier-casual"></div>
-                    <span><strong>Casual</strong> (1–4 uploads)</span>
+                    <span><strong>Casual</strong> (1 upload)</span>
                 </div>
                 <div class="tier-legend-item">
                     <div class="tier-legend-color tier-regular"></div>
-                    <span><strong>Regular</strong> (5–24 uploads)</span>
+                    <span><strong>Regular</strong> (2–5 uploads)</span>
                 </div>
                 <div class="tier-legend-item">
                     <div class="tier-legend-color tier-active"></div>
-                    <span><strong>Active</strong> (25–99 uploads)</span>
+                    <span><strong>Active</strong> (6–20 uploads)</span>
                 </div>
                 <div class="tier-legend-item">
                     <div class="tier-legend-color tier-power"></div>
-                    <span><strong>Power</strong> (100+ uploads)</span>
+                    <span><strong>Power</strong> (21+ uploads)</span>
                 </div>
             </div>
         </div>
@@ -301,7 +295,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="camp-data-table" id="diversity-data-table">
+                <table class="camp-data-table" id="diversity-data-table" data-sortable="true">
                     <thead>
                         <tr>
                             <th>Year</th>
@@ -311,10 +305,10 @@
                             <th style="text-align: right;">Gini Coefficient</th>
                             <th style="text-align: right;">Top 10% Share</th>
                             <th style="text-align: right;">Top 20% Share</th>
-                            <th style="text-align: right;">Casual (1–4)</th>
-                            <th style="text-align: right;">Regular (5–24)</th>
-                            <th style="text-align: right;">Active (25–99)</th>
-                            <th style="text-align: right;">Power (100+)</th>
+                            <th style="text-align: right;">Casual (1)</th>
+                            <th style="text-align: right;">Regular (2–5)</th>
+                            <th style="text-align: right;">Active (6–20)</th>
+                            <th style="text-align: right;">Power (21+)</th>
                         </tr>
                     </thead>
                     <tbody>

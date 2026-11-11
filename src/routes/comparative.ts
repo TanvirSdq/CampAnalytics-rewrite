@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { computeComparativeAnalytics } from '../core/analytics.js';
-import { parseCountryList } from '../core/utils.js';
+import { parseCountryList, asScalarString } from '../core/utils.js';
 
 const router = Router();
 
 export async function handleComparativeApi(req: Request, res: Response): Promise<void> {
-  const moduleParam = ((req.query.module || 'influx') as string).trim().toLowerCase();
+  const moduleParam = asScalarString(req.query.module, 'influx').trim().toLowerCase();
   if (!['influx', 'retention', 'quality', 'utility', 'diversity', 'mobility'].includes(moduleParam)) {
     res.status(400).json({
       error: `Invalid module '${moduleParam}'. Supported modules: influx, retention, quality, utility, diversity, mobility.`
@@ -13,13 +13,13 @@ export async function handleComparativeApi(req: Request, res: Response): Promise
     return;
   }
 
-  const eventType = ((req.query.event_type || req.query.eventType) as string || 'wlm').trim().toLowerCase();
+  const eventType = asScalarString(req.query.event_type || req.query.eventType, 'wlm').trim().toLowerCase();
   const rawCountries = req.query.countries || req.query.country_codes || req.query.countryCodes;
   const countryCodes = parseCountryList(rawCountries);
 
-  const yrStart = parseInt((req.query.start_year || req.query.startYear || req.query.yr_start) as string, 10);
-  const yrEnd = parseInt((req.query.end_year || req.query.endYear || req.query.yr_end) as string, 10);
-  const metricKey = ((req.query.metric || req.query.metric_key || req.query.metricKey) as string || '').trim();
+  const yrStart = parseInt(asScalarString(req.query.start_year || req.query.startYear || req.query.yr_start), 10);
+  const yrEnd = parseInt(asScalarString(req.query.end_year || req.query.endYear || req.query.yr_end), 10);
+  const metricKey = asScalarString(req.query.metric || req.query.metric_key || req.query.metricKey).trim();
 
   try {
     const result = await computeComparativeAnalytics({
@@ -32,7 +32,8 @@ export async function handleComparativeApi(req: Request, res: Response): Promise
     });
     res.json(result);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Comparative API error:', err);
+    res.status(500).json({ error: 'An internal error occurred while processing the comparative request.' });
   }
 }
 

@@ -64,12 +64,6 @@
     </div>
 </form>
 
-{% if error %}
-    <div class="alert alert-danger" style="margin-top: 16px; border-radius: 0;">
-        <strong>Error:</strong> {{ error }}
-    </div>
-{% endif %}
-
 {% if not mobility_result and not error %}
     <div class="empty-state-panel" style="margin-top: 20px; padding: 32px 20px; text-align: center; background: #ffffff; border: 1px dashed var(--border-color); border-radius: 0;">
         <div class="empty-state-text">Select a country and year above to evaluate cross-campaign contributor mobility and overlap</div>

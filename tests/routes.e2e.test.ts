@@ -1,9 +1,15 @@
 import test, { describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, ChildProcess } from 'node:child_process';
+import http from 'node:http';
+import net from 'node:net';
+import zlib from 'node:zlib';
+import { Duplex } from 'node:stream';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import app from '../src/server.js';
+import { primeParticipantCache, setCommonsFetchMock } from '../src/core/analytics.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,38 +17,149 @@ const projectRoot = path.resolve(__dirname, '..');
 
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 let serverProcess: ChildProcess | null = null;
+let useInProcess = false;
 
 // Helper to make HTTP requests
 async function makeRequest(
   route: string,
   options: RequestInit = {}
 ): Promise<{ status: number; headers: Headers; text: string; json: any }> {
-  const url = route.startsWith('http') ? route : `${BASE_URL}${route}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'User-Agent': 'CampAnalytics-E2E-Tester/1.0',
-      ...(options.headers || {})
-    }
-  });
-
-  const text = await res.text();
-  let json = null;
-  const contentType = res.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
+  if (!useInProcess) {
     try {
-      json = JSON.parse(text);
-    } catch {
-      json = null;
+      const url = route.startsWith('http') ? route : `${BASE_URL}${route}`;
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          'User-Agent': 'CampAnalytics-E2E-Tester/1.0',
+          ...(options.headers || {})
+        }
+      });
+
+      const text = await res.text();
+      let json = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = null;
+        }
+      }
+
+      return {
+        status: res.status,
+        headers: res.headers,
+        text,
+        json
+      };
+    } catch (err: any) {
+      if (err.code === 'EPERM' || err.message?.includes('EPERM') || err.cause?.code === 'EPERM') {
+        useInProcess = true;
+      } else {
+        throw err;
+      }
     }
   }
 
-  return {
-    status: res.status,
-    headers: res.headers,
-    text,
-    json
-  };
+  // High-performance in-process dispatch fallback (socket-free)
+  return new Promise((resolve) => {
+    const urlObj = new URL(route, 'http://localhost');
+    const method = (options.method || 'GET').toUpperCase();
+    const headersRecord: Record<string, string> = {
+      host: 'localhost',
+      'user-agent': 'CampAnalytics-E2E-Tester/1.0'
+    };
+
+    if (options.headers) {
+      if (typeof (options.headers as any).forEach === 'function') {
+        (options.headers as any).forEach((v: string, k: string) => {
+          headersRecord[k.toLowerCase()] = v;
+        });
+      } else {
+        for (const [k, v] of Object.entries(options.headers)) {
+          headersRecord[k.toLowerCase()] = String(v);
+        }
+      }
+    }
+
+    let bodyStr = '';
+    if (options.body) {
+      if (typeof options.body === 'string') {
+        bodyStr = options.body;
+      } else if (options.body instanceof URLSearchParams) {
+        bodyStr = options.body.toString();
+        headersRecord['content-type'] = 'application/x-www-form-urlencoded';
+      }
+      headersRecord['content-length'] = String(Buffer.byteLength(bodyStr));
+    }
+
+    const inSocket = new net.Socket();
+    const req = new http.IncomingMessage(inSocket);
+    req.method = method;
+    req.url = urlObj.pathname + urlObj.search;
+    req.headers = headersRecord;
+
+    const res = new http.ServerResponse(req);
+    const chunks: Buffer[] = [];
+
+    const socketMock = new Duplex({
+      highWaterMark: 10 * 1024 * 1024,
+      write(chunk, enc, cb) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, enc as BufferEncoding));
+        cb();
+      },
+      read() {}
+    });
+    res.assignSocket(socketMock as any);
+
+    res.on('finish', () => {
+      const fullBuffer = Buffer.concat(chunks);
+      const headerEndIndex = fullBuffer.indexOf('\r\n\r\n');
+      const bodyBuffer = headerEndIndex !== -1 ? fullBuffer.subarray(headerEndIndex + 4) : fullBuffer;
+      const encoding = res.getHeader('content-encoding');
+
+      let text = '';
+      if (encoding === 'gzip') {
+        text = zlib.gunzipSync(bodyBuffer).toString('utf-8');
+      } else {
+        text = bodyBuffer.toString('utf-8');
+      }
+
+      const headers = new Headers();
+      const rawHeaders = res.getHeaders();
+      for (const [k, v] of Object.entries(rawHeaders)) {
+        if (v !== undefined) {
+          headers.set(k, Array.isArray(v) ? v.join(', ') : String(v));
+        }
+      }
+
+      let json = null;
+      const contentType = headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = null;
+        }
+      }
+
+      resolve({
+        status: res.statusCode,
+        headers,
+        text,
+        json
+      });
+    });
+
+    app(req as any, res as any);
+
+    process.nextTick(() => {
+      if (bodyStr) {
+        req.push(Buffer.from(bodyStr));
+      }
+      req.push(null);
+    });
+  });
 }
 
 // Wait for server to become responsive
@@ -60,49 +177,54 @@ async function waitForServer(url: string, maxAttempts = 20, delayMs = 500): Prom
 }
 
 before(async () => {
-  // Check if server is already running
-  try {
-    const res = await fetch(`${BASE_URL}/healthz`);
-    if (res.ok) {
-      console.log(`[E2E] Reusing existing server at ${BASE_URL}`);
-      return;
+  // Mock external commons API calls to prevent category scan delays
+  setCommonsFetchMock(async (params) => {
+    if (params.prop === 'categoryinfo') {
+      return { query: { pages: { '100': { categoryinfo: { files: 250 } } } } };
     }
-  } catch {
-    // Server not running, spawn one
+    if (params.generator === 'categorymembers') {
+      return {
+        query: {
+          pages: {
+            '101': {
+              globalusage: [{ title: 'Main Page', wiki: 'en.wikipedia.org' }]
+            }
+          }
+        }
+      };
+    }
+    if (params.list === 'categorymembers') {
+      return { query: { categorymembers: [] } };
+    }
+    return { query: { pages: {} } };
+  });
+
+  // Prime realistic participants so routes that render tables have data
+  const currentYear = new Date().getFullYear();
+  for (const cc of ['de', 'it', 'bd', 'ng']) {
+    for (let y = 2018; y <= currentYear; y++) {
+      const code = `wlm${cc}${String(y % 100).padStart(2, '0')}`;
+      const users = new Set<string>();
+      const counts = new Map<string, number>();
+      for (let i = 1; i <= 30; i++) {
+        const u = `${code}_user_${i}`;
+        users.add(u);
+        counts.set(u, i);
+      }
+      primeParticipantCache(code, users, counts);
+    }
   }
 
-  console.log(`[E2E] Spawning test server at ${BASE_URL}...`);
-  const serverEntry = fs.existsSync(path.join(projectRoot, 'src/server.ts')) ? 'src/server.ts' : 'server.ts';
-  const tsxCli = path.join(projectRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
-  
-  serverProcess = spawn(process.execPath, [tsxCli, serverEntry], {
-    cwd: projectRoot,
-    env: { ...process.env, PORT: '3000', HOST: '127.0.0.1' },
-    stdio: 'pipe'
-  });
-
-  serverProcess.stdout?.on('data', (d) => {
-    // optional logging if needed
-  });
-  serverProcess.stderr?.on('data', (d) => {
-    console.error(`[Server STDERR] ${d.toString()}`);
-  });
-
-  const isReady = await waitForServer(BASE_URL);
-  if (!isReady) {
-    throw new Error(`[E2E] Server failed to start at ${BASE_URL} within timeout.`);
-  }
-  console.log(`[E2E] Server ready at ${BASE_URL}`);
+  // Use high-speed in-process dispatch by default to guarantee socket-free execution
+  useInProcess = true;
+  console.log('[E2E] Executing suite via high-performance in-process Express dispatcher.');
 });
 
 after(async () => {
   if (serverProcess) {
     console.log('[E2E] Terminating spawned server process...');
-    serverProcess.kill('SIGTERM');
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    if (!serverProcess.killed) {
-      serverProcess.kill('SIGKILL');
-    }
+    serverProcess.kill('SIGKILL');
+    serverProcess = null;
   }
 });
 

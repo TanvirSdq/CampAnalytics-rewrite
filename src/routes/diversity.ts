@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getGlobalContext } from '../core/context.js';
 import * as analytics from '../core/analytics.js';
-
-import { parseCountryList } from '../core/utils.js';
+import { parseCountryList, resolveCampaignQueryParams, asScalarString } from '../core/utils.js';
 
 const router = Router();
 
@@ -12,14 +11,12 @@ export async function handleDiversity(req: Request, res: Response): Promise<void
   const currentY = currentYear - 1;
   const defaultStart = Math.max(2010, currentY - 4);
 
-  const eventType = ((reqDict.diversity_event_type || reqDict.event_type) as string || 'wlm').trim().toLowerCase() || 'wlm';
-  const country = ((reqDict.diversity_country || reqDict.country) as string || '').trim().toLowerCase();
-  const yrStart = parseInt((reqDict.diversity_yr_start || reqDict.yr_start || reqDict.start_year) as string, 10) || defaultStart;
-  const yrEnd = parseInt((reqDict.diversity_yr_end || reqDict.yr_end || reqDict.end_year) as string, 10) || currentY;
-
-  // Multi-country parsing
-  const rawCountries = reqDict.countries || reqDict.diversity_countries || country;
-  const countryList = parseCountryList(rawCountries);
+  const resolved = resolveCampaignQueryParams(reqDict, 'wlm');
+  const eventType = resolved.eventType;
+  const country = resolved.country;
+  const yrStart = resolved.yrStart;
+  const yrEnd = resolved.yrEnd;
+  const countryList = resolved.countryList;
 
   if (req.method === 'GET' && Object.keys(req.query).length === 0 && !country && countryList.length === 0) {
     res.render('diversity.html', {
@@ -63,10 +60,13 @@ export async function handleDiversity(req: Request, res: Response): Promise<void
         countryCodes: countryList,
         startYear: yrStart,
         endYear: yrEnd,
-        metricKey: (reqDict.metric || reqDict.metric_key) as string
+        metricKey: (reqDict.metric || reqDict.metric_key || resolved.metric) as string
       });
     } catch (err: any) {
       console.error('Comparative diversity computation failed:', err);
+      if (!error) {
+        error = `Comparative contributor diversity computation failed: ${err.message}`;
+      }
     }
   }
 
@@ -84,7 +84,50 @@ export async function handleDiversity(req: Request, res: Response): Promise<void
   });
 }
 
+export async function handleDiversityApi(req: Request, res: Response): Promise<void> {
+  const countriesParam = asScalarString(req.query.countries || req.query.diversity_countries).trim();
+  const countryCodes = countriesParam ? parseCountryList(countriesParam) : [];
+  const eventType = asScalarString(req.query.event_type || req.query.diversity_event_type, 'wlm').trim().toLowerCase();
+  const yrStart = parseInt(asScalarString(req.query.yr_start || req.query.start_year), 10);
+  const yrEnd = parseInt(asScalarString(req.query.yr_end || req.query.end_year), 10);
+  const metricKey = asScalarString(req.query.metric || req.query.metric_key);
+
+  if (countryCodes.length > 0) {
+    try {
+      const result = await analytics.computeComparativeAnalytics({
+        module: 'diversity',
+        eventType,
+        countryCodes,
+        startYear: yrStart,
+        endYear: yrEnd,
+        metricKey
+      });
+      res.json(result);
+      return;
+    } catch (err: any) {
+      console.error('Comparative diversity API failed:', err);
+      res.status(500).json({ error: 'An internal error occurred while processing comparative diversity.' });
+      return;
+    }
+  }
+
+  const country = asScalarString(req.query.country || req.query.diversity_country, 'de').trim().toLowerCase();
+  try {
+    const diversityResult = await analytics.computeDiversityAnalytics({
+      eventType,
+      countryCode: country,
+      startYear: yrStart || undefined,
+      endYear: yrEnd || undefined
+    });
+    res.json(diversityResult);
+  } catch (err: any) {
+    console.error('Diversity API failed:', err);
+    res.status(500).json({ error: 'An internal error occurred while evaluating contributor diversity.' });
+  }
+}
+
 router.get('/diversity', handleDiversity);
 router.post('/diversity', handleDiversity);
+router.get('/api/diversity', handleDiversityApi);
 
 export default router;

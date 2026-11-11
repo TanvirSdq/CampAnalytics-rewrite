@@ -536,7 +536,7 @@
                                         <tr>
                                             <td style="font-weight: 600;">Newcomer Recruitment</td>
                                             <td>{{ metrics['Growth']['raw_formatted'] if metrics['Growth']['raw_formatted'] else metrics['Growth']['raw'] }}</td>
-                                            <td>{{ (metrics['Growth']['baseline_val'] ~ ' norm') if metrics['Growth'] and metrics['Growth']['baseline_val'] else '—' }}</td>
+                                            <td>{{ (metrics['Growth']['baseline_val'] ~ ' newcomers') if metrics['Growth'] and metrics['Growth']['baseline_val'] is not none else '—' }}</td>
                                             <td>
                                                 {% if metrics['Growth']['is_inaugural'] %}
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
@@ -584,14 +584,14 @@
                                         <tr>
                                             <td style="font-weight: 600;">Content Utility</td>
                                             <td>{{ metrics['Usage']['raw_formatted'] if metrics['Usage']['raw_formatted'] else ("%.1f"|format(metrics['Usage']['raw']) ~ '%') }}</td>
-                                            <td>{{ metrics['Usage']['baseline_val'] if metrics['Usage'] else '—' }}% norm</td>
+                                            <td>{{ ("%.1f"|format(metrics['Usage']['baseline_val']) ~ '%') if metrics['Usage'] and metrics['Usage']['baseline_val'] is not none else '—' }}</td>
                                             <td>
                                                 <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Usage']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
                                             </td>
                                             <td class="cell-benchmark"
-                                                data-median="{% if metrics['Usage'] and metrics['Usage']['benchmark_count'] is not none and metrics['Usage']['regional_median'] is not none %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_median']) }}%){% elif metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% else %}—{% endif %}"
-                                                data-mean="{% if metrics['Usage'] and metrics['Usage']['mean_benchmark_count'] is not none and metrics['Usage']['regional_mean'] is not none %}{{ metrics['Usage']['mean_benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_mean']) }}%){% elif metrics['Usage'] and metrics['Usage']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_mean']) }}%{% else %}—{% endif %}">
-                                                {% if metrics['Usage'] and metrics['Usage']['benchmark_count'] is not none and metrics['Usage']['regional_median'] is not none %}{{ metrics['Usage']['benchmark_count'] }} usages ({{ "%.1f"|format(metrics['Usage']['regional_median']) }}%){% elif metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% else %}—{% endif %}
+                                                data-median="{% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Usage'] and metrics['Usage']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_mean']) }}%{% else %}—{% endif %}">
+                                                {% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}%{% else %}—{% endif %}
                                             </td>
                                             <td class="cell-delta"
                                                 data-median="{% if metrics['Usage'] and metrics['Usage']['regional_delta'] is not none %}{% if metrics['Usage']['regional_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Usage']['regional_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Usage']['regional_delta']) }}%{% endif %}{% else %}—{% endif %}"
@@ -610,14 +610,14 @@
                                         <tr>
                                             <td style="font-weight: 600;">Quality Recognition</td>
                                             <td>{{ metrics['Quality']['raw_formatted'] if metrics['Quality']['raw_formatted'] else ("%.1f"|format(metrics['Quality']['raw']) ~ '%') }}</td>
-                                            <td>{{ metrics['Quality']['baseline_val'] if metrics['Quality'] else '—' }}% norm</td>
+                                            <td>{{ ("%.1f"|format(metrics['Quality']['baseline_val']) ~ '%') if metrics['Quality'] and metrics['Quality']['baseline_val'] is not none else '—' }}</td>
                                             <td>
                                                 <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Quality']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
                                             </td>
                                             <td class="cell-benchmark"
-                                                data-median="{% if metrics['Quality'] and metrics['Quality']['benchmark_count'] is not none and metrics['Quality']['regional_median'] is not none %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_median']) }}%){% elif metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% else %}—{% endif %}"
-                                                data-mean="{% if metrics['Quality'] and metrics['Quality']['mean_benchmark_count'] is not none and metrics['Quality']['regional_mean'] is not none %}{{ metrics['Quality']['mean_benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_mean']) }}%){% elif metrics['Quality'] and metrics['Quality']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_mean']) }}%{% else %}—{% endif %}">
-                                                {% if metrics['Quality'] and metrics['Quality']['benchmark_count'] is not none and metrics['Quality']['regional_median'] is not none %}{{ metrics['Quality']['benchmark_count'] }} works ({{ "%.1f"|format(metrics['Quality']['regional_median']) }}%){% elif metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% else %}—{% endif %}
+                                                data-median="{% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Quality'] and metrics['Quality']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_mean']) }}%{% else %}—{% endif %}">
+                                                {% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}%{% else %}—{% endif %}
                                             </td>
                                             <td class="cell-delta"
                                                 data-median="{% if metrics['Quality'] and metrics['Quality']['regional_delta'] is not none %}{% if metrics['Quality']['regional_delta'] >= 0 %}+{{ "%.1f"|format(metrics['Quality']['regional_delta']) }}%{% else %}{{ "%.1f"|format(metrics['Quality']['regional_delta']) }}%{% endif %}{% else %}—{% endif %}"
@@ -636,7 +636,7 @@
                                         <tr>
                                             <td style="font-weight: 600;">Contributor Diversity</td>
                                             <td>{{ metrics['Diversity']['raw_formatted'] if metrics['Diversity']['raw_formatted'] else ("%.1f"|format(metrics['Diversity']['raw']) ~ '%') }}</td>
-                                            <td>{{ metrics['Diversity']['baseline_val'] if metrics['Diversity'] else '—' }}% norm</td>
+                                            <td>{{ ("%.1f"|format(metrics['Diversity']['baseline_val']) ~ '%') if metrics['Diversity'] and metrics['Diversity']['baseline_val'] is not none else '—' }}</td>
                                             <td>
                                                 <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; {% if metrics['Diversity']['is_positive'] %}background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;{% else %}background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;{% endif %}">{{ metrics['Diversity']['yoy_delta_formatted'] }}</span>
                                             </td>

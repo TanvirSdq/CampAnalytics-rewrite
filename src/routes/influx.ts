@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getGlobalContext } from '../core/context.js';
 import * as analytics from '../core/analytics.js';
 
-import { parseCountryList } from '../core/utils.js';
+import { parseCountryList, resolveCampaignQueryParams, asScalarString } from '../core/utils.js';
 
 const router = Router();
 
@@ -12,17 +12,15 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
   const currentY = currentYear - 1;
   const defaultStart = currentY - 4;
 
-  const eventType = ((reqDict.influx_event_type as string) || 'wlm').trim().toLowerCase() || 'wlm';
-  const country = ((reqDict.influx_country as string) || '').trim().toLowerCase();
-  const yrStart = parseInt((reqDict.influx_yr_start || reqDict.start_year || reqDict.yr_start) as string, 10) || defaultStart;
-  const yrEnd = parseInt((reqDict.influx_yr_end || reqDict.end_year || reqDict.yr_end) as string, 10) || currentY;
+  const resolved = resolveCampaignQueryParams(reqDict, 'wlm');
+  const eventType = resolved.eventType;
+  const country = resolved.country;
+  const yrStart = resolved.yrStart;
+  const yrEnd = resolved.yrEnd;
   let rawCodes = ((reqDict.influx_codes as string) || '').trim();
+  const countryList = resolved.countryList;
 
-  // Multi-country parsing
-  const rawCountries = reqDict.countries || reqDict.influx_countries || country;
-  const countryList = parseCountryList(rawCountries);
-
-  if (req.method === 'GET' && Object.keys(req.query).length === 0) {
+  if (req.method === 'GET' && Object.keys(req.query).length === 0 && !rawCodes && countryList.length === 0) {
     res.render('influx.html', {
       ...getGlobalContext(req),
       PAGE_TITLE: 'CampTools - Contributor Influx',
@@ -50,6 +48,8 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
   }
 
   let comparativeResult: analytics.ComparativeAnalyticsResult | null = null;
+  let error: string | null = null;
+
   if (countryList.length > 0) {
     try {
       comparativeResult = await analytics.computeComparativeAnalytics({
@@ -58,10 +58,13 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
         countryCodes: countryList,
         startYear: yrStart,
         endYear: yrEnd,
-        metricKey: (reqDict.metric || reqDict.metric_key) as string
+        metricKey: (reqDict.metric || reqDict.metric_key || resolved.metric) as string
       });
     } catch (err: any) {
       console.error('Comparative influx computation failed:', err);
+      if (countryList.length > 1) {
+        error = `Comparative newcomer influx computation failed: ${err.message}`;
+      }
     }
   }
 
@@ -79,7 +82,7 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
       chart_b64: '',
       influx_result: null,
       comparative_result: comparativeResult,
-      error: null
+      error
     });
     return;
   }
@@ -97,13 +100,12 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
       chart_b64: '',
       influx_result: null,
       comparative_result: null,
-      error: null
+      error
     });
     return;
   }
 
   const validCodes = rawCodes.split(/\s+/).filter((c) => analytics.CODE_RE.test(c));
-  let error: string | null = null;
   let chartB64 = '';
   let influxResult: any = null;
 
@@ -146,13 +148,13 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
 }
 
 export async function handleInfluxApi(req: Request, res: Response): Promise<void> {
-  const countriesParam = ((req.query.countries || req.query.influx_countries) as string || '').trim();
+  const countriesParam = asScalarString(req.query.countries || req.query.influx_countries).trim();
   if (countriesParam) {
-    const countryCodes = countriesParam.split(/[,\s]+/).filter(Boolean);
-    const eventType = ((req.query.event_type || req.query.influx_event_type) as string || 'wlm').trim().toLowerCase();
-    const yrStart = parseInt((req.query.yr_start || req.query.start_year) as string, 10);
-    const yrEnd = parseInt((req.query.yr_end || req.query.end_year) as string, 10);
-    const metricKey = (req.query.metric || req.query.metric_key) as string;
+    const countryCodes = parseCountryList(countriesParam);
+    const eventType = asScalarString(req.query.event_type || req.query.influx_event_type, 'wlm').trim().toLowerCase();
+    const yrStart = parseInt(asScalarString(req.query.yr_start || req.query.start_year), 10);
+    const yrEnd = parseInt(asScalarString(req.query.yr_end || req.query.end_year), 10);
+    const metricKey = asScalarString(req.query.metric || req.query.metric_key);
 
     try {
       const comparativeResult = await analytics.computeComparativeAnalytics({
@@ -166,12 +168,13 @@ export async function handleInfluxApi(req: Request, res: Response): Promise<void
       res.json(comparativeResult);
       return;
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error('Comparative influx API computation failed:', err);
+      res.status(500).json({ error: 'An internal error occurred while processing comparative newcomer influx.' });
       return;
     }
   }
 
-  const influxCodes = ((req.query.influx_codes as string) || '').trim();
+  const influxCodes = asScalarString(req.query.influx_codes).trim();
   if (!influxCodes) {
     res.status(400).json({ error: 'Missing influx_codes or countries parameter' });
     return;
@@ -186,7 +189,8 @@ export async function handleInfluxApi(req: Request, res: Response): Promise<void
     const result = await analytics.computeYoYInflux(valid);
     res.json({ influx_codes: valid, records: result.records, profile: result.lifecycle, summary: result.summary });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Influx YoY computation failed:', err);
+    res.status(500).json({ error: 'An internal error occurred while processing contributor influx trends.' });
   }
 }
 

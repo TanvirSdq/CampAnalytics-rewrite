@@ -23,12 +23,21 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 const app = express();
 
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
 // Security Headers Middleware
 app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-XSS-Protection', '0');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: https://upload.wikimedia.org https://commons.wikimedia.org; connect-src 'self' https://commons.wikimedia.org; frame-ancestors 'none';"
+  );
   next();
 });
 
@@ -208,12 +217,34 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// Server Listen
+// Server Listen & Graceful Shutdown
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
-  console.log(`CampTools server listening on http://${HOST}:${PORT}`);
-});
+let server: any;
+if (process.env.NODE_ENV !== 'test') {
+  server = app.listen(PORT, HOST, () => {
+    console.log(`CampTools server listening on http://${HOST}:${PORT}`);
+  });
+}
+
+function gracefulShutdown(signal: string) {
+  console.log(`Received ${signal}. Starting graceful shutdown...`);
+  if (server) {
+    server.close(() => {
+      console.log('HTTP server closed successfully.');
+      process.exit(0);
+    });
+    setTimeout(() => {
+      console.error('Graceful shutdown timed out after 15s, forcing process exit.');
+      process.exit(1);
+    }, 15000).unref();
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;

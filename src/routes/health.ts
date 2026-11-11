@@ -2,18 +2,19 @@ import { Router, Request, Response } from 'express';
 import { getGlobalContext } from '../core/context.js';
 import * as analytics from '../core/analytics.js';
 import { HealthEvaluationResult } from '../core/types.js';
+import { asScalarString } from '../core/utils.js';
 
 const router = Router();
 
 export async function handleHealth(req: Request, res: Response): Promise<void> {
   const reqDict = req.method === 'POST' ? req.body : req.query;
-  let targetEvent = ((reqDict.target_event as string) || '').trim();
-  const compMode = (reqDict.comp_mode as string) || 'Previous Year Baseline';
-  const baselineEventInput = ((reqDict.baseline_event as string) || '').trim();
-  let region = ((reqDict.region as string) || '').trim();
-  const healthEvt = ((reqDict.health_event_type as string) || '').trim().toLowerCase();
-  const healthCc = ((reqDict.health_country as string) || '').trim().toLowerCase();
-  const healthYr = ((reqDict.health_year as string) || '').trim();
+  let targetEvent = asScalarString(reqDict.target_event).trim();
+  const compMode = asScalarString(reqDict.comp_mode) || 'Previous Year Baseline';
+  const baselineEventInput = asScalarString(reqDict.baseline_event).trim();
+  let region = asScalarString(reqDict.region).trim();
+  const healthEvt = asScalarString(reqDict.health_event_type).trim().toLowerCase();
+  const healthCc = asScalarString(reqDict.health_country).trim().toLowerCase();
+  const healthYr = asScalarString(reqDict.health_year).trim();
 
   if (req.method === 'GET' && Object.keys(req.query).length === 0) {
     res.render('health.html', {
@@ -70,7 +71,12 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
   let result: HealthEvaluationResult | null = null;
 
   try {
-    result = await analytics.computeHealthEvaluation(targetEvent, region);
+    const isCustomMode =
+      compMode === 'Custom Baseline Edition' ||
+      compMode === 'Custom Verification Code' ||
+      compMode === 'Custom Baseline Campaign';
+    const customBaseline = isCustomMode && baselineEventInput ? baselineEventInput : undefined;
+    result = await analytics.computeHealthEvaluation(targetEvent, region || undefined, customBaseline);
   } catch (err: any) {
     error = err.message;
   }
@@ -202,7 +208,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
 }
 
 export async function handleHealthApi(req: Request, res: Response): Promise<void> {
-  const targetCampaign = ((req.query.target_campaign as string) || '').trim();
+  const targetCampaign = asScalarString(req.query.target_campaign).trim();
   if (!targetCampaign) {
     res.status(400).json({ error: 'Missing target_campaign parameter' });
     return;
@@ -219,10 +225,17 @@ export async function handleHealthApi(req: Request, res: Response): Promise<void
     return;
   }
   try {
-    const healthResult = await analytics.computeHealthEvaluation(targetCampaign, req.query.region as string);
+    const region = asScalarString(req.query.region).trim();
+    const baseline = asScalarString(req.query.baseline_campaign || req.query.baseline_event).trim();
+    const healthResult = await analytics.computeHealthEvaluation(
+      targetCampaign,
+      region || undefined,
+      baseline || undefined
+    );
     res.json(healthResult);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('[Health API Error]', err);
+    res.status(500).json({ error: 'Internal server error while evaluating campaign performance.' });
   }
 }
 

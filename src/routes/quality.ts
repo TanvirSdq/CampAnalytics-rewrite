@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getGlobalContext } from '../core/context.js';
 import * as analytics from '../core/analytics.js';
 
-import { parseCountryList } from '../core/utils.js';
+import { parseCountryList, resolveCampaignQueryParams, asScalarString } from '../core/utils.js';
 
 const router = Router();
 
@@ -10,20 +10,17 @@ export async function handleQuality(req: Request, res: Response): Promise<void> 
   const reqDict = req.method === 'POST' ? req.body : req.query;
   const currentYear = new Date().getFullYear();
   const currentY = currentYear - 1;
-  const defaultStart = currentY - 4;
 
-  let targetCampaign = ((reqDict.target_campaign || reqDict.quality_event) as string || '').trim();
-  const eventType = ((reqDict.quality_event_type || reqDict.event_type) as string || '').trim().toLowerCase() || 'wlm';
-  const country = ((reqDict.quality_country || reqDict.country) as string || '').trim().toLowerCase();
+  const resolved = resolveCampaignQueryParams(reqDict, 'wlm');
+  let targetCampaign = ((reqDict.target_campaign || reqDict.quality_event) as string || resolved.targetCampaign || '').trim();
+  const eventType = resolved.eventType;
+  const country = resolved.country;
   const year = ((reqDict.quality_year || reqDict.year) as string || '').trim();
-  const yrStart = parseInt((reqDict.quality_yr_start || reqDict.yr_start || reqDict.start_year) as string, 10) || defaultStart;
-  const yrEnd = parseInt((reqDict.quality_yr_end || reqDict.yr_end || reqDict.end_year || year) as string, 10) || currentY;
+  const yrStart = resolved.yrStart;
+  const yrEnd = resolved.yrEnd;
+  const countryList = resolved.countryList;
 
-  // Multi-country parsing
-  const rawCountries = reqDict.countries || reqDict.quality_countries || country;
-  const countryList = parseCountryList(rawCountries);
-
-  if (req.method === 'GET' && Object.keys(req.query).length === 0 && !targetCampaign) {
+  if (req.method === 'GET' && Object.keys(req.query).length === 0 && !targetCampaign && countryList.length === 0) {
     res.render('quality.html', {
       ...getGlobalContext(req),
       PAGE_TITLE: 'CampTools - Quality Recognition',
@@ -39,13 +36,16 @@ export async function handleQuality(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  if (!targetCampaign && countryList.length > 0) {
+  // Only auto-derive single target campaign if countryList has exactly 1 country and no explicit targetCampaign
+  if (!targetCampaign && countryList.length === 1) {
     const singleC = countryList[0];
     const yy = String(yrEnd % 100).padStart(2, '0');
     targetCampaign = `${eventType}${singleC}${yy}`;
   }
 
   let comparativeResult: analytics.ComparativeAnalyticsResult | null = null;
+  let error: string | null = null;
+
   if (countryList.length > 0) {
     try {
       comparativeResult = await analytics.computeComparativeAnalytics({
@@ -54,10 +54,13 @@ export async function handleQuality(req: Request, res: Response): Promise<void> 
         countryCodes: countryList,
         startYear: yrStart,
         endYear: yrEnd,
-        metricKey: (reqDict.metric || reqDict.metric_key) as string
+        metricKey: (reqDict.metric || reqDict.metric_key || resolved.metric) as string
       });
     } catch (err: any) {
       console.error('Comparative quality computation failed:', err);
+      if (countryList.length > 1) {
+        error = `Comparative quality recognition computation failed: ${err.message}`;
+      }
     }
   }
 
@@ -72,39 +75,42 @@ export async function handleQuality(req: Request, res: Response): Promise<void> 
       quality_year: year || String(currentYear - 1),
       quality_result: null,
       comparative_result: null,
-      error: null
+      error
     });
     return;
   }
 
-  let error: string | null = null;
   let qualityResult: any = null;
 
-  const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
-  if (!m && !comparativeResult) {
-    error = `Invalid campaign code format '${targetCampaign}'. Please specify in standard syntax e.g. wlmde24, wlmbd24.`;
-  } else if (m) {
-    const [, evt, cc] = m;
-    const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
-    if (scopeNotice) {
-      error = scopeNotice;
-    } else {
-      try {
-        qualityResult = await analytics.computeQualityRecognitionDeep(targetCampaign);
-      } catch (err: any) {
-        error = `Error evaluating quality recognition: ${err.message}`;
+  if (targetCampaign) {
+    const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
+    if (!m && !comparativeResult) {
+      error = `Invalid campaign code format '${targetCampaign}'. Please specify in standard syntax e.g. wlmde24, wlmbd24.`;
+    } else if (m) {
+      const [, evt, cc] = m;
+      const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
+      if (scopeNotice) {
+        error = scopeNotice;
+      } else {
+        try {
+          qualityResult = await analytics.computeQualityRecognitionDeep(targetCampaign);
+        } catch (err: any) {
+          error = `Error evaluating quality recognition: ${err.message}`;
+        }
       }
     }
   }
+
+  const mCode = targetCampaign ? analytics.CODE_RE.exec(targetCampaign.toLowerCase()) : null;
 
   res.render('quality.html', {
     ...getGlobalContext(req),
     PAGE_TITLE: targetCampaign ? `CampTools - Quality Recognition: ${targetCampaign.toUpperCase()}` : 'CampTools - Quality Recognition Comparison',
     mode: 'Quality Recognition',
     target_campaign: targetCampaign,
-    quality_event_type: m ? m[1] : eventType || 'wlm',
-    quality_country: m ? m[2] : country || (countryList[0] || 'de'),
-    quality_year: m ? String(2000 + parseInt(m[3], 10)) : String(yrEnd),
+    quality_event_type: mCode ? mCode[1] : eventType || 'wlm',
+    quality_country: mCode ? mCode[2] : country || (countryList[0] || 'de'),
+    quality_year: mCode ? String(2000 + parseInt(mCode[3], 10)) : String(yrEnd),
     quality_result: qualityResult,
     comparative_result: comparativeResult,
     error
@@ -112,13 +118,13 @@ export async function handleQuality(req: Request, res: Response): Promise<void> 
 }
 
 export async function handleQualityApi(req: Request, res: Response): Promise<void> {
-  const countriesParam = ((req.query.countries || req.query.quality_countries) as string || '').trim();
+  const countriesParam = asScalarString(req.query.countries || req.query.quality_countries).trim();
   if (countriesParam) {
     const countryCodes = countriesParam.split(/[,\s]+/).filter(Boolean);
-    const eventType = ((req.query.event_type || req.query.quality_event_type) as string || 'wlm').trim().toLowerCase();
-    const yrStart = parseInt((req.query.yr_start || req.query.start_year) as string, 10);
-    const yrEnd = parseInt((req.query.yr_end || req.query.end_year) as string, 10);
-    const metricKey = (req.query.metric || req.query.metric_key) as string;
+    const eventType = (asScalarString(req.query.event_type || req.query.quality_event_type) || 'wlm').trim().toLowerCase();
+    const yrStart = parseInt(asScalarString(req.query.yr_start || req.query.start_year), 10);
+    const yrEnd = parseInt(asScalarString(req.query.yr_end || req.query.end_year), 10);
+    const metricKey = asScalarString(req.query.metric || req.query.metric_key);
 
     try {
       const result = await analytics.computeComparativeAnalytics({
@@ -132,12 +138,13 @@ export async function handleQualityApi(req: Request, res: Response): Promise<voi
       res.json(result);
       return;
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error('[Quality API Comparative Error]', err);
+      res.status(500).json({ error: 'Internal server error while evaluating comparative quality recognition.' });
       return;
     }
   }
 
-  const targetCampaign = ((req.query.target_campaign || req.query.quality_event) as string || '').trim();
+  const targetCampaign = asScalarString(req.query.target_campaign || req.query.quality_event).trim();
   if (!targetCampaign) {
     res.status(400).json({ error: 'Missing target_campaign or countries parameter' });
     return;
@@ -157,7 +164,8 @@ export async function handleQualityApi(req: Request, res: Response): Promise<voi
     const qualityResult = await analytics.computeQualityRecognitionDeep(targetCampaign);
     res.json(qualityResult);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('[Quality API Error]', err);
+    res.status(500).json({ error: 'Internal server error while evaluating quality recognition.' });
   }
 }
 

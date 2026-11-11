@@ -1,13 +1,36 @@
-import test, { describe, it } from 'node:test';
+import test, { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   computeDiversityAnalytics,
   computeSingleDiversityRecord,
-  computeComparativeAnalytics
+  computeComparativeAnalytics,
+  primeParticipantCache,
+  setCommonsFetchMock
 } from '../src/core/analytics.js';
 import type { DiversityResult, DiversityRecord } from '../src/core/types.js';
 
 describe('Contributor Diversity Analytics Engine', () => {
+  before(() => {
+    setCommonsFetchMock(async () => {
+      return { query: { pages: {} } };
+    });
+    const countries = ['de', 'it', 'bd', 'ng'];
+    const currentYear = new Date().getFullYear();
+    for (const cc of countries) {
+      for (let y = 2018; y <= currentYear; y++) {
+        const code = `wlm${cc}${String(y % 100).padStart(2, '0')}`;
+        const users = new Set<string>();
+        const counts = new Map<string, number>();
+        for (let i = 1; i <= 50; i++) {
+          const u = `${code}_user_${i}`;
+          users.add(u);
+          counts.set(u, i);
+        }
+        primeParticipantCache(code, users, counts);
+      }
+    }
+  });
+
   it('computes longitudinal diversity records and tiers for Germany WLM', async () => {
     const result: DiversityResult = await computeDiversityAnalytics({
       eventType: 'wlm',

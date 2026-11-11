@@ -760,8 +760,8 @@ var CampComparativeSuite = (function () {
       return state.selectedCountries.indexOf(row.country_code) !== -1;
     });
 
-    var html = '<div class="table-responsive">' +
-      '<table id="comparative-data-table" class="camp-table table-hover" data-sortable="true">' +
+    var html = '<div class="table-scroll-container">' +
+      '<table id="comparative-data-table" class="data-table" data-sortable="true">' +
       '<thead><tr>';
 
     headers.forEach(function (h) {

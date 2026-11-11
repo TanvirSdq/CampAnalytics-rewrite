@@ -1,6 +1,11 @@
-import test, { describe, it } from 'node:test';
+import test, { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeComparativeAnalytics, CODEX_COLOR_PALETTE } from '../src/core/analytics.js';
+import {
+  computeComparativeAnalytics,
+  CODEX_COLOR_PALETTE,
+  primeParticipantCache,
+  setCommonsFetchMock
+} from '../src/core/analytics.js';
 import type {
   ComparativeAnalyticsResult,
   CountrySeries,
@@ -8,6 +13,44 @@ import type {
   MapTimelinePoint,
   IndicatorMetadata
 } from '../src/core/types.js';
+
+before(() => {
+  setCommonsFetchMock(async (params) => {
+    if (params.prop === 'categoryinfo') {
+      return { query: { pages: { '10': { categoryinfo: { files: 200 } } } } };
+    }
+    if (params.generator === 'categorymembers') {
+      return {
+        query: {
+          pages: {
+            '101': {
+              globalusage: [{ title: 'Main Page', wiki: 'en.wikipedia.org' }]
+            }
+          }
+        }
+      };
+    }
+    if (params.list === 'categorymembers') {
+      return { query: { categorymembers: [] } };
+    }
+    return { query: { pages: {} } };
+  });
+
+  const countries = ['de', 'it', 'bd', 'fr', 'es', 'ua', 'pl', 'ng', 'in', 'np', 'pk', 'lk'];
+  for (const cc of countries) {
+    for (let y = 2018; y <= 2026; y++) {
+      const code = `wlm${cc}${String(y % 100).padStart(2, '0')}`;
+      const users = new Set<string>();
+      const counts = new Map<string, number>();
+      for (let i = 1; i <= 25; i++) {
+        const u = `${code}_user_${i}`;
+        users.add(u);
+        counts.set(u, i);
+      }
+      primeParticipantCache(code, users, counts);
+    }
+  }
+});
 
 describe('Comparative Analytics Engine: Codex Color Palette', () => {
   it('defines a standardized Wikimedia Codex step palette with at least 15 colors', () => {
@@ -71,7 +114,8 @@ describe('Comparative Analytics Engine: Influx Module', () => {
 
     for (const pt of deSeries.points) {
       assert.ok(pt.year >= 2020 && pt.year <= 2024);
-      assert.ok(typeof pt.value === 'number' || pt.value === null);
+      assert.equal(typeof pt.value, 'number');
+      assert.notEqual(pt.value, null);
       assert.ok(typeof pt.formatted_value === 'string');
       assert.ok(pt.code.startsWith('wlmde'));
     }
@@ -134,10 +178,9 @@ describe('Comparative Analytics Engine: Quality Recognition Module', () => {
     for (const series of result.series) {
       assert.equal(series.points.length, 3);
       for (const pt of series.points) {
-        if (pt.value !== null) {
-          assert.ok(typeof pt.value === 'number');
-          assert.ok(pt.value >= 0);
-        }
+        assert.equal(typeof pt.value, 'number');
+        assert.notEqual(pt.value, null);
+        assert.ok(pt.value >= 0);
       }
     }
   });
@@ -159,10 +202,9 @@ describe('Comparative Analytics Engine: Content Utility Module', () => {
 
     for (const series of result.series) {
       for (const pt of series.points) {
-        if (pt.value !== null) {
-          assert.ok(typeof pt.value === 'number');
-          assert.ok(pt.value >= 0);
-        }
+        assert.equal(typeof pt.value, 'number');
+        assert.notEqual(pt.value, null);
+        assert.ok(pt.value >= 0);
       }
     }
   });

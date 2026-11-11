@@ -26,7 +26,7 @@ import {
   DiversityResult
 } from './types.js';
 
-import { BoundedCache, mapConcurrent, computeEmpiricalMean } from './utils.js';
+import { BoundedCache, mapConcurrent, computeEmpiricalMean, escapeHtml, safeJsonForScript } from './utils.js';
 
 export type {
   HealthEvaluationResult,
@@ -109,14 +109,36 @@ for (const [regName, ccs] of Object.entries(REGION_COUNTRY_MAPPING)) {
 }
 
 export function countryDisplayName(cc: string): string {
+  if (!cc) return '';
   return (COUNTRY_MAP[cc] || cc).replace(/_/g, ' ');
 }
 
+export function normalizeMediaWikiUsername(raw: string): string {
+  if (!raw) return '';
+  let decoded = raw
+    .replace(/&amp;/g, '&')
+    .replace(/&#0*39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/_/g, ' ')
+    .trim();
+  try {
+    decoded = decodeURIComponent(decoded).replace(/_/g, ' ').trim();
+  } catch {
+    // Keep decoded string if percent-encoding is not present
+  }
+  if (!decoded) return '';
+  return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+}
+
 export function isBotAccount(username: string): boolean {
-  if (!username) return true;
-  const u = username.trim();
-  if (KNOWN_BOTS.has(u)) return true;
-  if (/bot$/i.test(u) || /_bot$/i.test(u) || /-bot$/i.test(u)) return true;
+  const norm = normalizeMediaWikiUsername(username);
+  if (!norm) return true;
+  const u = norm.toLowerCase();
+  if (KNOWN_BOTS.has(norm) || KNOWN_BOTS.has(u)) return true;
+  if (/(?:^|[-_\s.])bot(?=[-_\s.]|\d+|$)/i.test(norm)) return true;
+  if (/[a-z]Bot(?:\d*|$)/.test(norm)) return true;
+  if (/(?:pywikibot|delinker|reviewr|cropbot|rotbot|wlm-bot)/i.test(u)) return true;
+  if (u.includes('maintenance script') || u.includes('mediawiki default')) return true;
   return false;
 }
 
@@ -313,6 +335,62 @@ const _metricsCache = new BoundedCache<string, { data: any; ts: number }>(1000);
 const _categoryFileCountCache = new BoundedCache<string, { count: number; ts: number }>(2000);
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+const COMMONS_USER_AGENT = 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)';
+
+let _commonsFetchMock: ((params: Record<string, string>) => Promise<any>) | null = null;
+
+export function setCommonsFetchMock(fn: ((params: Record<string, string>) => Promise<any>) | null): void {
+  _commonsFetchMock = fn;
+}
+
+export async function fetchCommonsApi(params: Record<string, string>, timeoutMs = 8000): Promise<any> {
+  let data: any;
+  if (_commonsFetchMock) {
+    data = await _commonsFetchMock(params);
+  } else {
+    const searchParams = new URLSearchParams({
+      ...params,
+      format: 'json'
+    });
+    const url = `https://commons.wikimedia.org/w/api.php?${searchParams.toString()}`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': COMMONS_USER_AGENT },
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (!res.ok) {
+        throw new Error(`Commons API HTTP error: ${res.status} ${res.statusText}`);
+      }
+      data = await res.json();
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
+  }
+
+  if (data?.error) {
+    throw new Error(`MediaWiki API error [${data.error.code}]: ${data.error.info || 'Unknown error'}`);
+  }
+  return data;
+}
+
+const _inFlightPromises = new Map<string, Promise<any>>();
+
+export function coalesceInFlight<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = _inFlightPromises.get(key);
+  if (existing) return existing as Promise<T>;
+  const promise = fn().finally(() => {
+    _inFlightPromises.delete(key);
+  });
+  _inFlightPromises.set(key, promise);
+  return promise;
+}
+
 export async function fetchCategoryFileCount(category: string): Promise<number> {
   const norm = category.replace(/\s+/g, '_').toLowerCase();
   const cached = _categoryFileCountCache.get(norm);
@@ -320,117 +398,157 @@ export async function fetchCategoryFileCount(category: string): Promise<number> 
     return cached.count;
   }
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+  return coalesceInFlight(`count:${norm}`, async () => {
+    const doubleCheck = _categoryFileCountCache.get(norm);
+    if (doubleCheck && Date.now() - doubleCheck.ts < CACHE_TTL_MS) {
+      return doubleCheck.count;
+    }
+
     const catTitle = category.startsWith('Category:') ? category : `Category:${category}`;
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(catTitle)}&prop=categoryinfo&format=json`;
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-      signal: controller.signal
+    const data = await fetchCommonsApi({
+      action: 'query',
+      titles: catTitle,
+      prop: 'categoryinfo'
     });
-    clearTimeout(timeout);
-    if (res.ok) {
-      const data = await res.json();
-      const pages = data?.query?.pages || {};
-      for (const pid of Object.keys(pages)) {
-        const cinfo = pages[pid]?.categoryinfo;
-        if (cinfo && typeof cinfo.files === 'number') {
-          _categoryFileCountCache.set(norm, { count: cinfo.files, ts: Date.now() });
-          return cinfo.files;
-        }
+    const pages = data?.query?.pages || {};
+    for (const pid of Object.keys(pages)) {
+      if (pid === '-1') {
+        _categoryFileCountCache.set(norm, { count: 0, ts: Date.now() });
+        return 0;
+      }
+      const cinfo = pages[pid]?.categoryinfo;
+      if (cinfo && typeof cinfo.files === 'number') {
+        _categoryFileCountCache.set(norm, { count: cinfo.files, ts: Date.now() });
+        return cinfo.files;
       }
     }
-  } catch {
-    // Network fallback
-  }
-
-  _categoryFileCountCache.set(norm, { count: 0, ts: Date.now() });
-  return 0;
+    _categoryFileCountCache.set(norm, { count: 0, ts: Date.now() });
+    return 0;
+  });
 }
 
+export async function getCategoryFileCountSafe(category: string): Promise<number> {
+  try {
+    return await fetchCategoryFileCount(category);
+  } catch {
+    return 0;
+  }
+}
 
 export async function fetchParticipantsForCategory(category: string): Promise<Set<string>> {
-  const users = new Set<string>();
-  const counts = new Map<string, number>();
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
+  const normCat = category.toLowerCase();
+  const cached = _userCountsCache.get(normCat);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return new Set(cached.counts.keys());
+  }
 
-    // Try Toolforge uploadersincat scraper first
-    const ptoolsUrl = `https://ptools.toolforge.org/uploadersincat.php?category=${encodeURIComponent(category)}`;
-    const res = await fetch(ptoolsUrl, {
-      headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org)' },
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
+  return coalesceInFlight(`part:${normCat}`, async () => {
+    const doubleCheck = _userCountsCache.get(normCat);
+    if (doubleCheck && Date.now() - doubleCheck.ts < CACHE_TTL_MS) {
+      return new Set(doubleCheck.counts.keys());
+    }
 
-    if (res.ok) {
-      const html = await res.text();
-      const regex = /User:([^"'<>#]+)<\/a>\s*:\s*(\d+)\s*files/g;
-      let match;
-      while ((match = regex.exec(html)) !== null) {
-        const username = match[1].trim();
-        const fileCount = parseInt(match[2], 10);
-        if (!isBotAccount(username)) {
-          users.add(username);
-          if (!isNaN(fileCount)) {
-            counts.set(username, fileCount);
+    const users = new Set<string>();
+    const counts = new Map<string, number>();
+    let ptoolsSucceeded = false;
+
+    // 1. Try Toolforge uploadersincat scraper first
+    if (!_commonsFetchMock) {
+      try {
+        const ptoolsUrl = `https://ptools.toolforge.org/uploadersincat.php?category=${encodeURIComponent(category)}`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(ptoolsUrl, {
+          headers: { 'User-Agent': COMMONS_USER_AGENT },
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          ptoolsSucceeded = true;
+          const html = await res.text();
+          const regex = /User:([^"'<>#]+)<\/a>\s*:\s*(\d+)\s*files/g;
+          let match;
+          while ((match = regex.exec(html)) !== null) {
+            const rawUser = match[1].trim();
+            const username = normalizeMediaWikiUsername(rawUser);
+            const fileCount = parseInt(match[2], 10);
+            if (username && !isBotAccount(username)) {
+              users.add(username);
+              if (!isNaN(fileCount)) {
+                counts.set(username, fileCount);
+              }
+            }
+          }
+          if (users.size > 0) {
+            _userCountsCache.set(normCat, { counts, ts: Date.now() });
+            return users;
           }
         }
+      } catch {
+        // Network or timeout on Toolforge scraper, fall back to official Commons API
       }
+    }
+
+    // 2. Query official Commons generator=categorymembers API
+    try {
+      let continueToken: string | undefined = undefined;
+      let iterations = 0;
+      let anyQuerySucceeded = false;
+
+      while (iterations < 100) {
+        iterations++;
+        const queryParams: Record<string, string> = {
+          action: 'query',
+          generator: 'categorymembers',
+          gcmtitle: `Category:${category}`,
+          gcmlimit: '500',
+          prop: 'imageinfo',
+          iiprop: 'user'
+        };
+        if (continueToken) {
+          queryParams.gcmcontinue = continueToken;
+        }
+
+        const data = await fetchCommonsApi(queryParams);
+        anyQuerySucceeded = true;
+        const pages = data?.query?.pages || {};
+        for (const pageId of Object.keys(pages)) {
+          const ii = pages[pageId]?.imageinfo;
+          if (ii && ii[0]?.user) {
+            const u = normalizeMediaWikiUsername(ii[0].user);
+            if (u && !isBotAccount(u)) {
+              users.add(u);
+              counts.set(u, (counts.get(u) || 0) + 1);
+            }
+          }
+        }
+        if (data?.continue?.gcmcontinue) {
+          continueToken = data.continue.gcmcontinue;
+        } else {
+          break;
+        }
+      }
+
       if (users.size > 0) {
-        _userCountsCache.set(category.toLowerCase(), { counts, ts: Date.now() });
+        _userCountsCache.set(normCat, { counts, ts: Date.now() });
         return users;
       }
-    }
-  } catch {
-    // Network or timeout failure, continue to Commons API
-  }
 
-  try {
-    let continueToken: string | undefined = undefined;
-    let iterations = 0;
-    while (iterations < 10) {
-      iterations++;
-      const continueParam: string = continueToken ? `&gcmcontinue=${encodeURIComponent(continueToken)}` : '';
-      const commonsUrl: string = `https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:${encodeURIComponent(category)}&gcmlimit=500&prop=imageinfo&iiprop=user&format=json${continueParam}`;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
-      const res: Response = await fetch(commonsUrl, {
-        headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-
-      if (!res.ok) break;
-      const data: any = await res.json();
-      const pages = data?.query?.pages || {};
-      for (const pageId of Object.keys(pages)) {
-        const ii = pages[pageId]?.imageinfo;
-        if (ii && ii[0]?.user) {
-          const u = ii[0].user;
-          if (!isBotAccount(u)) {
-            users.add(u);
-            counts.set(u, (counts.get(u) || 0) + 1);
-          }
-        }
+      if (anyQuerySucceeded || ptoolsSucceeded) {
+        _userCountsCache.set(normCat, { counts, ts: Date.now() });
+        return users;
       }
-      if (data?.continue?.gcmcontinue) {
-        continueToken = data.continue.gcmcontinue;
-      } else {
-        break;
+    } catch (err) {
+      if (users.size > 0) {
+        _userCountsCache.set(normCat, { counts, ts: Date.now() });
+        return users;
       }
+      throw err;
     }
-    if (users.size > 0) {
-      _userCountsCache.set(category.toLowerCase(), { counts, ts: Date.now() });
-      return users;
-    }
-  } catch {
-    // Fall through
-  }
 
-  return users;
+    return users;
+  });
 }
 
 export async function getParticipants(code: string): Promise<Set<string>> {
@@ -447,12 +565,17 @@ export async function getParticipants(code: string): Promise<Set<string>> {
   if (event === 'all') {
     // Aggregate across campaigns
     const subCodes = getSubCampaignCodes(clean);
-    const subResults = await fetchAllConcurrently(subCodes);
+    let anyError = false;
+    const subResults = await fetchAllConcurrently(subCodes, () => {
+      anyError = true;
+    });
     const combined = new Set<string>();
     for (const s of Object.values(subResults)) {
       for (const u of s) combined.add(u);
     }
-    _participantCache.set(clean, { users: combined, ts: Date.now() });
+    if (!anyError) {
+      _participantCache.set(clean, { users: combined, ts: Date.now() });
+    }
     return combined;
   }
 
@@ -485,9 +608,11 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
   if (event === 'all') {
     const subCodes = getSubCampaignCodes(clean);
     const combinedCounts = new Map<string, number>();
-    for (const sub of subCodes) {
-      const subCounts = await getParticipantsWithUploadCounts(sub);
-      for (const [u, cnt] of subCounts.entries()) {
+    const subMaps = await mapConcurrent(subCodes, 6, async (sc) => {
+      return await getParticipantsWithUploadCounts(sc);
+    });
+    for (const subMap of subMaps) {
+      for (const [u, cnt] of subMap.entries()) {
         combinedCounts.set(u, (combinedCounts.get(u) || 0) + cnt);
       }
     }
@@ -518,19 +643,43 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
   return emptyCounts;
 }
 
-export async function fetchAllConcurrently(codes: string[]): Promise<Record<string, Set<string>>> {
+export function primeParticipantCache(
+  code: string,
+  users: Set<string> | string[],
+  counts?: Map<string, number> | Record<string, number>
+): void {
+  const norm = code.replace(/\s+/g, '').toLowerCase();
+  const userSet = users instanceof Set ? users : new Set(users);
+  _participantCache.set(norm, { users: userSet, ts: Date.now() });
+  if (counts) {
+    const countsMap = counts instanceof Map ? counts : new Map(Object.entries(counts));
+    _userCountsCache.set(norm, { counts: countsMap, ts: Date.now() });
+  }
+}
+
+export async function fetchAllConcurrently(
+  codes: string[],
+  onError?: (code: string, err: any) => void
+): Promise<Record<string, Set<string>>> {
   const results: Record<string, Set<string>> = {};
   await mapConcurrent(codes, 6, async (code) => {
-    results[code.toLowerCase()] = await getParticipants(code);
+    try {
+      results[code.toLowerCase()] = await getParticipants(code);
+    } catch (err) {
+      if (onError) onError(code, err);
+      results[code.toLowerCase()] = new Set<string>();
+    }
   });
   return results;
 }
 
 export async function getCampaignStructuralMetrics(code: string): Promise<{
   quality_image_share: number;
+  quality_images_count?: number;
   top10_uploader_share: number;
   usage_share: number;
   total_uploads: number;
+  used_images_sample_count?: number;
 }> {
   const clean = code.replace(/\s+/g, '').toLowerCase();
   const cached = _metricsCache.get(clean);
@@ -579,29 +728,33 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
     let totalSubUploads = 0;
     let totalQualityCount = 0;
     let weightedUsageSum = 0;
+    let weightedTop10Sum = 0;
+    let totalUsedSampleCount = 0;
 
-    for (const sub of subCodes) {
-      const subMetrics = await getCampaignStructuralMetrics(sub);
+    const subMetricsList = await mapConcurrent(subCodes, 6, async (sub) => {
+      return await getCampaignStructuralMetrics(sub);
+    });
+
+    for (const subMetrics of subMetricsList) {
       if (subMetrics.total_uploads > 0) {
         totalSubUploads += subMetrics.total_uploads;
-        const qCount = Math.round((subMetrics.total_uploads * subMetrics.quality_image_share) / 100);
-        totalQualityCount += qCount;
-        weightedUsageSum += subMetrics.total_uploads * subMetrics.usage_share;
+        totalQualityCount += (subMetrics.quality_images_count ?? 0);
+        weightedUsageSum += (subMetrics.total_uploads * subMetrics.usage_share);
+        weightedTop10Sum += (subMetrics.total_uploads * subMetrics.top10_uploader_share);
+        totalUsedSampleCount += (subMetrics.used_images_sample_count ?? 0);
       }
     }
 
-    const effectiveTotalUploads = totalUploads > 0 ? totalUploads : totalSubUploads;
-    const qualityShare = effectiveTotalUploads > 0 ? parseFloat(((totalQualityCount / effectiveTotalUploads) * 100).toFixed(1)) : 0.0;
-    const usageShare = totalSubUploads > 0 ? parseFloat((weightedUsageSum / totalSubUploads).toFixed(1)) : 0.0;
-
-    const metrics = {
-      quality_image_share: qualityShare,
-      top10_uploader_share: countsMap.size > 0 ? top10Share : 0.0,
-      usage_share: usageShare,
-      total_uploads: effectiveTotalUploads
+    const aggregated = {
+      quality_image_share: totalSubUploads > 0 ? Number(((totalQualityCount / totalSubUploads) * 100).toFixed(2)) : 0,
+      quality_images_count: totalQualityCount,
+      top10_uploader_share: totalSubUploads > 0 ? Number((weightedTop10Sum / totalSubUploads).toFixed(1)) : 0,
+      usage_share: totalSubUploads > 0 ? Number((weightedUsageSum / totalSubUploads).toFixed(1)) : 0,
+      total_uploads: totalSubUploads,
+      used_images_sample_count: totalUsedSampleCount
     };
-    _metricsCache.set(clean, { data: metrics, ts: Date.now() });
-    return metrics;
+    _metricsCache.set(clean, { data: aggregated, ts: Date.now() });
+    return aggregated;
   }
 
   const categories = getCategoryCandidates(clean);
@@ -610,7 +763,7 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
   let qualityCount = 0;
   const qiCandidates = getQualityCategoryCandidates(clean);
   for (const qcat of qiCandidates) {
-    const count = await fetchCategoryFileCount(qcat);
+    const count = await getCategoryFileCountSafe(qcat);
     if (count > 0) {
       qualityCount = count;
       break;
@@ -624,24 +777,20 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
   let usedFiles = 0;
   for (const cat of categories) {
     try {
-      const uController = new AbortController();
-      const uTimeout = setTimeout(() => uController.abort(), 4000);
-      const uRes = await fetch(
-        `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=categorymembers&gcmtitle=Category:${encodeURIComponent(cat)}&gcmtype=file&gcmlimit=50&prop=globalusage&gulimit=5`,
-        {
-          headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-          signal: uController.signal
-        }
-      );
-      clearTimeout(uTimeout);
-      if (uRes.ok) {
-        const uData = await uRes.json();
-        const pages = uData?.query?.pages || {};
-        for (const pid of Object.keys(pages)) {
-          sampledFiles++;
-          const gu = pages[pid]?.globalusage || [];
-          if (gu.length > 0) usedFiles++;
-        }
+      const uData = await fetchCommonsApi({
+        action: 'query',
+        generator: 'categorymembers',
+        gcmtitle: `Category:${cat}`,
+        gcmtype: 'file',
+        gcmlimit: '50',
+        prop: 'globalusage',
+        gulimit: '5'
+      }, 5000);
+      const pages = uData?.query?.pages || {};
+      for (const pid of Object.keys(pages)) {
+        sampledFiles++;
+        const gu = pages[pid]?.globalusage || [];
+        if (gu.length > 0) usedFiles++;
       }
     } catch {
       // Fall through
@@ -653,9 +802,11 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
 
   const metrics = {
     quality_image_share: qualityShare,
+    quality_images_count: qualityCount,
     top10_uploader_share: countsMap.size > 0 ? top10Share : 0.0,
     usage_share: usageShare,
-    total_uploads: totalUploads
+    total_uploads: totalUploads,
+    used_images_sample_count: usedFiles
   };
 
   _metricsCache.set(clean, { data: metrics, ts: Date.now() });
@@ -732,7 +883,14 @@ export function computeRetentionPercentages(
   return allPercentages;
 }
 
-export function buildGlobalTable(validCountries: Record<string, Record<string, Set<string>>>): string {
+export function computeGlobalRetentionData(validCountries: Record<string, Record<string, Set<string>>>): Array<{
+  country: string;
+  occurrences: number;
+  forwardRetention: number;
+  avgRetention: number;
+  medianRetention: number;
+  maxRetention: number;
+}> {
   const rows: Array<{
     country: string;
     occurrences: number;
@@ -761,7 +919,11 @@ export function buildGlobalTable(validCountries: Record<string, Record<string, S
   }
 
   rows.sort((a, b) => a.country.localeCompare(b.country));
+  return rows;
+}
 
+export function buildGlobalTable(input: Record<string, Record<string, Set<string>>> | any[]): string {
+  const rows = Array.isArray(input) ? input : computeGlobalRetentionData(input);
   if (!rows.length) return '';
 
   let html = `<table class="data-table"><thead><tr>
@@ -775,9 +937,10 @@ export function buildGlobalTable(validCountries: Record<string, Record<string, S
   </tr></thead><tbody>`;
 
   rows.forEach((r, idx) => {
+    const displayName = escapeHtml(r.country || '');
     html += `<tr>
       <td>${idx + 1}</td>
-      <td><strong>${r.country}</strong></td>
+      <td><strong>${displayName}</strong></td>
       <td>${r.occurrences}</td>
       <td>${r.forwardRetention}%</td>
       <td>${r.avgRetention}%</td>
@@ -818,10 +981,11 @@ export function createWorldMapHtml(
 ): string {
   if (!worldData.length) return '';
 
-  const jsonLocations = JSON.stringify(worldData.map((d) => d.country));
-  const jsonZ = JSON.stringify(worldData.map((d) => d.retention));
-  const jsonHover = JSON.stringify(
-    worldData.map((d) => `<b>${d.country}</b><br>Editions: ${d.occurrences}<br>Retention: ${d.retention}%`)
+  const safeMetric = escapeHtml(metricChoice).replace(/['"\\]/g, '');
+  const jsonLocations = safeJsonForScript(worldData.map((d) => d.country));
+  const jsonZ = safeJsonForScript(worldData.map((d) => d.retention));
+  const jsonHover = safeJsonForScript(
+    worldData.map((d) => `<b>${escapeHtml(d.country)}</b><br>Editions: ${d.occurrences}<br>Retention: ${d.retention}%`)
   );
 
   return `
@@ -870,7 +1034,7 @@ export function createWorldMapHtml(
             autocolorscale: false,
             marker: { line: { color: '#ffffff', width: 1.2 } },
             colorbar: {
-              title: { text: '${metricChoice} (%)', font: { color: '#202122', size: 12, family: 'Inter, sans-serif' } },
+              title: { text: '${safeMetric} (%)', font: { color: '#202122', size: 12, family: 'Inter, sans-serif' } },
               tickfont: { color: '#54595d', size: 11 },
               ticksuffix: '%',
               len: 0.75,
@@ -881,7 +1045,7 @@ export function createWorldMapHtml(
 
           var layout = {
             title: {
-              text: '<b>${metricChoice} Longitudinal Participant Retention by Nation</b>',
+              text: '<b>${safeMetric} Longitudinal Participant Retention by Nation</b>',
               x: 0.03,
               y: 0.95,
               font: { color: '#202122', size: 14, family: 'Inter, sans-serif' }
@@ -1000,7 +1164,7 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;">`;
   
   // Title
-  svg += `<text x="${width / 2}" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#202122">${countryName.replace(/_/g, ' ')} Retention Matrix</text>`;
+  svg += `<text x="${width / 2}" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#202122">${escapeHtml(countryName.replace(/_/g, ' '))} Retention Matrix</text>`;
 
   // Y axis label
   svg += `<text x="20" y="${margin.top + (n * cellSize) / 2}" text-anchor="middle" transform="rotate(-90, 20, ${margin.top + (n * cellSize) / 2})" font-size="11" font-weight="600" fill="#54595d">Source Cohort</text>`;
@@ -1189,7 +1353,10 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
 
   let summary: any;
   if (records.length > 0) {
-    const avgNewcomer = records.reduce((s, r) => s + r.newcomer_share_pct, 0) / records.length;
+    // Post-baseline editions exclude the synthetic 100% year-0 artifact
+    const postBaseline = records.slice(1);
+    const validRecords = postBaseline.length > 0 ? postBaseline : records;
+    const avgNewcomer = validRecords.reduce((s, r) => s + r.newcomer_share_pct, 0) / validRecords.length;
     const peakInflux = [...records].sort((a, b) => b.new_contributors - a.new_contributors)[0];
     const peakTotal = [...records].sort((a, b) => b.total_active - a.total_active)[0];
     const latest = records[records.length - 1];
@@ -1248,7 +1415,7 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:'Inter', sans-serif;">`;
 
   // Chart Title
-  svg += `<text x="${width / 2}" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#202122">${title}</text>`;
+  svg += `<text x="${width / 2}" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#202122">${escapeHtml(title)}</text>`;
 
   // Clean Top Legend (Placed right beneath title for instant context)
   svg += `
@@ -1516,9 +1683,9 @@ export function generateHealthMetrics(
   };
   metrics.Expansion = metrics.Growth;
 
-  // 4. Content Utility (Wikipedia Article Transclusions)
+  // 4. Content Utility (Wikipedia Article Transclusions - Sample Transclusion Only)
   const rawUsage = parseFloat(structuralMetrics.usage_share || 0.0);
-  const rawUsageCount = Math.round((totalUploads * rawUsage) / 100);
+  const rawUsageCount = structuralMetrics.used_images_sample_count ?? 0;
   const useRateBm = typeof benchmarks.usage === 'number' ? benchmarks.usage : null;
   const useCountBm = typeof benchmarks.usage_count === 'number' ? benchmarks.usage_count : null;
   const useRateMean = typeof benchmarksMean?.usage === 'number' ? benchmarksMean.usage : null;
@@ -1549,9 +1716,9 @@ export function generateHealthMetrics(
     is_inaugural: false
   };
 
-  // 5. Quality Recognition (Quality / Featured Images)
+  // 5. Quality Recognition (Quality / Featured Images - Authentic Commons Distinct Counts)
   const rawQuality = parseFloat(structuralMetrics.quality_image_share || 0.0);
-  const rawQualityCount = Math.round((totalUploads * rawQuality) / 100);
+  const rawQualityCount = structuralMetrics.quality_images_count ?? 0;
   const qualRateBm = typeof benchmarks.quality === 'number' ? benchmarks.quality : null;
   const qualCountBm = typeof benchmarks.quality_count === 'number' ? benchmarks.quality_count : null;
   const qualRateMean = typeof benchmarksMean?.quality === 'number' ? benchmarksMean.quality : null;
@@ -1667,7 +1834,8 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       distinct_articles: 0,
       cross_wiki_projects_count: 0,
       media_usages: [],
-      top_photographers: []
+      top_photographers: [],
+      project_distribution: []
     };
   }
 
@@ -1681,11 +1849,19 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
     const uniqueArticles = new Set<string>();
     const projectDist: Record<string, number> = {};
     const mediaUsages: any[] = [];
-    const uploaderUtility: Record<string, { used_files: number; total_usages: number }> = {};
+    const uploaderUtility: Record<string, { used_files: number; total_usages: number; articles: Set<string> }> = {};
     const seenFiles = new Set<string>();
 
-    for (const sub of subCodes) {
-      const subRes = await computeContentUtilityDeep(sub);
+    const subResults = await mapConcurrent(subCodes, 6, async (sc) => {
+      try {
+        return await computeContentUtilityDeep(sc);
+      } catch {
+        return null;
+      }
+    });
+
+    for (const subRes of subResults) {
+      if (!subRes) continue;
       totalSampled += subRes.total_sampled || 0;
       usedFilesCount += subRes.distinct_used_images || 0;
       totalUsages += subRes.total_global_usages || 0;
@@ -1698,10 +1874,15 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
           }
         }
       }
+      for (const pd of (subRes.project_distribution || [])) {
+        projectDist[pd.project] = (projectDist[pd.project] || 0) + (pd.count || 0);
+      }
       for (const tp of (subRes.top_photographers || [])) {
-        const u = tp.uploader || tp.username;
+        const rawU = tp.uploader || tp.username;
+        const u = normalizeMediaWikiUsername(rawU);
+        if (!u || isBotAccount(u)) continue;
         if (!uploaderUtility[u]) {
-          uploaderUtility[u] = { used_files: 0, total_usages: 0 };
+          uploaderUtility[u] = { used_files: 0, total_usages: 0, articles: new Set<string>() };
         }
         uploaderUtility[u].used_files += tp.used_files_count || 0;
         uploaderUtility[u].total_usages += tp.total_usages || 0;
@@ -1722,8 +1903,16 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
         used_files_count: uploaderUtility[u].used_files,
         used_images_count: uploaderUtility[u].used_files,
         total_usages: uploaderUtility[u].total_usages,
-        distinct_articles_count: uploaderUtility[u].used_files,
+        distinct_articles_count: uploaderUtility[u].articles.size || uploaderUtility[u].used_files,
         primary_wiki: primaryWiki
+      }));
+
+    const projectDistribution = Object.entries(projectDist)
+      .sort((a, b) => b[1] - a[1])
+      .map(([wiki, count]) => ({
+        project: wiki,
+        count,
+        percentage: totalUsages > 0 ? parseFloat(((count / totalUsages) * 100).toFixed(1)) : 0.0
       }));
 
     return {
@@ -1743,7 +1932,8 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       distinct_articles: uniqueArticles.size,
       cross_wiki_projects_count: Object.keys(projectDist).length,
       media_usages: mediaUsages,
-      top_photographers: topPhotographers
+      top_photographers: topPhotographers,
+      project_distribution: projectDistribution
     };
   }
 
@@ -1755,55 +1945,57 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
   const uniqueArticles = new Set<string>();
   const projectDist: Record<string, number> = {};
   const mediaUsages: any[] = [];
-  const uploaderUtility: Record<string, { used_files: number; total_usages: number }> = {};
+  const uploaderUtility: Record<string, { used_files: number; total_usages: number; articles: Set<string> }> = {};
 
   for (const cat of categories) {
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
-      const url = `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=categorymembers&gcmtitle=Category:${encodeURIComponent(cat)}&gcmtype=file&gcmlimit=50&prop=imageinfo|globalusage&iiprop=user|url&iiurlwidth=300&gulimit=10`;
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const data = await res.json();
-        const pages = data?.query?.pages || {};
-        for (const pid of Object.keys(pages)) {
-          const p = pages[pid];
-          totalSampled++;
-          const title = p.title || '';
-          const gu = p.globalusage || [];
-          const ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
-          const uploader = ii.user || 'Community Contributor';
-          const thumbUrl = ii.thumburl || '';
-          const descUrl = ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+      const data = await fetchCommonsApi({
+        action: 'query',
+        generator: 'categorymembers',
+        gcmtitle: `Category:${cat}`,
+        gcmtype: 'file',
+        gcmlimit: '50',
+        prop: 'imageinfo|globalusage',
+        iiprop: 'user|url',
+        iiurlwidth: '300',
+        gulimit: '10'
+      }, 7000);
+      const pages = data?.query?.pages || {};
+      for (const pid of Object.keys(pages)) {
+        const p = pages[pid];
+        totalSampled++;
+        const title = p.title || '';
+        const gu = p.globalusage || [];
+        const ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
+        const rawUser = ii.user || '';
+        const uploader = normalizeMediaWikiUsername(rawUser);
+        const thumbUrl = ii.thumburl || '';
+        const descUrl = ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
-          if (gu.length > 0 && !isBotAccount(uploader)) {
-            usedFilesCount++;
-            totalUsages += gu.length;
-            if (!uploaderUtility[uploader]) {
-              uploaderUtility[uploader] = { used_files: 0, total_usages: 0 };
-            }
-            uploaderUtility[uploader].used_files++;
-            uploaderUtility[uploader].total_usages += gu.length;
+        if (gu.length > 0 && uploader && !isBotAccount(uploader)) {
+          usedFilesCount++;
+          totalUsages += gu.length;
+          if (!uploaderUtility[uploader]) {
+            uploaderUtility[uploader] = { used_files: 0, total_usages: 0, articles: new Set<string>() };
+          }
+          uploaderUtility[uploader].used_files++;
+          uploaderUtility[uploader].total_usages += gu.length;
 
-            for (const u of gu) {
-              const wiki = u.wiki || 'unknown';
-              const art = (u.title || '').replace(/_/g, ' ');
-              projectDist[wiki] = (projectDist[wiki] || 0) + 1;
-              uniqueArticles.add(`${wiki}:${art}`);
-              if (mediaUsages.length < 25) {
-                mediaUsages.push({
-                  file_title: title.replace('File:', '').replace(/_/g, ' '),
-                  full_title: title,
-                  article: art,
-                  wiki: wiki,
-                  commons_url: descUrl,
-                  thumb_url: thumbUrl
-                });
-              }
+          for (const u of gu) {
+            const wiki = u.wiki || 'unknown';
+            const art = (u.title || '').replace(/_/g, ' ');
+            projectDist[wiki] = (projectDist[wiki] || 0) + 1;
+            uniqueArticles.add(`${wiki}:${art}`);
+            uploaderUtility[uploader].articles.add(`${wiki}:${art}`);
+            if (mediaUsages.length < 25) {
+              mediaUsages.push({
+                file_title: title.replace('File:', '').replace(/_/g, ' '),
+                full_title: title,
+                article: art,
+                wiki: wiki,
+                commons_url: descUrl,
+                thumb_url: thumbUrl
+              });
             }
           }
         }
@@ -1828,8 +2020,16 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       used_files_count: uploaderUtility[u].used_files,
       used_images_count: uploaderUtility[u].used_files,
       total_usages: uploaderUtility[u].total_usages,
-      distinct_articles_count: uploaderUtility[u].used_files,
+      distinct_articles_count: uploaderUtility[u].articles.size,
       primary_wiki: primaryWiki
+    }));
+
+  const projectDistribution = Object.entries(projectDist)
+    .sort((a, b) => b[1] - a[1])
+    .map(([wiki, count]) => ({
+      project: wiki,
+      count,
+      percentage: totalUsages > 0 ? parseFloat(((count / totalUsages) * 100).toFixed(1)) : 0.0
     }));
 
   return {
@@ -1849,13 +2049,10 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
     distinct_articles: uniqueArticles.size,
     cross_wiki_projects_count: Object.keys(projectDist).length,
     media_usages: mediaUsages,
-    top_photographers: topPhotographers
+    top_photographers: topPhotographers,
+    project_distribution: projectDistribution
   };
 }
-
-// =========================================================================
-// QUALITY RECOGNITION DEEP ANALYSIS
-// =========================================================================
 
 export async function computeQualityRecognitionDeep(targetCampaign: string): Promise<any> {
   const clean = targetCampaign.replace(/\s+/g, '').toLowerCase();
@@ -1897,8 +2094,16 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
     const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
     const seenTitles = new Set<string>();
 
-    for (const sub of subCodes) {
-      const subRes = await computeQualityRecognitionDeep(sub);
+    const subResults = await mapConcurrent(subCodes, 6, async (sc) => {
+      try {
+        return await computeQualityRecognitionDeep(sc);
+      } catch {
+        return null;
+      }
+    });
+
+    for (const subRes of subResults) {
+      if (!subRes) continue;
       qiCount += subRes.qi_count || 0;
       fpCount += subRes.fp_count || 0;
       viCount += subRes.vi_count || 0;
@@ -1909,7 +2114,9 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         }
       }
       for (const lb of (subRes.leaderboard || [])) {
-        const u = lb.uploader || lb.username;
+        const rawU = lb.uploader || lb.username;
+        const u = normalizeMediaWikiUsername(rawU);
+        if (!u || isBotAccount(u)) continue;
         if (!uploaderHonors[u]) {
           uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
         }
@@ -1963,94 +2170,76 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
 
   const qiCandidates = getQualityCategoryCandidates(clean);
   for (const qcat of qiCandidates) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch(
-          `https://commons.wikimedia.org/w/api.php?action=query&titles=Category:${encodeURIComponent(qcat)}&prop=categoryinfo&format=json`,
-          {
-            headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-            signal: controller.signal
-          }
-        );
-        clearTimeout(timeout);
-        if (res.ok) {
-          const data = await res.json();
-          const pages = data?.query?.pages || {};
-          for (const pid of Object.keys(pages)) {
-            const cinfo = pages[pid]?.categoryinfo;
-            if (cinfo && cinfo.files > 0) {
-              qiCount = cinfo.files;
-              // Fetch a sample of real recognized files
-              const fController = new AbortController();
-              const fTimeout = setTimeout(() => fController.abort(), 6000);
-              const fRes = await fetch(
-                `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=categorymembers&gcmtitle=Category:${encodeURIComponent(qcat)}&gcmtype=file&gcmlimit=25&prop=imageinfo&iiprop=user|timestamp|url&iiurlwidth=300`,
-                {
-                  headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-                  signal: fController.signal
-                }
-              );
-              clearTimeout(fTimeout);
-              if (fRes.ok) {
-                const fData = await fRes.json();
-                const fPages = fData?.query?.pages || {};
-                for (const fPid of Object.keys(fPages)) {
-                  const fpObj = fPages[fPid];
-                  const title = fpObj.title || '';
-                  const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
-                  const uploader = ii.user || 'Photographer';
-                  const thumb = ii.thumburl || '';
-                  const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+    try {
+      const data = await fetchCommonsApi({
+        action: 'query',
+        titles: `Category:${qcat}`,
+        prop: 'categoryinfo'
+      }, 5000);
+      const pages = data?.query?.pages || {};
+      for (const pid of Object.keys(pages)) {
+        const cinfo = pages[pid]?.categoryinfo;
+        if (cinfo && cinfo.files > 0) {
+          qiCount = cinfo.files;
+          const fData = await fetchCommonsApi({
+            action: 'query',
+            generator: 'categorymembers',
+            gcmtitle: `Category:${qcat}`,
+            gcmtype: 'file',
+            gcmlimit: '25',
+            prop: 'imageinfo',
+            iiprop: 'user|timestamp|url',
+            iiurlwidth: '300'
+          }, 6000);
+          const fPages = fData?.query?.pages || {};
+          for (const fPid of Object.keys(fPages)) {
+            const fpObj = fPages[fPid];
+            const title = fpObj.title || '';
+            const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
+            const rawUser = ii.user || '';
+            const uploader = normalizeMediaWikiUsername(rawUser);
+            if (!uploader || isBotAccount(uploader)) continue;
+            const thumb = ii.thumburl || '';
+            const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
-                  recognizedFiles.push({
-                    title,
-                    file_title: title,
-                    thumb_url: thumb,
-                    honors: ['Quality Image'],
-                    uploader,
-                    commons_url: commonsUrl,
-                    details: 'Certified as Quality Image on Wikimedia Commons.'
-                  });
+            recognizedFiles.push({
+              title,
+              file_title: title,
+              thumb_url: thumb,
+              honors: ['Quality Image'],
+              uploader,
+              commons_url: commonsUrl,
+              details: 'Certified as Quality Image on Wikimedia Commons.'
+            });
 
-                  if (!uploaderHonors[uploader]) {
-                    uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
-                  }
-                  uploaderHonors[uploader].qi++;
-                }
-              }
-              break;
+            if (!uploaderHonors[uploader]) {
+              uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
             }
+            uploaderHonors[uploader].qi++;
           }
+          break;
         }
-      } catch {
-        // Fall through
       }
+    } catch {
+      // Fall through
+    }
     if (qiCount > 0) break;
   }
 
   const fpCandidates = getFeaturedCategoryCandidates(clean);
   for (const fpCat of fpCandidates) {
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(
-        `https://commons.wikimedia.org/w/api.php?action=query&titles=Category:${encodeURIComponent(fpCat)}&prop=categoryinfo&format=json`,
-        {
-          headers: { 'User-Agent': 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)' },
-          signal: controller.signal
-        }
-      );
-      clearTimeout(timeout);
-      if (res.ok) {
-        const data = await res.json();
-        const pages = data?.query?.pages || {};
-        for (const pid of Object.keys(pages)) {
-          const cinfo = pages[pid]?.categoryinfo;
-          if (cinfo && cinfo.files > 0) {
-            fpCount = cinfo.files;
-            break;
-          }
+      const data = await fetchCommonsApi({
+        action: 'query',
+        titles: `Category:${fpCat}`,
+        prop: 'categoryinfo'
+      }, 5000);
+      const pages = data?.query?.pages || {};
+      for (const pid of Object.keys(pages)) {
+        const cinfo = pages[pid]?.categoryinfo;
+        if (cinfo && cinfo.files > 0) {
+          fpCount = cinfo.files;
+          break;
         }
       }
     } catch {
@@ -2090,7 +2279,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
     vi_count: viCount,
     honored_photographers_count: leaderboard.length,
     recognized_count: recognizedFiles.length,
-    recognized_files: recognizedFiles,
+    recognized_files: recognizedFiles.slice(0, 30),
     leaderboard: leaderboard
   };
 }
@@ -2131,7 +2320,8 @@ export function resolveRegionName(input?: string, fallbackCc?: string): string {
 
 export async function computeHealthEvaluation(
   targetEvent: string,
-  regionInput?: string
+  regionInput?: string,
+  customBaselineEvent?: string
 ): Promise<HealthEvaluationResult> {
   const match = CODE_RE.exec(targetEvent.toLowerCase());
   if (!match) throw new Error(`Invalid campaign code format '${targetEvent}'`);
@@ -2139,7 +2329,9 @@ export async function computeHealthEvaluation(
   const yearInt = parseInt(yearStr, 10);
   const prevYearStr = String((yearInt - 1 + 100) % 100).padStart(2, '0');
   const region = resolveRegionName(regionInput, targetCc);
-  const baselineEvent = `${eventType}${targetCc}${prevYearStr}`;
+  const baselineEvent = customBaselineEvent
+    ? customBaselineEvent.replace(/\s+/g, '').toLowerCase()
+    : `${eventType}${targetCc}${prevYearStr}`;
   const isAll = eventType === 'all';
 
   // Collect chronological past 3-5 years for longitudinal trajectory
@@ -2180,29 +2372,26 @@ export async function computeHealthEvaluation(
     top5Regional.push(targetCc.toLowerCase());
   }
 
-  // Peers to display alongside target country (up to 5 peer campaigns)
-  const peerList = heldRegional
-    .filter((p) => p.cc.toLowerCase() !== targetCc.toLowerCase())
-    .slice(0, 5)
-    .map((p) => p.cc);
+  const peerList = top5Regional.filter((cc) => cc !== targetCc.toLowerCase());
 
+  // Concurrent fetching of structural metrics
   const structuralCodes = new Set<string>();
-  for (const cc of top5Regional) {
-    structuralCodes.add(`${eventType}${cc}${yearStr}`);
-  }
-  for (const cc of peerList) {
-    structuralCodes.add(`${eventType}${cc}${yearStr}`);
-  }
   structuralCodes.add(targetEvent.toLowerCase());
   structuralCodes.add(baselineEvent.toLowerCase());
+  for (const cc of top5Regional) {
+    structuralCodes.add(`${eventType}${cc}${yearStr}`);
+    structuralCodes.add(`${eventType}${cc}${prevYearStr}`);
+  }
   for (const y of pastYears) {
     structuralCodes.add(`${eventType}${targetCc}${String(y % 100).padStart(2, '0')}`);
   }
+
   const structuralMetrics = await fetchStructuralMetricsConcurrently(Array.from(structuralCodes));
 
+  // Compute Regional Benchmarks
+  const repScales: number[] = [];
   const repRetentions: number[] = [];
   const repGrowths: number[] = [];
-  const repScales: number[] = [];
   const repQualityRates: number[] = [];
   const repQualityCounts: number[] = [];
   const repDiversities: number[] = [];
@@ -2216,11 +2405,9 @@ export async function computeHealthEvaluation(
     const bU = allFetched[bCode] || new Set<string>();
     const struct = structuralMetrics[tCode] || {};
 
-    if (tU.size > 0) {
-      repScales.push(tU.size);
-    }
+    if (tU.size > 0) repScales.push(tU.size);
 
-    if (bU.size > 0) {
+    if (bU.size > 0 && tU.size > 0) {
       let o = 0;
       for (const u of tU) if (bU.has(u)) o++;
       repRetentions.push((o / bU.size) * 100);
@@ -2231,17 +2418,16 @@ export async function computeHealthEvaluation(
       for (const u of tU) if (!bU.has(u)) n++;
       repGrowths.push(n);
 
-      const estUploads = struct.total_uploads || 0;
       if (struct.quality_image_share !== undefined) {
         repQualityRates.push(struct.quality_image_share);
-        repQualityCounts.push(Math.round((estUploads * struct.quality_image_share) / 100));
+        repQualityCounts.push(struct.quality_images_count ?? 0);
       }
       if (struct.top10_uploader_share !== undefined) {
         repDiversities.push(struct.top10_uploader_share);
       }
       if (struct.usage_share !== undefined) {
         repUsages.push(struct.usage_share);
-        repUsageCounts.push(Math.round((estUploads * struct.usage_share) / 100));
+        repUsageCounts.push(struct.used_images_sample_count ?? 0);
       }
     }
   }
@@ -2306,8 +2492,8 @@ export async function computeHealthEvaluation(
       newcomers = Math.max(0, uSet.size - retained);
       retPct = parseFloat(((retained / priorSet.size) * 100).toFixed(1));
     }
-    const qCount = Math.round((uploads * (struct.quality_image_share || 0)) / 100);
-    const uCount = Math.round((uploads * (struct.usage_share || 0)) / 100);
+    const qCount = struct.quality_images_count ?? 0;
+    const uCount = struct.used_images_sample_count ?? 0;
 
     historicalSeries.push({
       year: 2000 + y,
@@ -2335,8 +2521,8 @@ export async function computeHealthEvaluation(
     uploaders: targetUsers.size,
     uploads: targetUploads,
     retention_pct: targetRetPct,
-    quality_count: Math.round((targetUploads * (targetStructural.quality_image_share || 0)) / 100),
-    usage_count: Math.round((targetUploads * (targetStructural.usage_share || 0)) / 100)
+    quality_count: targetStructural.quality_images_count ?? 0,
+    usage_count: targetStructural.used_images_sample_count ?? 0
   });
 
   for (const cc of peerList) {
@@ -2358,8 +2544,8 @@ export async function computeHealthEvaluation(
       uploaders: pUsers.size,
       uploads: pUploads,
       retention_pct: pRetPct,
-      quality_count: Math.round((pUploads * (pStruct.quality_image_share || 0)) / 100),
-      usage_count: Math.round((pUploads * (pStruct.usage_share || 0)) / 100)
+      quality_count: pStruct.quality_images_count ?? 0,
+      usage_count: pStruct.used_images_sample_count ?? 0
     });
   }
 
@@ -2388,9 +2574,9 @@ export async function computeHealthEvaluation(
     retention_rate_pct: retentionPct,
     total_uploads: totalUploadsEst,
     usage_share_pct: usageShare,
-    articles_illustrated_estimate: Math.round((totalUploadsEst * usageShare) / 100),
+    articles_illustrated_estimate: targetStructural.used_images_sample_count ?? 0,
     quality_image_share_pct: qualityShare,
-    quality_images_estimate: Math.round((totalUploadsEst * qualityShare) / 100),
+    quality_images_estimate: targetStructural.quality_images_count ?? 0,
     top10_uploader_share_pct: targetUsers.size > 0 ? (targetStructural.top10_uploader_share ?? 0) : 0,
     dimensions: metrics,
     benchmarks,
@@ -2474,7 +2660,8 @@ export async function computeComparativeAnalytics(
   }
 
   // Pre-fetch codes: from startYear - 1 up to endYear (for historical continuity)
-  const fetchStart = Math.max(2010, startYear - 1);
+  // For influx analysis, newcomer identification requires the complete historical cohort back to campaign inception (2010)
+  const fetchStart = module === 'influx' ? 2010 : Math.max(2010, startYear - 1);
   const allCodes: string[] = [];
   for (const cc of requestedCountries) {
     for (let y = fetchStart; y <= endYear; y++) {
@@ -2490,6 +2677,7 @@ export async function computeComparativeAnalytics(
   const utilityResults: Record<string, any> = {};
   const diversityResults: Record<string, DiversityRecord> = {};
 
+  const mobilityResults: Record<string, MobilityResult> = {};
   if (module === 'quality') {
     await mapConcurrent(allCodes, 6, async (code) => {
       qualityResults[code] = await computeQualityRecognitionDeep(code);
@@ -2509,6 +2697,20 @@ export async function computeComparativeAnalytics(
       const rec = await computeSingleDiversityRecord(eventType, task.cc, task.y);
       diversityResults[`${task.cc}_${task.y}`] = rec;
     });
+  } else if (module === 'mobility') {
+    const mobilityTasks: Array<{ cc: string; y: number }> = [];
+    for (const cc of requestedCountries) {
+      for (const y of years) {
+        mobilityTasks.push({ cc, y });
+      }
+    }
+    await mapConcurrent(mobilityTasks, 4, async (task) => {
+      const mob = await computeMobilityAnalytics({
+        countryCode: task.cc,
+        year: task.y
+      });
+      mobilityResults[`${task.cc}_${task.y}`] = mob;
+    });
   }
 
   // Construct series per country
@@ -2520,12 +2722,12 @@ export async function computeComparativeAnalytics(
     const points: TimeSeriesPoint[] = [];
 
     if (module === 'influx') {
-      // Historical seen pool starting before startYear
+      // Historical seen pool strictly accumulated from campaign inception (2010) through startYear - 1
       const seenPrior = new Set<string>();
-      if (startYear - 1 >= 2010) {
-        const priorCode = `${eventType}${cc}${String((startYear - 1) % 100).padStart(2, '0')}`;
-        const priorUsers = participantResults[priorCode] || new Set<string>();
-        for (const u of priorUsers) seenPrior.add(u);
+      for (let py = 2010; py < startYear; py++) {
+        const pCode = `${eventType}${cc}${String(py % 100).padStart(2, '0')}`;
+        const pUsers = participantResults[pCode] || new Set<string>();
+        for (const u of pUsers) seenPrior.add(u);
       }
 
       for (const y of years) {
@@ -2680,6 +2882,23 @@ export async function computeComparativeAnalytics(
             val = rec.gini_coefficient;
             fVal = val.toFixed(3);
           }
+        }
+        points.push({
+          year: y,
+          value: val,
+          formatted_value: fVal,
+          code
+        });
+      }
+    } else if (module === 'mobility') {
+      for (const y of years) {
+        const code = `${eventType}${cc}${String(y % 100).padStart(2, '0')}`;
+        const mob = mobilityResults[`${cc}_${y}`];
+        let val: number = 0;
+        let fVal = '0.0%';
+        if (mob) {
+          val = mob.summary.average_conversion;
+          fVal = `${val.toFixed(1)}%`;
         }
         points.push({
           year: y,
@@ -2853,6 +3072,25 @@ export async function computeComparativeAnalytics(
         'Contests with institutional mass uploads or GLAM partnerships show elevated top-decile concentration.'
       ]
     };
+  } else if (module === 'mobility') {
+    meta = {
+      indicator_id: 'mobility_conversion',
+      title: 'Cross-Campaign Contributor Mobility Rate',
+      definition: 'Average percentage of campaign participants in a national ecosystem who also participated in another Wikimedia campaign within the same calendar year.',
+      data_source: 'Wikimedia Commons Category Members API & Toolforge Database',
+      metric_unit: '%',
+      coverage: 'Annual national campaign editions (2010–present)',
+      license: 'CC BY-SA 4.0',
+      methodology_notes: [
+        'Calculated across all pairwise campaign combinations active in the country during the target year.',
+        'Conversion rate reflects directional contributor transition between distinct photo initiatives.',
+        'Automated upload bots and maintenance tools are scrubbed prior to cohort intersection.'
+      ],
+      caveats: [
+        'Affiliates running only a single contest in a calendar year naturally exhibit zero cross-campaign mobility.',
+        'Cross-campaign mobilization depends on affiliate organizing calendars and local marketing synergy.'
+      ]
+    };
   } else {
     // utility
     const isRate =
@@ -2942,8 +3180,8 @@ export function createComparativeMultiLineSvg(
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">`;
 
   // Title
-  svg += `<text x="${margin.left}" y="22" font-size="14" font-weight="700" fill="#202122">${result.indicator_title} · ${result.event_name}</text>`;
-  svg += `<text x="${width - margin.right + 10}" y="22" text-anchor="start" font-size="11" font-weight="500" fill="#72777d">${result.indicator_unit}</text>`;
+  svg += `<text x="${margin.left}" y="22" font-size="14" font-weight="700" fill="#202122">${escapeHtml(result.indicator_title)} · ${escapeHtml(result.event_name)}</text>`;
+  svg += `<text x="${width - margin.right + 10}" y="22" text-anchor="start" font-size="11" font-weight="500" fill="#72777d">${escapeHtml(result.indicator_unit)}</text>`;
 
   // Horizontal Grid Lines & Y Ticks (5 steps)
   const steps = 5;
@@ -2984,7 +3222,7 @@ export function createComparativeMultiLineSvg(
     const lx = getX(lastPt.year);
     const ly = getY(lastPt.value!);
     svg += `<rect x="${lx + 8}" y="${ly - 4}" width="8" height="8" rx="0" ry="0" fill="${s.color}" />`;
-    svg += `<text x="${lx + 20}" y="${ly + 3}" font-size="11" font-weight="600" fill="#202122">${s.country_name}</text>`;
+    svg += `<text x="${lx + 20}" y="${ly + 3}" font-size="11" font-weight="600" fill="#202122">${escapeHtml(s.country_name)}</text>`;
   }
 
   svg += `</svg>`;
@@ -3053,14 +3291,14 @@ export async function computeSingleDiversityRecord(
       top_10_percent_share: 100,
       top_20_percent_share: 100,
       tiers: {
-        casual_count: singleVal < 5 ? 1 : 0,
-        casual_share: singleVal < 5 ? 100 : 0,
-        regular_count: singleVal >= 5 && singleVal < 25 ? 1 : 0,
-        regular_share: singleVal >= 5 && singleVal < 25 ? 100 : 0,
-        active_count: singleVal >= 25 && singleVal < 100 ? 1 : 0,
-        active_share: singleVal >= 25 && singleVal < 100 ? 100 : 0,
-        power_count: singleVal >= 100 ? 1 : 0,
-        power_share: singleVal >= 100 ? 100 : 0
+        casual_count: singleVal === 1 ? 1 : 0,
+        casual_share: singleVal === 1 ? 100 : 0,
+        regular_count: singleVal >= 2 && singleVal <= 5 ? 1 : 0,
+        regular_share: singleVal >= 2 && singleVal <= 5 ? 100 : 0,
+        active_count: singleVal >= 6 && singleVal <= 20 ? 1 : 0,
+        active_share: singleVal >= 6 && singleVal <= 20 ? 100 : 0,
+        power_count: singleVal >= 21 ? 1 : 0,
+        power_share: singleVal >= 21 ? 100 : 0
       },
       percentile_shares: singleShares,
       lorenz_curve: [{ p: 0, l: 0 }, { p: 100, l: 100 }]
@@ -3076,12 +3314,12 @@ export async function computeSingleDiversityRecord(
   const rawGini = (2 * sumIndexed) / (n * totalUploads) - (n + 1) / n;
   const gini = parseFloat(Math.max(0, Math.min(1, rawGini)).toFixed(3));
 
-  // Top 10% and Top 20% Pareto Shares
-  const k10 = Math.max(1, Math.round(n * 0.10));
+  // Top 10% and Top 20% Pareto Shares (Math.ceil per METHODOLOGY.md)
+  const k10 = Math.max(1, Math.ceil(n * 0.10));
   const top10Sum = x.slice(n - k10).reduce((a, b) => a + b, 0);
   const top10Share = parseFloat(((top10Sum / totalUploads) * 100).toFixed(1));
 
-  const k20 = Math.max(1, Math.round(n * 0.20));
+  const k20 = Math.max(1, Math.ceil(n * 0.20));
   const top20Sum = x.slice(n - k20).reduce((a, b) => a + b, 0);
   const top20Share = parseFloat(((top20Sum / totalUploads) * 100).toFixed(1));
 
@@ -3109,16 +3347,20 @@ export async function computeSingleDiversityRecord(
     }
   }
 
-  // 4-Tier Breakdown
+  // 4-Tier Breakdown strictly aligned with METHODOLOGY.md Section 5.3:
+  // Tier 1 (Casual): 1 upload
+  // Tier 2 (Regular): 2-5 uploads
+  // Tier 3 (Active): 6-20 uploads
+  // Tier 4 (Power): 21+ uploads
   let casualCount = 0;
   let regularCount = 0;
   let activeCount = 0;
   let powerCount = 0;
 
   for (const count of x) {
-    if (count < 5) casualCount++;
-    else if (count < 25) regularCount++;
-    else if (count < 100) activeCount++;
+    if (count === 1) casualCount++;
+    else if (count >= 2 && count <= 5) regularCount++;
+    else if (count >= 6 && count <= 20) activeCount++;
     else powerCount++;
   }
 
@@ -3208,7 +3450,7 @@ export async function computeDiversityAnalytics(params: {
       methodology_notes: [
         'Gini coefficient is calculated from ascendingly ordered contributor submissions.',
         'Pareto top-decile share measures the percentage of total submissions generated by the top 10% most prolific uploaders.',
-        'Four-tier contributor segmentation categorizes users into Casual (1–4), Regular (5–24), Active (25–99), and Power (100+) contributors.',
+        'Four-tier contributor segmentation categorizes users into Casual (1), Regular (2–5), Active (6–20), and Power (21+) contributors.',
         'Known bots and batch administrative tools are excluded to prevent artificial concentration skew.'
       ],
       caveats: [

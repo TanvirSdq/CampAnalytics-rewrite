@@ -1,6 +1,4 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Lato:ital,wght@0,400;0,500;0,700;1,400&display=swap');
-
 :root {
     --bg-canvas: #f8f9fa;
     --bg-surface: #ffffff;
@@ -1071,7 +1069,7 @@ button:focus-visible {
 }
 
 .notice-error {
-    background-color: var(--bg-surface)1f0;
+    background-color: #fff1f0;
     border: 1px solid #ffccc7;
     color: #a8071a;
 }
