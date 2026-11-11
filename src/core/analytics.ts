@@ -1248,7 +1248,7 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
     newcomer_share_pct: number;
     veteran_share_pct: number;
     retention_from_prev_pct: number;
-    cumulative_pool: number;
+    cumulative_pool: number | null;
     yoy_growth_pct: number;
     new_to_veteran_ratio: number | null;
     ratio_status: string;
@@ -1289,6 +1289,7 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
   const sortedYears = Object.keys(yearToCodes).map(Number).sort((a, b) => a - b);
   const records: any[] = [];
   const seenAllPrior = new Set<string>();
+  const seenEvaluated = new Set<string>();
   const userEditionCounts: Record<string, number> = {};
   let prevUsers = new Set<string>();
 
@@ -1306,7 +1307,6 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
     let returningUsers = 0;
 
     for (const u of currentUsers) {
-      userEditionCounts[u] = (userEditionCounts[u] || 0) + 1;
       if (seenAllPrior.has(u)) {
         returningUsers++;
       } else {
@@ -1314,7 +1314,16 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
       }
     }
 
-    const isBaseline = idx === 0;
+    const isBaseline = idx === 0 && sortedYears.length > 1;
+    const isEvaluatedEdition = sortedYears.length === 1 || !isBaseline;
+
+    if (isEvaluatedEdition) {
+      for (const u of currentUsers) {
+        userEditionCounts[u] = (userEditionCounts[u] || 0) + 1;
+        seenEvaluated.add(u);
+      }
+    }
+
     let yoyGrowth = 0;
     let retentionFromPrev = 0;
     let ratio: number | null = null;
@@ -1356,7 +1365,7 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
       newcomer_share_pct: parseFloat(newcomerShare.toFixed(1)),
       veteran_share_pct: parseFloat(veteranShare.toFixed(1)),
       retention_from_prev_pct: parseFloat(retentionFromPrev.toFixed(1)),
-      cumulative_pool: seenAllPrior.size,
+      cumulative_pool: isEvaluatedEdition ? seenEvaluated.size : null,
       yoy_growth_pct: parseFloat(yoyGrowth.toFixed(1)),
       new_to_veteran_ratio: ratio,
       ratio_status: ratioStatus,
@@ -1386,8 +1395,8 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
     const validRecords = postBaseline.length > 0 ? postBaseline : records;
     const avgNewcomer = validRecords.reduce((s, r) => s + r.newcomer_share_pct, 0) / validRecords.length;
     const peakInflux = [...validRecords].sort((a, b) => b.new_contributors - a.new_contributors)[0];
-    const peakTotal = [...records].sort((a, b) => b.total_active - a.total_active)[0];
-    const latest = records[records.length - 1];
+    const peakTotal = [...validRecords].sort((a, b) => b.total_active - a.total_active)[0];
+    const latest = validRecords[validRecords.length - 1];
 
     summary = {
       total_unique_community: Object.keys(userEditionCounts).length,
@@ -1433,8 +1442,11 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
   const maxTotal = Math.max(...records.map((r) => r.total_active), 10);
   const yMax = Math.ceil(maxTotal * 1.38);
 
-  const maxCumulative = Math.max(...records.map((r) => r.cumulative_pool || r.total_active), 10);
-  const yMaxCum = Math.ceil(maxCumulative * 1.15);
+  const validPools = records
+    .map((r) => r.cumulative_pool)
+    .filter((p): p is number => typeof p === 'number' && p > 0);
+  const maxCumulative = validPools.length > 0 ? Math.max(...validPools) : maxTotal;
+  const yMaxCum = Math.ceil(maxCumulative * 1.15) || 10;
 
   const numBars = records.length;
   const barBand = plotW / numBars;
@@ -1492,8 +1504,11 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
     const newY = retY - newH;
 
     // Pre-calculate cumulative line point for this column to test visual clearance
-    const cumY = margin.top + plotH - ((rec.cumulative_pool || rec.total_active) / yMaxCum) * plotH;
-    linePoints.push({ x: cx, y: cumY, pool: rec.cumulative_pool || rec.total_active, barTopY: newY });
+    let cumY: number | null = null;
+    if (typeof rec.cumulative_pool === 'number' && rec.cumulative_pool > 0) {
+      cumY = margin.top + plotH - (rec.cumulative_pool / yMaxCum) * plotH;
+      linePoints.push({ x: cx, y: cumY, pool: rec.cumulative_pool, barTopY: newY });
+    }
 
     // Returning Users (Solid Deep Navy - sharp rectangle)
     if (retH > 0) {
@@ -1508,7 +1523,8 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
       svg += `<rect x="${x}" y="${newY}" width="${barWidth}" height="${newH}" rx="0" ry="0" fill="#0284c7" />`;
       // Display segment text if tall enough AND clear of the crossing cumulative trendline
       const newMidY = newY + newH / 2 + 4;
-      if (newH >= 24 && rec.returning_contributors > 0 && Math.abs(cumY - newMidY) > 28) {
+      const isClearOfCumLine = cumY === null || Math.abs(cumY - newMidY) > 28;
+      if (newH >= 24 && rec.returning_contributors > 0 && isClearOfCumLine) {
         svg += `<text x="${cx}" y="${newMidY}" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">${rec.new_contributors.toLocaleString()}</text>`;
       }
     }

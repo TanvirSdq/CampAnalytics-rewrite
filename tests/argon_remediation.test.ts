@@ -162,12 +162,29 @@ test('MATH-04: computeYoYInflux excludes Year 0 from avg_newcomer_share_pct', as
   // and NOT include the 100% year-0 artifact
   assert.equal(influx.summary.avg_newcomer_share_pct, 58.4);
 
-  // peak_influx_year must also exclude the baseline year (2022) even when baseline has more initial entrants
+  // peak_influx_year must also exclude the baseline year (2021) even when baseline has more initial entrants
   analytics.primeParticipantCache('wlmde21', ['U1', 'U2', 'U3', 'U4', 'U5'], new Map([['U1', 1], ['U2', 1], ['U3', 1], ['U4', 1], ['U5', 1]]));
   const influxWithLargeBaseline = await analytics.computeYoYInflux(['wlmde21', 'wlmde22', 'wlmde23', 'wlmde24']);
   assert.notEqual(influxWithLargeBaseline.summary.peak_influx_year, 2021, 'Peak influx year must exclude baseline year');
   assert.equal(influxWithLargeBaseline.summary.peak_influx_year, 2022);
   assert.equal(influxWithLargeBaseline.summary.peak_influx_count, 2);
+
+  // Cumulative pool must start from evaluated editions (2022), excluding baseline year (2021)
+  assert.equal(influxWithLargeBaseline.records[0].is_baseline, true);
+  assert.equal(influxWithLargeBaseline.records[0].cumulative_pool, null, 'Baseline year must have null cumulative pool');
+  assert.equal(influxWithLargeBaseline.records[1].year, 2022);
+  assert.equal(influxWithLargeBaseline.records[1].cumulative_pool, 2, 'Cumulative pool must start at 2022 active count');
+  assert.equal(influxWithLargeBaseline.records[2].year, 2023);
+  assert.equal(influxWithLargeBaseline.records[2].cumulative_pool, 3, 'Cumulative pool accumulates evaluated edition participants');
+  assert.equal(influxWithLargeBaseline.summary.total_unique_community, 5, 'Total unique community must reflect evaluated editions (UserA, UserB, UserC, UserD, UserE)');
+
+  // Influx chart must not draw a cumulative point for baseline year
+  const chartB64 = analytics.createInfluxBarchartSvg(influxWithLargeBaseline.records, 'Test');
+  const chartSvg = Buffer.from(chartB64, 'base64').toString('utf8');
+  assert.ok(chartSvg.includes('2021'));
+  // Cumulative line points count must equal post-baseline records (3)
+  const amberDots = (chartSvg.match(/<circle cx="[^"]+" cy="[^"]+" r="4\.5"/g) || []).length;
+  assert.equal(amberDots, 3, 'Should have exactly 3 cumulative dots for the 3 evaluated years (2022, 2023, 2024)');
 });
 
 test('MATH-05: Comparative mobility module produces valid points and methodology card', async () => {

@@ -517,7 +517,13 @@
                                                         <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
                                                     {% endif %}
                                                 </td>
-                                                <td style="font-weight: 600; color: var(--nav-teal);">{{ r.cumulative_pool | commas }}</td>
+                                                <td style="font-weight: 600; color: var(--nav-teal);">
+                                                    {% if r.cumulative_pool is not none %}
+                                                        {{ r.cumulative_pool | commas }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
