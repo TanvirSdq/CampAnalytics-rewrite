@@ -864,9 +864,10 @@
             if (!yrStartInput || !yrEndInput) return;
             const y1 = parseInt(yrStartInput.value, 10) || {{ DEFAULT_START_YEAR }};
             const y2 = parseInt(yrEndInput.value, 10) || {{ CURRENT_YEAR }};
+            const baselineYr = y1 > 2010 ? y1 - 1 : y1;
             
             const codes = [];
-            for (let y = y1; y <= y2; y++) {
+            for (let y = baselineYr; y <= y2; y++) {
                 const yy = String(y % 100).padStart(2, '0');
                 codes.push(evt + cc + yy);
             }
@@ -881,7 +882,7 @@
                 if (notice) {
                     influxHint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
                 } else {
-                    influxHint.innerText = 'Chronological campaign sequence to evaluate.';
+                    influxHint.innerText = 'Chronological campaign sequence to evaluate (includes ' + baselineYr + ' as prior baseline).';
                 }
             }
         }
@@ -910,7 +911,7 @@
         }
 
         // Parse typed or pasted codes into Influx Builder controls
-        function parseCodeToInfluxBuilder() {
+        function parseCodeToInfluxBuilder(fromInputEvent) {
             const codesInput = document.getElementById('influx_codes');
             if (!codesInput) return;
             const val = codesInput.value.trim().toLowerCase();
@@ -941,7 +942,15 @@
                 }
                 const yrStartInput = document.getElementById('influx_yr_start');
                 const yrEndInput = document.getElementById('influx_yr_end');
-                if (minY !== null && yrStartInput) yrStartInput.value = minY;
+                if (minY !== null && yrStartInput) {
+                    const existingStart = parseInt(yrStartInput.value, 10);
+                    // Preserve span start year if minY is the automatic prior-year baseline (existingStart - 1)
+                    if (!fromInputEvent && existingStart && minY === existingStart - 1) {
+                        yrStartInput.value = existingStart;
+                    } else {
+                        yrStartInput.value = minY < maxY ? minY + 1 : minY;
+                    }
+                }
                 if (maxY !== null && yrEndInput) yrEndInput.value = maxY;
 
                 const influxHint = document.getElementById('influx-scope-hint');

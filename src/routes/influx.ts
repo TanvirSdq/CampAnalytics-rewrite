@@ -9,7 +9,7 @@ const router = Router();
 export async function handleInflux(req: Request, res: Response): Promise<void> {
   const reqDict = req.method === 'POST' ? req.body : req.query;
   const currentYear = new Date().getFullYear();
-  const currentY = currentYear - 1;
+  const currentY = currentYear;
   const defaultStart = currentY - 4;
 
   const resolved = resolveCampaignQueryParams(reqDict, 'wlm');
@@ -41,7 +41,8 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
   if (!rawCodes && countryList.length === 1) {
     const singleC = countryList[0];
     const codesArr: string[] = [];
-    for (let y = yrStart; y <= yrEnd; y++) {
+    const baselineStart = yrStart > 2010 ? yrStart - 1 : yrStart;
+    for (let y = baselineStart; y <= yrEnd; y++) {
       codesArr.push(`${eventType}${singleC}${String(y % 100).padStart(2, '0')}`);
     }
     rawCodes = codesArr.join(' ');
@@ -106,6 +107,13 @@ export async function handleInflux(req: Request, res: Response): Promise<void> {
   }
 
   const validCodes = rawCodes.split(/\s+/).filter((c) => analytics.CODE_RE.test(c));
+  // When a span [yrStart, yrEnd] is selected via builder, ensure the year prior (yrStart - 1) is included as the baseline
+  if ((reqDict.influx_yr_start || reqDict.yr_start) && country && yrStart > 2010 && validCodes.length > 0) {
+    const priorYearCode = `${eventType}${country.toLowerCase()}${String((yrStart - 1) % 100).padStart(2, '0')}`;
+    if (analytics.CODE_RE.test(priorYearCode) && !validCodes.some((c) => c.toLowerCase() === priorYearCode)) {
+      validCodes.unshift(priorYearCode);
+    }
+  }
   let chartB64 = '';
   let influxResult: any = null;
 

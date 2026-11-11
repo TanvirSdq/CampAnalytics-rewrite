@@ -195,130 +195,396 @@
                 </div>
 
                 <div class="display-panel-body camp-shell-body">
-                    <!-- Observational KPI Summary Grid with YoY Velocity Deltas -->
+                    <!-- Observational KPI Summary Grid with Dual Comparison Bars (Regional Peers + Prior Year) -->
                     <div class="stat-kpi-grid">
+                        <!-- 1. Community Scale -->
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Community Scale</span>
-                                {% if metrics['Scale'] and metrics['Scale']['is_inaugural'] %}
-                                    <span class="stat-kpi-badge badge-neutral">Inaugural</span>
-                                {% elif metrics['Scale'] and metrics['Scale']['is_positive'] %}
-                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
+                                {% if metrics['Scale'] and metrics['Scale']['regional_is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive" id="kpi-scale-badge"
+                                          data-median-text="{{ metrics['Scale']['regional_delta_formatted'] }}"
+                                          data-median-class="badge-positive"
+                                          data-mean-text="{{ metrics['Scale']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Scale']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Scale']['regional_delta_formatted'] }}</span>
                                 {% else %}
-                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-negative" id="kpi-scale-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
+                                          data-median-text="{{ metrics['Scale']['regional_delta_formatted'] }}"
+                                          data-median-class="badge-negative"
+                                          data-mean-text="{{ metrics['Scale']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Scale']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Scale']['regional_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Scale']['raw'] if metrics['Scale'] else target_users_count ~ ' uploaders' }}</div>
-                            <div class="stat-kpi-subtext" id="kpi-scale-subtext"
-                                 data-median="Regional Benchmark: {% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}"
-                                 data-mean="Regional Benchmark: {% if metrics['Scale'] and metrics['Scale']['regional_mean'] is not none %}{{ metrics['Scale']['regional_mean'] }} uploaders{% else %}—{% endif %}">Regional Benchmark: {% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}</div>
+                            <div class="kpi-dual-bars">
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl" data-peer-lbl="true">vs Peer Median (P₅₀)</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val" id="kpi-scale-peer-val"
+                                                  data-median="{% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}"
+                                                  data-mean="{% if metrics['Scale'] and metrics['Scale']['regional_mean'] is not none %}{{ metrics['Scale']['regional_mean'] }} uploaders{% else %}—{% endif %}">{% if metrics['Scale'] and metrics['Scale']['regional_median'] is not none %}{{ metrics['Scale']['regional_median'] }} uploaders{% else %}—{% endif %}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track" title="Target Campaign vs Regional Peer Benchmark">
+                                            <div class="kpi-comp-fill-target" id="kpi-scale-tgt-peer-bar"
+                                                 data-median-w="{{ metrics['Scale']['target_vs_reg_median_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Scale']['target_vs_reg_mean_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Scale']['target_vs_reg_median_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track" title="Regional Peer Benchmark">
+                                            <div class="kpi-comp-fill-peer" id="kpi-scale-peer-bar"
+                                                 data-median-w="{{ metrics['Scale']['reg_median_bar_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Scale']['reg_mean_bar_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Scale']['reg_median_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl">vs Prior Edition</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val">{{ metrics['Scale']['prior_val_formatted'] or '—' }}</span>
+                                            <span class="kpi-comp-delta {% if metrics['Scale']['is_inaugural'] %}delta-neutral{% elif metrics['Scale']['yoy_is_positive'] %}delta-pos{% else %}delta-neg{% endif %}">{{ metrics['Scale']['yoy_delta_formatted'] }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track" title="Target Campaign vs Prior Edition">
+                                            <div class="kpi-comp-fill-target" style="width: {{ metrics['Scale']['target_vs_prior_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track" title="Prior Edition Baseline">
+                                            <div class="kpi-comp-fill-prior" style="width: {{ metrics['Scale']['prior_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- 2. Contributor Retention -->
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Contributor Retention</span>
                                 {% if metrics['Retention']['is_inaugural'] %}
                                     <span class="stat-kpi-badge badge-neutral">Inaugural</span>
-                                {% elif metrics['Retention']['is_positive'] %}
+                                {% elif metrics['Retention']['regional_is_positive'] %}
                                     <span class="stat-kpi-badge badge-positive" id="kpi-retention-badge"
-                                          data-median-text="{{ metrics['Retention']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Retention']['regional_delta_formatted'] }}"
                                           data-median-class="badge-positive"
                                           data-mean-text="{{ metrics['Retention']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Retention']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Retention']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Retention']['regional_delta_formatted'] }}</span>
                                 {% else %}
                                     <span class="stat-kpi-badge badge-negative" id="kpi-retention-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
-                                          data-median-text="{{ metrics['Retention']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Retention']['regional_delta_formatted'] }}"
                                           data-median-class="badge-negative"
                                           data-mean-text="{{ metrics['Retention']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Retention']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Retention']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Retention']['regional_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Retention']['raw'] }}</div>
-                            <div class="stat-kpi-subtext">Retained: {{ metrics['Retention']['raw_formatted'] or '—' }}</div>
+                            <div class="stat-kpi-subtext" style="margin-top: 2px;">Retained: {{ metrics['Retention']['raw_formatted'] or '—' }}</div>
+                            <div class="kpi-dual-bars">
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl" data-peer-lbl="true">vs Peer Median (P₅₀)</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val" id="kpi-retention-peer-val"
+                                                  data-median="{% if metrics['Retention'] and metrics['Retention']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Retention']['regional_median']) }}%{% else %}—{% endif %}"
+                                                  data-mean="{% if metrics['Retention'] and metrics['Retention']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Retention']['regional_mean']) }}%{% else %}—{% endif %}">{% if metrics['Retention'] and metrics['Retention']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Retention']['regional_median']) }}%{% else %}—{% endif %}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" id="kpi-retention-tgt-peer-bar"
+                                                 data-median-w="{{ metrics['Retention']['target_vs_reg_median_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Retention']['target_vs_reg_mean_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Retention']['target_vs_reg_median_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-peer" id="kpi-retention-peer-bar"
+                                                 data-median-w="{{ metrics['Retention']['reg_median_bar_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Retention']['reg_mean_bar_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Retention']['reg_median_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl">vs Prior Edition</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val">{{ metrics['Retention']['prior_val_formatted'] or '—' }}</span>
+                                            <span class="kpi-comp-delta {% if metrics['Retention']['is_inaugural'] %}delta-neutral{% elif metrics['Retention']['yoy_is_positive'] %}delta-pos{% else %}delta-neg{% endif %}">{{ metrics['Retention']['yoy_delta_formatted'] }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" style="width: {{ metrics['Retention']['target_vs_prior_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-prior" style="width: {{ metrics['Retention']['prior_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- 3. Newcomer Recruitment -->
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Newcomer Recruitment</span>
                                 {% if metrics['Growth']['is_inaugural'] %}
                                     <span class="stat-kpi-badge badge-neutral">Inaugural</span>
-                                {% elif metrics['Growth']['is_positive'] %}
+                                {% elif metrics['Growth']['regional_is_positive'] %}
                                     <span class="stat-kpi-badge badge-positive" id="kpi-growth-badge"
-                                          data-median-text="{{ metrics['Growth']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Growth']['regional_delta_formatted'] }}"
                                           data-median-class="badge-positive"
                                           data-mean-text="{{ metrics['Growth']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Growth']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Growth']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Growth']['regional_delta_formatted'] }}</span>
                                 {% else %}
                                     <span class="stat-kpi-badge badge-negative" id="kpi-growth-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
-                                          data-median-text="{{ metrics['Growth']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Growth']['regional_delta_formatted'] }}"
                                           data-median-class="badge-negative"
                                           data-mean-text="{{ metrics['Growth']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Growth']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Growth']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Growth']['regional_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Growth']['raw'] }}</div>
-                            <div class="stat-kpi-subtext">First-Time Intake: {{ "%.1f"|format(metrics['Growth']['yoy_delta_pct'] or 0) }}% of cohort</div>
+                            <div class="stat-kpi-subtext" style="margin-top: 2px;">First-Time Intake: {{ "%.1f"|format(metrics['Growth']['yoy_delta_pct'] or 0) }}% of cohort</div>
+                            <div class="kpi-dual-bars">
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl" data-peer-lbl="true">vs Peer Median (P₅₀)</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val" id="kpi-growth-peer-val"
+                                                  data-median="{% if metrics['Growth'] and metrics['Growth']['regional_median'] is not none %}{{ metrics['Growth']['regional_median'] }} newcomers{% else %}—{% endif %}"
+                                                  data-mean="{% if metrics['Growth'] and metrics['Growth']['regional_mean'] is not none %}{{ metrics['Growth']['regional_mean'] }} newcomers{% else %}—{% endif %}">{% if metrics['Growth'] and metrics['Growth']['regional_median'] is not none %}{{ metrics['Growth']['regional_median'] }} newcomers{% else %}—{% endif %}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" id="kpi-growth-tgt-peer-bar"
+                                                 data-median-w="{{ metrics['Growth']['target_vs_reg_median_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Growth']['target_vs_reg_mean_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Growth']['target_vs_reg_median_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-peer" id="kpi-growth-peer-bar"
+                                                 data-median-w="{{ metrics['Growth']['reg_median_bar_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Growth']['reg_mean_bar_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Growth']['reg_median_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl">vs Prior Edition</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val">{{ metrics['Growth']['prior_val_formatted'] or '—' }}</span>
+                                            <span class="kpi-comp-delta {% if metrics['Growth']['is_inaugural'] %}delta-neutral{% elif metrics['Growth']['yoy_is_positive'] %}delta-pos{% else %}delta-neg{% endif %}">{{ metrics['Growth']['yoy_delta_formatted'] }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" style="width: {{ metrics['Growth']['target_vs_prior_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-prior" style="width: {{ metrics['Growth']['prior_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- 4. Upload Volume -->
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Upload Volume</span>
-                                {% if metrics['Uploads'] and metrics['Uploads']['is_inaugural'] %}
-                                    <span class="stat-kpi-badge badge-neutral">Inaugural</span>
-                                {% elif metrics['Uploads'] and metrics['Uploads']['is_positive'] %}
-                                    <span class="stat-kpi-badge badge-positive">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
+                                {% if metrics['Uploads'] and metrics['Uploads']['regional_is_positive'] %}
+                                    <span class="stat-kpi-badge badge-positive" id="kpi-uploads-badge"
+                                          data-median-text="{{ metrics['Uploads']['regional_delta_formatted'] }}"
+                                          data-median-class="badge-positive"
+                                          data-mean-text="{{ metrics['Uploads']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Uploads']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Uploads']['regional_delta_formatted'] }}</span>
                                 {% else %}
-                                    <span class="stat-kpi-badge badge-negative" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
+                                    <span class="stat-kpi-badge badge-negative" id="kpi-uploads-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
+                                          data-median-text="{{ metrics['Uploads']['regional_delta_formatted'] }}"
+                                          data-median-class="badge-negative"
+                                          data-mean-text="{{ metrics['Uploads']['mean_delta_formatted'] }}"
+                                          data-mean-class="{% if metrics['Uploads']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Uploads']['regional_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Uploads']['raw'] if metrics['Uploads'] else '—' }}</div>
-                            <div class="stat-kpi-subtext">Baseline: {{ (metrics['Uploads']['baseline_val'] ~ ' submissions') if metrics['Uploads'] and metrics['Uploads']['baseline_val'] else '—' }}</div>
+                            <div class="kpi-dual-bars">
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl" data-peer-lbl="true">vs Peer Median (P₅₀)</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val" id="kpi-uploads-peer-val"
+                                                  data-median="{% if metrics['Uploads'] and metrics['Uploads']['regional_median'] is not none %}{{ metrics['Uploads']['regional_median'] }} files{% else %}—{% endif %}"
+                                                  data-mean="{% if metrics['Uploads'] and metrics['Uploads']['regional_mean'] is not none %}{{ metrics['Uploads']['regional_mean'] }} files{% else %}—{% endif %}">{% if metrics['Uploads'] and metrics['Uploads']['regional_median'] is not none %}{{ metrics['Uploads']['regional_median'] }} files{% else %}—{% endif %}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" id="kpi-uploads-tgt-peer-bar"
+                                                 data-median-w="{{ metrics['Uploads']['target_vs_reg_median_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Uploads']['target_vs_reg_mean_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Uploads']['target_vs_reg_median_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-peer" id="kpi-uploads-peer-bar"
+                                                 data-median-w="{{ metrics['Uploads']['reg_median_bar_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Uploads']['reg_mean_bar_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Uploads']['reg_median_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl">vs Prior Edition</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val">{{ metrics['Uploads']['prior_val_formatted'] or '—' }}</span>
+                                            <span class="kpi-comp-delta {% if metrics['Uploads']['is_inaugural'] %}delta-neutral{% elif metrics['Uploads']['yoy_is_positive'] %}delta-pos{% else %}delta-neg{% endif %}">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" style="width: {{ metrics['Uploads']['target_vs_prior_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-prior" style="width: {{ metrics['Uploads']['prior_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- 5. Content Utility -->
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Content Utility</span>
-                                {% if metrics['Usage']['is_positive'] %}
+                                {% if metrics['Usage']['regional_is_positive'] %}
                                     <span class="stat-kpi-badge badge-positive" id="kpi-usage-badge"
-                                          data-median-text="{{ metrics['Usage']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Usage']['regional_delta_formatted'] }}"
                                           data-median-class="badge-positive"
                                           data-mean-text="{{ metrics['Usage']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Usage']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Usage']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Usage']['regional_delta_formatted'] }}</span>
                                 {% else %}
                                     <span class="stat-kpi-badge badge-negative" id="kpi-usage-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
-                                          data-median-text="{{ metrics['Usage']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Usage']['regional_delta_formatted'] }}"
                                           data-median-class="badge-negative"
                                           data-mean-text="{{ metrics['Usage']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Usage']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Usage']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Usage']['regional_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Usage']['raw_formatted'] if metrics['Usage']['raw_formatted'] else ("%.1f"|format(metrics['Usage']['raw']) ~ '%') }}</div>
-                            <div class="stat-kpi-subtext" id="kpi-usage-subtext"
-                                 data-median="Regional Benchmark: {% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}% usage{% else %}—{% endif %}"
-                                 data-mean="Regional Benchmark: {% if metrics['Usage'] and metrics['Usage']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_mean']) }}% usage{% else %}—{% endif %}">Regional Benchmark: {% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}% usage{% else %}—{% endif %}</div>
+                            <div class="kpi-dual-bars">
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl" data-peer-lbl="true">vs Peer Median (P₅₀)</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val" id="kpi-usage-peer-val"
+                                                  data-median="{% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}% usage{% else %}—{% endif %}"
+                                                  data-mean="{% if metrics['Usage'] and metrics['Usage']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_mean']) }}% usage{% else %}—{% endif %}">{% if metrics['Usage'] and metrics['Usage']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Usage']['regional_median']) }}% usage{% else %}—{% endif %}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" id="kpi-usage-tgt-peer-bar"
+                                                 data-median-w="{{ metrics['Usage']['target_vs_reg_median_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Usage']['target_vs_reg_mean_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Usage']['target_vs_reg_median_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-peer" id="kpi-usage-peer-bar"
+                                                 data-median-w="{{ metrics['Usage']['reg_median_bar_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Usage']['reg_mean_bar_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Usage']['reg_median_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl">vs Prior Edition</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val">{{ metrics['Usage']['prior_val_formatted'] or '—' }}</span>
+                                            <span class="kpi-comp-delta {% if metrics['Usage']['is_inaugural'] %}delta-neutral{% elif metrics['Usage']['yoy_is_positive'] %}delta-pos{% else %}delta-neg{% endif %}">{{ metrics['Usage']['yoy_delta_formatted'] }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" style="width: {{ metrics['Usage']['target_vs_prior_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-prior" style="width: {{ metrics['Usage']['prior_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- 6. Quality Recognition -->
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
                                 <span>Quality Recognition</span>
-                                {% if metrics['Quality']['is_positive'] %}
+                                {% if metrics['Quality']['regional_is_positive'] %}
                                     <span class="stat-kpi-badge badge-positive" id="kpi-quality-badge"
-                                          data-median-text="{{ metrics['Quality']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Quality']['regional_delta_formatted'] }}"
                                           data-median-class="badge-positive"
                                           data-mean-text="{{ metrics['Quality']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Quality']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Quality']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Quality']['regional_delta_formatted'] }}</span>
                                 {% else %}
                                     <span class="stat-kpi-badge badge-negative" id="kpi-quality-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0;"
-                                          data-median-text="{{ metrics['Quality']['yoy_delta_formatted'] }}"
+                                          data-median-text="{{ metrics['Quality']['regional_delta_formatted'] }}"
                                           data-median-class="badge-negative"
                                           data-mean-text="{{ metrics['Quality']['mean_delta_formatted'] }}"
-                                          data-mean-class="{% if metrics['Quality']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                          data-mean-class="{% if metrics['Quality']['mean_is_positive'] %}badge-positive{% else %}badge-negative{% endif %}">{{ metrics['Quality']['regional_delta_formatted'] }}</span>
                                 {% endif %}
                             </div>
                             <div class="stat-kpi-value">{{ metrics['Quality']['raw_formatted'] if metrics['Quality']['raw_formatted'] else ("%.1f"|format(metrics['Quality']['raw']) ~ '% QI') }}</div>
-                            <div class="stat-kpi-subtext" id="kpi-quality-subtext"
-                                 data-median="Regional Benchmark: {% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}% QI{% else %}—{% endif %}"
-                                 data-mean="Regional Benchmark: {% if metrics['Quality'] and metrics['Quality']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_mean']) }}% QI{% else %}—{% endif %}">Regional Benchmark: {% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}% QI{% else %}—{% endif %}</div>
+                            <div class="kpi-dual-bars">
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl" data-peer-lbl="true">vs Peer Median (P₅₀)</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val" id="kpi-quality-peer-val"
+                                                  data-median="{% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}% QI{% else %}—{% endif %}"
+                                                  data-mean="{% if metrics['Quality'] and metrics['Quality']['regional_mean'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_mean']) }}% QI{% else %}—{% endif %}">{% if metrics['Quality'] and metrics['Quality']['regional_median'] is not none %}{{ "%.1f"|format(metrics['Quality']['regional_median']) }}% QI{% else %}—{% endif %}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" id="kpi-quality-tgt-peer-bar"
+                                                 data-median-w="{{ metrics['Quality']['target_vs_reg_median_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Quality']['target_vs_reg_mean_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Quality']['target_vs_reg_median_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-peer" id="kpi-quality-peer-bar"
+                                                 data-median-w="{{ metrics['Quality']['reg_median_bar_pct'] or 0 }}"
+                                                 data-mean-w="{{ metrics['Quality']['reg_mean_bar_pct'] or 0 }}"
+                                                 style="width: {{ metrics['Quality']['reg_median_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="kpi-comp-group">
+                                    <div class="kpi-comp-header">
+                                        <span class="kpi-comp-lbl">vs Prior Edition</span>
+                                        <span class="kpi-comp-meta">
+                                            <span class="kpi-comp-val">{{ metrics['Quality']['prior_val_formatted'] or '—' }}</span>
+                                            <span class="kpi-comp-delta {% if metrics['Quality']['is_inaugural'] %}delta-neutral{% elif metrics['Quality']['yoy_is_positive'] %}delta-pos{% else %}delta-neg{% endif %}">{{ metrics['Quality']['yoy_delta_formatted'] }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="kpi-comp-bars-pair">
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-target" style="width: {{ metrics['Quality']['target_vs_prior_pct'] or 0 }}%;"></div>
+                                        </div>
+                                        <div class="kpi-comp-track">
+                                            <div class="kpi-comp-fill-prior" style="width: {{ metrics['Quality']['prior_bar_pct'] or 0 }}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -387,7 +653,9 @@
                                         <select id="peer-metric-select" class="form-control form-control-sm" style="font-size: 0.78rem; padding: 3px 8px; height: auto;" onchange="renderPeerContextChart()">
                                             <option value="uploaders">Active Uploaders</option>
                                             <option value="uploads">Total Submissions</option>
+                                            <option value="newcomers">First-Time Newcomers</option>
                                             <option value="retention">Retention Rate (%)</option>
+                                            <option value="usage">Content Utility (%)</option>
                                             <option value="quality">Quality Images</option>
                                         </select>
                                     </div>
@@ -572,14 +840,30 @@
                                             <td>
                                                 {% if metrics['Uploads'] and metrics['Uploads']['is_inaugural'] %}
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Inaugural</span>
-                                                {% elif metrics['Uploads'] and metrics['Uploads']['is_positive'] %}
+                                                {% elif metrics['Uploads'] and metrics['Uploads']['yoy_is_positive'] %}
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
                                                 {% else %}
                                                     <span class="benchmark-delta-pill" style="display: inline-block; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 0; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">{{ metrics['Uploads']['yoy_delta_formatted'] }}</span>
                                                 {% endif %}
                                             </td>
-                                            <td class="cell-benchmark" data-median="—" data-mean="—">—</td>
-                                            <td class="cell-delta" data-median="—" data-mean="—">—</td>
+                                            <td class="cell-benchmark"
+                                                data-median="{% if metrics['Uploads'] and metrics['Uploads']['regional_median'] is not none %}{{ metrics['Uploads']['regional_median'] }} files{% else %}—{% endif %}"
+                                                data-mean="{% if metrics['Uploads'] and metrics['Uploads']['regional_mean'] is not none %}{{ metrics['Uploads']['regional_mean'] }} files{% else %}—{% endif %}">
+                                                {% if metrics['Uploads'] and metrics['Uploads']['regional_median'] is not none %}{{ metrics['Uploads']['regional_median'] }} files{% else %}—{% endif %}
+                                            </td>
+                                            <td class="cell-delta"
+                                                data-median="{% if metrics['Uploads'] and metrics['Uploads']['regional_delta'] is not none %}{% if metrics['Uploads']['regional_delta'] >= 0 %}+{{ metrics['Uploads']['regional_delta'].toLocaleString() }}{% else %}{{ metrics['Uploads']['regional_delta'].toLocaleString() }}{% endif %}{% else %}—{% endif %}"
+                                                data-median-pos="{% if metrics['Uploads'] and metrics['Uploads']['regional_delta'] is not none and metrics['Uploads']['regional_delta'] >= 0 %}true{% else %}false{% endif %}"
+                                                data-mean="{% if metrics['Uploads'] and metrics['Uploads']['regional_mean_delta'] is not none %}{% if metrics['Uploads']['regional_mean_delta'] >= 0 %}+{{ metrics['Uploads']['regional_mean_delta'].toLocaleString() }}{% else %}{{ metrics['Uploads']['regional_mean_delta'].toLocaleString() }}{% endif %}{% else %}—{% endif %}"
+                                                data-mean-pos="{% if metrics['Uploads'] and metrics['Uploads']['regional_mean_delta'] is not none and metrics['Uploads']['regional_mean_delta'] >= 0 %}true{% else %}false{% endif %}">
+                                                {% if metrics['Uploads'] and metrics['Uploads']['regional_delta'] is not none %}
+                                                    {% if metrics['Uploads']['regional_delta'] >= 0 %}
+                                                        <span style="color: #15803d; font-weight: 600;">+{{ metrics['Uploads']['regional_delta'].toLocaleString() }}</span>
+                                                    {% else %}
+                                                        <span style="color: #b91c1c; font-weight: 600;">{{ metrics['Uploads']['regional_delta'].toLocaleString() }}</span>
+                                                    {% endif %}
+                                                {% else %}—{% endif %}
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600;">Content Utility</td>
@@ -685,8 +969,11 @@
                 window.PEER_COMPARISONS = {{ (peer_comparisons or [])|tojson }};
                 window.TARGET_EVENT = "{{ target_event }}";
 
+                window.CURRENT_BENCHMARK_MODE = 'median';
+
                 function switchBenchmarkMode(mode) {
                     const isMean = mode === 'mean';
+                    window.CURRENT_BENCHMARK_MODE = isMean ? 'mean' : 'median';
                     const btnMedian = document.getElementById('bm-toggle-median');
                     const btnMean = document.getElementById('bm-toggle-mean');
                     if (btnMedian && btnMean) {
@@ -694,18 +981,36 @@
                         btnMean.classList.toggle('active', isMean);
                     }
 
-                    // 1. Update KPI Card Subtexts
-                    const subtextIds = ['kpi-scale-subtext', 'kpi-usage-subtext', 'kpi-quality-subtext'];
-                    subtextIds.forEach(id => {
+                    // 1. Update KPI Card Regional Peer Labels, Values & Proportional Bars
+                    document.querySelectorAll('[data-peer-lbl="true"]').forEach(el => {
+                        el.textContent = isMean ? 'vs Peer Mean (Avg)' : 'vs Peer Median (P₅₀)';
+                    });
+                    const peerValIds = ['kpi-scale-peer-val', 'kpi-retention-peer-val', 'kpi-growth-peer-val', 'kpi-uploads-peer-val', 'kpi-usage-peer-val', 'kpi-quality-peer-val'];
+                    peerValIds.forEach(id => {
                         const el = document.getElementById(id);
                         if (el) {
                             const val = el.getAttribute(isMean ? 'data-mean' : 'data-median');
                             if (val) el.textContent = val;
                         }
                     });
+                    const barIds = [
+                        'kpi-scale-tgt-peer-bar', 'kpi-scale-peer-bar',
+                        'kpi-retention-tgt-peer-bar', 'kpi-retention-peer-bar',
+                        'kpi-growth-tgt-peer-bar', 'kpi-growth-peer-bar',
+                        'kpi-uploads-tgt-peer-bar', 'kpi-uploads-peer-bar',
+                        'kpi-usage-tgt-peer-bar', 'kpi-usage-peer-bar',
+                        'kpi-quality-tgt-peer-bar', 'kpi-quality-peer-bar'
+                    ];
+                    barIds.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            const w = el.getAttribute(isMean ? 'data-mean-w' : 'data-median-w') || '0';
+                            el.style.width = `${w}%`;
+                        }
+                    });
 
                     // 2. Update KPI Badges
-                    const badgeIds = ['kpi-retention-badge', 'kpi-growth-badge', 'kpi-usage-badge', 'kpi-quality-badge'];
+                    const badgeIds = ['kpi-scale-badge', 'kpi-retention-badge', 'kpi-growth-badge', 'kpi-uploads-badge', 'kpi-usage-badge', 'kpi-quality-badge'];
                     badgeIds.forEach(id => {
                         const el = document.getElementById(id);
                         if (el) {
@@ -750,6 +1055,9 @@
                             cell.textContent = '—';
                         }
                     });
+
+                    // 6. Re-render Peer Context Chart so Regional Benchmark reference bar updates
+                    renderPeerContextChart();
                 }
 
                 function renderLongitudinalChart() {
@@ -887,6 +1195,9 @@
 
                 function renderPeerContextChart() {
                     const peers = window.PEER_COMPARISONS || [];
+                    const rep = window.OVERALL_REPORT_DATA || {};
+                    const dims = rep.dimensions || {};
+                    const isMean = window.CURRENT_BENCHMARK_MODE === 'mean';
                     const el = document.getElementById('chart-peer-context');
                     if (!el || !peers.length || typeof Plotly === 'undefined') return;
 
@@ -896,22 +1207,56 @@
                     const labels = peers.map(p => `${p.country} (${p.country_code})`);
                     let values = [];
                     let metricLabel = 'Active Uploaders';
+                    let isPercent = false;
+                    let regBenchVal = null;
+                    let priorVal = null;
 
                     if (metric === 'uploads') {
                         values = peers.map(p => p.uploads);
-                        metricLabel = 'Submissions';
+                        metricLabel = 'Total Submissions';
+                        regBenchVal = dims.Uploads ? (isMean ? dims.Uploads.regional_mean : dims.Uploads.regional_median) : null;
+                        priorVal = dims.Uploads ? dims.Uploads.baseline_val : null;
+                    } else if (metric === 'newcomers') {
+                        values = peers.map(p => p.newcomers ?? 0);
+                        metricLabel = 'First-Time Newcomers';
+                        regBenchVal = dims.Growth ? (isMean ? dims.Growth.regional_mean : dims.Growth.regional_median) : null;
+                        priorVal = dims.Growth ? dims.Growth.baseline_val : null;
                     } else if (metric === 'retention') {
                         values = peers.map(p => p.retention_pct || 0);
                         metricLabel = 'Retention Rate (%)';
+                        isPercent = true;
+                        regBenchVal = dims.Retention ? (isMean ? dims.Retention.regional_mean : dims.Retention.regional_median) : null;
+                        priorVal = dims.Retention ? dims.Retention.baseline_val : null;
+                    } else if (metric === 'usage') {
+                        values = peers.map(p => p.usage_rate_pct ?? 0);
+                        metricLabel = 'Content Utility (%)';
+                        isPercent = true;
+                        regBenchVal = dims.Usage ? (isMean ? dims.Usage.regional_mean : dims.Usage.regional_median) : null;
+                        priorVal = dims.Usage ? dims.Usage.baseline_val : null;
                     } else if (metric === 'quality') {
                         values = peers.map(p => p.quality_count);
                         metricLabel = 'Quality Images';
+                        regBenchVal = dims.Quality ? (isMean ? dims.Quality.mean_benchmark_count : dims.Quality.benchmark_count) : null;
+                        priorVal = dims.Quality ? dims.Quality.baseline_count : null;
                     } else {
                         values = peers.map(p => p.uploaders);
-                        metricLabel = 'Uploaders';
+                        metricLabel = 'Active Uploaders';
+                        regBenchVal = dims.Scale ? (isMean ? dims.Scale.regional_mean : dims.Scale.regional_median) : null;
+                        priorVal = dims.Scale ? dims.Scale.baseline_val : null;
                     }
 
                     const colors = peers.map((p, idx) => idx === 0 ? '#2563eb' : '#64748b');
+
+                    if (typeof regBenchVal === 'number' && !isNaN(regBenchVal)) {
+                        labels.push(isMean ? 'Regional Peer Mean' : 'Regional Peer Median (P₅₀)');
+                        values.push(regBenchVal);
+                        colors.push('#008080');
+                    }
+                    if (typeof priorVal === 'number' && !isNaN(priorVal) && priorVal > 0) {
+                        labels.push(`Prior Edition (${(rep.baseline_code || 't-1').toUpperCase()})`);
+                        values.push(priorVal);
+                        colors.push('#475569');
+                    }
 
                     const trace = {
                         y: labels,
@@ -919,13 +1264,13 @@
                         type: 'bar',
                         orientation: 'h',
                         marker: { color: colors },
-                        text: values.map(v => metric === 'retention' ? `${v}%` : v.toLocaleString()),
+                        text: values.map(v => isPercent ? `${Number(v).toFixed(1)}%` : Number(v).toLocaleString()),
                         textposition: 'auto',
                         hoverinfo: 'x+y'
                     };
 
                     const layout = {
-                        margin: { t: 20, r: 35, b: 40, l: 120 },
+                        margin: { t: 20, r: 35, b: 40, l: 155 },
                         xaxis: { title: metricLabel, showgrid: true, gridcolor: '#e2e8f0' },
                         yaxis: { autorange: 'reversed' },
                         paper_bgcolor: '#ffffff',

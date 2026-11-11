@@ -86,7 +86,7 @@
                                                 Clear Codes
                                             </button>
                                         </div>
-                                        <input type="text" id="influx_codes" name="influx_codes" class="form-control form-control-code" value="{{ influx_codes|default('') }}" placeholder="e.g. wlmde22 wlmde23 wlmde24 wlmde25 wlmde26" oninput="parseCodeToInfluxBuilder()">
+                                        <input type="text" id="influx_codes" name="influx_codes" class="form-control form-control-code" value="{{ influx_codes|default('') }}" placeholder="e.g. wlmde22 wlmde23 wlmde24 wlmde25 wlmde26" oninput="parseCodeToInfluxBuilder(true)">
                                         <div class="form-hint" id="influx-scope-hint">Chronological campaign sequence to evaluate.</div>
                                     </div>
                                 </div>

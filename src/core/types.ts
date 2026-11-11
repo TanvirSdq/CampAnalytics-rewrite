@@ -36,6 +36,7 @@ export interface HealthBenchmarks {
   usage_count?: number | null;
   usage_rate?: number | null;
   scale: number | null;
+  uploads?: number | null;
 }
 
 export interface HealthMetricDimension {
@@ -46,11 +47,15 @@ export interface HealthMetricDimension {
   benchmark_count?: number;
   baseline_val?: number | null;
   baseline_count?: number | null;
+  prior_val_formatted?: string;
   yoy_delta?: number | null;
   yoy_delta_pct?: number | null;
   yoy_delta_formatted?: string;
+  yoy_is_positive?: boolean;
   regional_median?: number | null;
   regional_delta?: number | null;
+  regional_delta_formatted?: string;
+  regional_is_positive?: boolean;
   regional_mean?: number | null;
   regional_mean_delta?: number | null;
   mean_benchmark_count?: number | null;
@@ -131,9 +136,11 @@ export interface PeerComparisonPoint {
   code: string;
   uploaders: number;
   uploads: number;
+  newcomers?: number;
   retention_pct: number | null;
   quality_count: number;
   usage_count: number;
+  usage_rate_pct?: number;
 }
 
 export interface HealthEvaluationResult {

@@ -161,6 +161,13 @@ test('MATH-04: computeYoYInflux excludes Year 0 from avg_newcomer_share_pct', as
   // avg_newcomer_share_pct must average post-baseline editions (50 + 66.7) / 2 = 58.4%
   // and NOT include the 100% year-0 artifact
   assert.equal(influx.summary.avg_newcomer_share_pct, 58.4);
+
+  // peak_influx_year must also exclude the baseline year (2022) even when baseline has more initial entrants
+  analytics.primeParticipantCache('wlmde21', ['U1', 'U2', 'U3', 'U4', 'U5'], new Map([['U1', 1], ['U2', 1], ['U3', 1], ['U4', 1], ['U5', 1]]));
+  const influxWithLargeBaseline = await analytics.computeYoYInflux(['wlmde21', 'wlmde22', 'wlmde23', 'wlmde24']);
+  assert.notEqual(influxWithLargeBaseline.summary.peak_influx_year, 2021, 'Peak influx year must exclude baseline year');
+  assert.equal(influxWithLargeBaseline.summary.peak_influx_year, 2022);
+  assert.equal(influxWithLargeBaseline.summary.peak_influx_count, 2);
 });
 
 test('MATH-05: Comparative mobility module produces valid points and methodology card', async () => {

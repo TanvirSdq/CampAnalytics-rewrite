@@ -776,32 +776,54 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
 
   const qualityShare = totalUploads > 0 ? parseFloat(((qualityCount / totalUploads) * 100).toFixed(1)) : 0.0;
 
-  // Real Global Usage sampling (50 files from Commons category)
-  let sampledFiles = 0;
-  let usedFiles = 0;
+  // Full-category Global Usage evaluation (paginated 500-file batches with gulimit=500)
+  const seenPids = new Set<string>();
+  const usedPids = new Set<string>();
   for (const cat of categories) {
     try {
-      const uData = await fetchCommonsApi({
-        action: 'query',
-        generator: 'categorymembers',
-        gcmtitle: `Category:${cat}`,
-        gcmtype: 'file',
-        gcmlimit: '50',
-        prop: 'globalusage',
-        gulimit: '5'
-      }, 5000);
-      const pages = uData?.query?.pages || {};
-      for (const pid of Object.keys(pages)) {
-        sampledFiles++;
-        const gu = pages[pid]?.globalusage || [];
-        if (gu.length > 0) usedFiles++;
+      let continueParams: Record<string, string> | undefined = undefined;
+      let iterations = 0;
+      const startTime = Date.now();
+
+      while (iterations < 60 && Date.now() - startTime < 12000) {
+        iterations++;
+        const queryParams: Record<string, string> = {
+          action: 'query',
+          generator: 'categorymembers',
+          gcmtitle: `Category:${cat}`,
+          gcmtype: 'file',
+          gcmlimit: '500',
+          prop: 'globalusage',
+          gulimit: '500',
+          ...(continueParams || {})
+        };
+        const uData = await fetchCommonsApi(queryParams, 6000);
+        const pages = uData?.query?.pages || {};
+        for (const pid of Object.keys(pages)) {
+          if (pid === '-1') continue;
+          seenPids.add(pid);
+          const gu = pages[pid]?.globalusage || [];
+          if (gu.length > 0) usedPids.add(pid);
+        }
+        if (uData?.continue) {
+          continueParams = {};
+          for (const [k, v] of Object.entries(uData.continue)) {
+            if (typeof v === 'string' || typeof v === 'number') {
+              continueParams[k] = String(v);
+            }
+          }
+        } else {
+          break;
+        }
       }
     } catch {
-      // Fall through
+      // Fall through if transient timeout on continuation page
     }
-    if (sampledFiles > 0) break;
+    if (seenPids.size > 0) break;
   }
 
+  const sampledFiles = seenPids.size;
+  const usedFiles = usedPids.size;
   const usageShare = sampledFiles > 0 ? parseFloat(((usedFiles / sampledFiles) * 100).toFixed(1)) : 0.0;
 
   const metrics = {
@@ -1360,10 +1382,10 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
   let summary: any;
   if (records.length > 0) {
     // Post-baseline editions exclude the synthetic 100% year-0 artifact
-    const postBaseline = records.slice(1);
+    const postBaseline = records.filter((r) => !r.is_baseline);
     const validRecords = postBaseline.length > 0 ? postBaseline : records;
     const avgNewcomer = validRecords.reduce((s, r) => s + r.newcomer_share_pct, 0) / validRecords.length;
-    const peakInflux = [...records].sort((a, b) => b.new_contributors - a.new_contributors)[0];
+    const peakInflux = [...validRecords].sort((a, b) => b.new_contributors - a.new_contributors)[0];
     const peakTotal = [...records].sort((a, b) => b.total_active - a.total_active)[0];
     const latest = records[records.length - 1];
 
@@ -1558,6 +1580,17 @@ export function computeEmpiricalMedian(arr: number[]): number | null {
   return parseFloat(med.toFixed(1));
 }
 
+function computeBarPair(a: number | null | undefined, b: number | null | undefined): [number, number] {
+  const valA = typeof a === 'number' && !isNaN(a) && a > 0 ? a : 0;
+  const valB = typeof b === 'number' && !isNaN(b) && b > 0 ? b : 0;
+  const maxVal = Math.max(valA, valB);
+  if (maxVal <= 0) return [0, 0];
+  return [
+    Math.min(100, Math.max(4, Math.round((valA / maxVal) * 100))),
+    Math.min(100, Math.max(4, Math.round((valB / maxVal) * 100)))
+  ];
+}
+
 export function generateHealthMetrics(
   targetUsers: Set<string>,
   baselineUsers: Set<string>,
@@ -1565,7 +1598,11 @@ export function generateHealthMetrics(
   benchmarks: any,
   baselineStructural?: any,
   benchmarksMean?: any,
-  allPriorUsers?: Set<string>
+  allPriorUsers?: Set<string>,
+  priorEditionStats?: {
+    retention_rate?: number | null;
+    newcomers_count?: number | null;
+  }
 ): Record<string, any> {
   const metrics: Record<string, any> = {};
   const isInaugural = !baselineUsers || baselineUsers.size === 0;
@@ -1575,8 +1612,8 @@ export function generateHealthMetrics(
   const baseUploads = baselineStructural?.total_uploads || 0;
 
   // 1. Community Scale (Active Uploaders Volume)
-  const scaleBm = typeof benchmarks.scale === 'number' ? benchmarks.scale : null;
-  const scaleMean = typeof benchmarksMean?.scale === 'number' ? benchmarksMean.scale : null;
+  const scaleBm = typeof benchmarks.scale === 'number' ? Math.round(benchmarks.scale) : null;
+  const scaleMean = typeof benchmarksMean?.scale === 'number' ? Math.round(benchmarksMean.scale) : null;
   const scaleDelta = !isInaugural ? targetCount - baseCount : null;
   const scaleDeltaPct = !isInaugural && baseCount > 0 ? parseFloat((((targetCount - baseCount) / baseCount) * 100).toFixed(1)) : null;
   let scaleDeltaFormatted = 'Inaugural';
@@ -1585,43 +1622,71 @@ export function generateHealthMetrics(
   }
   const scaleRegDelta = scaleBm !== null ? Math.round(targetCount - scaleBm) : null;
   const scaleMeanDelta = scaleMean !== null ? Math.round(targetCount - scaleMean) : null;
+  const scaleRegDeltaFormatted = scaleRegDelta !== null ? (scaleRegDelta >= 0 ? `▲ +${scaleRegDelta.toLocaleString()} vs peer median` : `▼ ${scaleRegDelta.toLocaleString()} vs peer median`) : '—';
+  const scaleMeanDeltaFormatted = scaleMeanDelta !== null ? (scaleMeanDelta >= 0 ? `▲ +${scaleMeanDelta.toLocaleString()} vs peer mean` : `▼ ${scaleMeanDelta.toLocaleString()} vs peer mean`) : '—';
+  const [scaleTgtMedPct, scaleRegMedPct] = computeBarPair(targetCount, scaleBm);
+  const [scaleTgtMeanPct, scaleRegMeanPct] = computeBarPair(targetCount, scaleMean);
+  const [scaleTgtPriorPct, scalePriorBarPct] = computeBarPair(targetCount, !isInaugural ? baseCount : 0);
 
   metrics.Scale = {
     raw: `${targetCount.toLocaleString()} uploaders`,
     count: targetCount,
     baseline_val: baseCount,
+    prior_val_formatted: !isInaugural ? `${baseCount.toLocaleString()} uploaders` : 'Inaugural',
     yoy_delta: scaleDelta,
     yoy_delta_pct: scaleDeltaPct,
     yoy_delta_formatted: scaleDeltaFormatted,
-    regional_median: scaleBm !== null ? Math.round(scaleBm) : null,
+    yoy_is_positive: scaleDelta !== null ? scaleDelta >= 0 : true,
+    regional_median: scaleBm,
     regional_delta: scaleRegDelta,
-    regional_mean: scaleMean !== null ? Math.round(scaleMean) : null,
+    regional_delta_formatted: scaleRegDeltaFormatted,
+    regional_is_positive: scaleRegDelta !== null ? scaleRegDelta >= 0 : true,
+    regional_mean: scaleMean,
     regional_mean_delta: scaleMeanDelta,
-    is_positive: scaleDelta !== null ? scaleDelta >= 0 : true,
-    benchmark: scaleBm !== null ? Math.round(scaleBm) : null,
-    is_inaugural: isInaugural
+    mean_delta_formatted: scaleMeanDeltaFormatted,
+    mean_is_positive: scaleMeanDelta !== null ? scaleMeanDelta >= 0 : true,
+    is_positive: scaleRegDelta !== null ? scaleRegDelta >= 0 : (scaleDelta !== null ? scaleDelta >= 0 : true),
+    benchmark: scaleBm,
+    is_inaugural: isInaugural,
+    target_vs_reg_median_pct: scaleTgtMedPct,
+    reg_median_bar_pct: scaleRegMedPct,
+    target_vs_reg_mean_pct: scaleTgtMeanPct,
+    reg_mean_bar_pct: scaleRegMeanPct,
+    target_vs_prior_pct: scaleTgtPriorPct,
+    prior_bar_pct: scalePriorBarPct
   };
 
   // 2. Contributor Retention
   const retBm = typeof benchmarks.retention === 'number' ? benchmarks.retention : null;
   const retMean = typeof benchmarksMean?.retention === 'number' ? benchmarksMean.retention : null;
+  const priorRetRate = typeof priorEditionStats?.retention_rate === 'number' ? priorEditionStats.retention_rate : null;
   if (isInaugural) {
     metrics.Retention = {
       raw: 'Inaugural Baseline',
       count: 0,
       baseline_val: 0,
+      prior_val_formatted: 'Inaugural',
       yoy_delta: null,
       yoy_delta_pct: null,
       yoy_delta_formatted: 'Inaugural',
+      yoy_is_positive: true,
       regional_median: retBm,
       regional_delta: null,
+      regional_delta_formatted: 'Inaugural',
+      regional_is_positive: true,
       regional_mean: retMean,
       regional_mean_delta: null,
       mean_delta_formatted: 'Inaugural',
       mean_is_positive: true,
       benchmark: retBm,
       is_inaugural: true,
-      is_positive: true
+      is_positive: true,
+      target_vs_reg_median_pct: 0,
+      reg_median_bar_pct: retBm ? 100 : 0,
+      target_vs_reg_mean_pct: 0,
+      reg_mean_bar_pct: retMean ? 100 : 0,
+      target_vs_prior_pct: 0,
+      prior_bar_pct: 0
     };
   } else {
     let overlap = 0;
@@ -1631,27 +1696,46 @@ export function generateHealthMetrics(
     const rawRate = parseFloat(((overlap / baseCount) * 100.0).toFixed(1));
     const regDelta = retBm !== null ? parseFloat((rawRate - retBm).toFixed(1)) : null;
     const regMeanDelta = retMean !== null ? parseFloat((rawRate - retMean).toFixed(1)) : null;
+    const retYoYDelta = priorRetRate !== null ? parseFloat((rawRate - priorRetRate).toFixed(1)) : null;
     const retFormatted = `${overlap.toLocaleString()} / ${baseCount.toLocaleString()} (${rawRate.toFixed(1)}%)`;
-    const retDeltaFormatted = regDelta !== null ? (regDelta >= 0 ? `▲ +${regDelta.toFixed(1)}% vs regional norm` : `▼ ${regDelta.toFixed(1)}% vs regional norm`) : `${rawRate.toFixed(1)}% retained`;
-    const retMeanDeltaFormatted = regMeanDelta !== null ? (regMeanDelta >= 0 ? `▲ +${regMeanDelta.toFixed(1)}% vs regional norm` : `▼ ${regMeanDelta.toFixed(1)}% vs regional norm`) : `${rawRate.toFixed(1)}% retained`;
+    const retRegDeltaFormatted = regDelta !== null ? (regDelta >= 0 ? `▲ +${regDelta.toFixed(1)}% vs peer median` : `▼ ${regDelta.toFixed(1)}% vs peer median`) : `${rawRate.toFixed(1)}% retained`;
+    const retMeanDeltaFormatted = regMeanDelta !== null ? (regMeanDelta >= 0 ? `▲ +${regMeanDelta.toFixed(1)}% vs peer mean` : `▼ ${regMeanDelta.toFixed(1)}% vs peer mean`) : `${rawRate.toFixed(1)}% retained`;
+    const retYoYFormatted = retYoYDelta !== null
+      ? (retYoYDelta >= 0 ? `▲ +${retYoYDelta.toFixed(1)}% YoY` : `▼ ${retYoYDelta.toFixed(1)}% YoY`)
+      : `${overlap.toLocaleString()}/${baseCount.toLocaleString()} from prior`;
+    const [retTgtMedPct, retRegMedPct] = computeBarPair(rawRate, retBm);
+    const [retTgtMeanPct, retRegMeanPct] = computeBarPair(rawRate, retMean);
+    const [retTgtPriorPct, retPriorBarPct] = priorRetRate !== null
+      ? computeBarPair(rawRate, priorRetRate)
+      : computeBarPair(overlap, baseCount);
 
     metrics.Retention = {
       raw: `${rawRate.toFixed(1)}%`,
       raw_formatted: retFormatted,
       count: overlap,
-      baseline_val: baseCount,
-      yoy_delta: regDelta,
+      baseline_val: priorRetRate !== null ? priorRetRate : baseCount,
+      prior_val_formatted: priorRetRate !== null ? `${priorRetRate.toFixed(1)}%` : `${baseCount.toLocaleString()} cohort`,
+      yoy_delta: retYoYDelta !== null ? retYoYDelta : regDelta,
       yoy_delta_pct: rawRate,
-      yoy_delta_formatted: retDeltaFormatted,
+      yoy_delta_formatted: retYoYFormatted,
+      yoy_is_positive: retYoYDelta !== null ? retYoYDelta >= 0 : true,
       regional_median: retBm,
       regional_delta: regDelta,
+      regional_delta_formatted: retRegDeltaFormatted,
+      regional_is_positive: regDelta !== null ? regDelta >= 0 : true,
       regional_mean: retMean,
       regional_mean_delta: regMeanDelta,
       mean_delta_formatted: retMeanDeltaFormatted,
       mean_is_positive: regMeanDelta !== null ? regMeanDelta >= 0 : true,
       benchmark: retBm,
       is_inaugural: false,
-      is_positive: regDelta !== null ? regDelta >= 0 : true
+      is_positive: regDelta !== null ? regDelta >= 0 : true,
+      target_vs_reg_median_pct: retTgtMedPct,
+      reg_median_bar_pct: retRegMedPct,
+      target_vs_reg_mean_pct: retTgtMeanPct,
+      reg_mean_bar_pct: retRegMeanPct,
+      target_vs_prior_pct: retTgtPriorPct,
+      prior_bar_pct: retPriorBarPct
     };
   }
 
@@ -1661,75 +1745,112 @@ export function generateHealthMetrics(
   for (const u of targetUsers) {
     if (!historicalPriorPool || !historicalPriorPool.has(u)) newUsersCount++;
   }
-  const expBm = typeof benchmarks.expansion === 'number' ? benchmarks.expansion : (typeof benchmarks.growth === 'number' ? benchmarks.growth : null);
-  const expMean = typeof benchmarksMean?.expansion === 'number' ? benchmarksMean.expansion : (typeof benchmarksMean?.growth === 'number' ? benchmarksMean.growth : null);
+  const expBm = typeof benchmarks.expansion === 'number' ? Math.round(benchmarks.expansion) : (typeof benchmarks.growth === 'number' ? Math.round(benchmarks.growth) : null);
+  const expMean = typeof benchmarksMean?.expansion === 'number' ? Math.round(benchmarksMean.expansion) : (typeof benchmarksMean?.growth === 'number' ? Math.round(benchmarksMean.growth) : null);
+  const priorNewcomers = typeof priorEditionStats?.newcomers_count === 'number' ? priorEditionStats.newcomers_count : (!isInaugural ? baseCount : null);
   const newcomerShare = targetCount > 0 ? parseFloat(((newUsersCount / targetCount) * 100).toFixed(1)) : 0.0;
   const expRegDelta = expBm !== null ? Math.round(newUsersCount - expBm) : null;
   const expMeanDelta = expMean !== null ? Math.round(newUsersCount - expMean) : null;
+  const expYoYDelta = !isInaugural && priorNewcomers !== null ? newUsersCount - priorNewcomers : null;
+  const expYoYDeltaPct = !isInaugural && priorNewcomers && priorNewcomers > 0
+    ? parseFloat((((newUsersCount - priorNewcomers) / priorNewcomers) * 100).toFixed(1))
+    : null;
   const expFormatted = `${newUsersCount.toLocaleString()} newcomers (${newcomerShare.toFixed(1)}%)`;
-  const expDeltaFormatted = expRegDelta !== null ? (expRegDelta >= 0 ? `▲ +${expRegDelta.toLocaleString()} vs regional norm` : `▼ ${expRegDelta.toLocaleString()} vs regional norm`) : `${newUsersCount.toLocaleString()} newcomers`;
-  const expMeanDeltaFormatted = expMeanDelta !== null ? (expMeanDelta >= 0 ? `▲ +${expMeanDelta.toLocaleString()} vs regional norm` : `▼ ${expMeanDelta.toLocaleString()} vs regional norm`) : `${newUsersCount.toLocaleString()} newcomers`;
+  const expRegDeltaFormatted = expRegDelta !== null ? (expRegDelta >= 0 ? `▲ +${expRegDelta.toLocaleString()} vs peer median` : `▼ ${expRegDelta.toLocaleString()} vs peer median`) : `${newUsersCount.toLocaleString()} newcomers`;
+  const expMeanDeltaFormatted = expMeanDelta !== null ? (expMeanDelta >= 0 ? `▲ +${expMeanDelta.toLocaleString()} vs peer mean` : `▼ ${expMeanDelta.toLocaleString()} vs peer mean`) : `${newUsersCount.toLocaleString()} newcomers`;
+  const expYoYFormatted = expYoYDelta !== null && expYoYDeltaPct !== null
+    ? (expYoYDelta >= 0 ? `▲ +${expYoYDelta.toLocaleString()} (+${expYoYDeltaPct}%)` : `▼ -${Math.abs(expYoYDelta).toLocaleString()} (${expYoYDeltaPct}%)`)
+    : 'Inaugural';
+  const [expTgtMedPct, expRegMedPct] = computeBarPair(newUsersCount, expBm);
+  const [expTgtMeanPct, expRegMeanPct] = computeBarPair(newUsersCount, expMean);
+  const [expTgtPriorPct, expPriorBarPct] = computeBarPair(newUsersCount, !isInaugural ? priorNewcomers : 0);
 
   metrics.Growth = {
     raw: `${newUsersCount.toLocaleString()} newcomers`,
     raw_formatted: expFormatted,
     count: newUsersCount,
-    baseline_val: expBm !== null ? Math.round(expBm) : null,
-    yoy_delta: expRegDelta,
+    baseline_val: priorNewcomers !== null ? priorNewcomers : expBm,
+    prior_val_formatted: !isInaugural && priorNewcomers !== null ? `${priorNewcomers.toLocaleString()} newcomers` : 'Inaugural',
+    yoy_delta: expYoYDelta !== null ? expYoYDelta : expRegDelta,
     yoy_delta_pct: newcomerShare,
-    yoy_delta_formatted: expDeltaFormatted,
-    regional_median: expBm !== null ? Math.round(expBm) : null,
+    yoy_delta_formatted: expYoYFormatted,
+    yoy_is_positive: expYoYDelta !== null ? expYoYDelta >= 0 : true,
+    regional_median: expBm,
     regional_delta: expRegDelta,
-    regional_mean: expMean !== null ? Math.round(expMean) : null,
+    regional_delta_formatted: expRegDeltaFormatted,
+    regional_is_positive: expRegDelta !== null ? expRegDelta >= 0 : true,
+    regional_mean: expMean,
     regional_mean_delta: expMeanDelta,
     mean_delta_formatted: expMeanDeltaFormatted,
     mean_is_positive: expMeanDelta !== null ? expMeanDelta >= 0 : true,
-    benchmark: expBm !== null ? Math.round(expBm) : null,
+    benchmark: expBm,
     newcomers_count: newUsersCount,
     is_positive: expRegDelta !== null ? expRegDelta >= 0 : true,
-    is_inaugural: isInaugural
+    is_inaugural: isInaugural,
+    target_vs_reg_median_pct: expTgtMedPct,
+    reg_median_bar_pct: expRegMedPct,
+    target_vs_reg_mean_pct: expTgtMeanPct,
+    reg_mean_bar_pct: expRegMeanPct,
+    target_vs_prior_pct: expTgtPriorPct,
+    prior_bar_pct: expPriorBarPct
   };
   metrics.Expansion = metrics.Growth;
 
-  // 4. Content Utility (Wikipedia Article Transclusions - Sample Transclusion Only)
+  // 4. Content Utility (Wikipedia Article Transclusions - Full Category Pagination)
   const rawUsage = parseFloat(structuralMetrics.usage_share || 0.0);
   const rawUsageCount = structuralMetrics.used_images_sample_count ?? 0;
-  const sampledFilesCount = structuralMetrics.sampled_files_count ?? 50;
+  const sampledFilesCount = structuralMetrics.sampled_files_count ?? totalUploads;
   const baseUsage = !isInaugural && baselineStructural?.usage_share !== undefined ? parseFloat(baselineStructural.usage_share) : null;
+  const baseUsageCount = !isInaugural && baselineStructural?.used_images_sample_count !== undefined ? baselineStructural.used_images_sample_count : null;
   const usageYoYDelta = baseUsage !== null ? parseFloat((rawUsage - baseUsage).toFixed(1)) : null;
   const useRateBm = typeof benchmarks.usage === 'number' ? benchmarks.usage : null;
-  const useCountBm = typeof benchmarks.usage_count === 'number' ? benchmarks.usage_count : null;
+  const useCountBm = typeof benchmarks.usage_count === 'number' ? Math.round(benchmarks.usage_count) : null;
   const useRateMean = typeof benchmarksMean?.usage === 'number' ? benchmarksMean.usage : null;
-  const useCountMean = typeof benchmarksMean?.usage_count === 'number' ? benchmarksMean.usage_count : null;
+  const useCountMean = typeof benchmarksMean?.usage_count === 'number' ? Math.round(benchmarksMean.usage_count) : null;
   const useRegDelta = useRateBm !== null ? parseFloat((rawUsage - useRateBm).toFixed(1)) : null;
   const useMeanDelta = useRateMean !== null ? parseFloat((rawUsage - useRateMean).toFixed(1)) : null;
+  const useRegDeltaFormatted = useRegDelta !== null ? (useRegDelta >= 0 ? `▲ +${useRegDelta.toFixed(1)}% vs peer median` : `▼ ${useRegDelta.toFixed(1)}% vs peer median`) : `${rawUsage.toFixed(1)}% usage`;
+  const useMeanDeltaFormatted = useMeanDelta !== null ? (useMeanDelta >= 0 ? `▲ +${useMeanDelta.toFixed(1)}% vs peer mean` : `▼ ${useMeanDelta.toFixed(1)}% vs peer mean`) : `${rawUsage.toFixed(1)}% usage`;
   const useYoYFormatted = usageYoYDelta !== null
     ? (usageYoYDelta >= 0 ? `▲ +${usageYoYDelta.toFixed(1)}% YoY` : `▼ ${usageYoYDelta.toFixed(1)}% YoY`)
-    : (useRegDelta !== null ? (useRegDelta >= 0 ? `▲ +${useRegDelta.toFixed(1)}% vs regional norm` : `▼ ${useRegDelta.toFixed(1)}% vs regional norm`) : `${rawUsage.toFixed(1)}% usage`);
-  const useMeanDeltaFormatted = useMeanDelta !== null ? (useMeanDelta >= 0 ? `▲ +${useMeanDelta.toFixed(1)}% vs regional norm` : `▼ ${useMeanDelta.toFixed(1)}% vs regional norm`) : `${rawUsage.toFixed(1)}% usage`;
+    : 'Inaugural';
+  const [useTgtMedPct, useRegMedPct] = computeBarPair(rawUsage, useRateBm);
+  const [useTgtMeanPct, useRegMeanPct] = computeBarPair(rawUsage, useRateMean);
+  const [useTgtPriorPct, usePriorBarPct] = computeBarPair(rawUsage, baseUsage);
 
   metrics.Usage = {
     raw: rawUsage,
     count: rawUsageCount,
     sampled_count: sampledFilesCount,
-    raw_formatted: sampledFilesCount > 0
-      ? `${rawUsage.toFixed(1)}% (${rawUsageCount}/${sampledFilesCount} sampled)`
-      : `${rawUsage.toFixed(1)}%`,
+    baseline_count: baseUsageCount,
+    raw_formatted: `${rawUsageCount.toLocaleString()} files used (${rawUsage.toFixed(1)}%)`,
     baseline_val: baseUsage !== null ? baseUsage : useRateBm,
+    prior_val_formatted: baseUsage !== null
+      ? `${baseUsageCount !== null ? baseUsageCount.toLocaleString() + ' files (' : ''}${baseUsage.toFixed(1)}%${baseUsageCount !== null ? ')' : ''}`
+      : 'Inaugural',
     yoy_delta: usageYoYDelta !== null ? usageYoYDelta : useRegDelta,
     yoy_delta_pct: rawUsage,
     yoy_delta_formatted: useYoYFormatted,
+    yoy_is_positive: usageYoYDelta !== null ? usageYoYDelta >= 0 : true,
     regional_median: useRateBm,
     regional_delta: useRegDelta,
+    regional_delta_formatted: useRegDeltaFormatted,
+    regional_is_positive: useRegDelta !== null ? useRegDelta >= 0 : true,
     regional_mean: useRateMean,
     regional_mean_delta: useMeanDelta,
-    mean_benchmark_count: useCountMean !== null ? Math.round(useCountMean) : null,
+    mean_benchmark_count: useCountMean,
     mean_delta_formatted: useMeanDeltaFormatted,
     mean_is_positive: useMeanDelta !== null ? useMeanDelta >= 0 : true,
     benchmark: useRateBm,
-    benchmark_count: useCountBm !== null ? Math.round(useCountBm) : null,
-    is_positive: usageYoYDelta !== null ? usageYoYDelta >= 0 : (useRegDelta !== null ? useRegDelta >= 0 : true),
-    is_inaugural: false
+    benchmark_count: useCountBm,
+    is_positive: useRegDelta !== null ? useRegDelta >= 0 : (usageYoYDelta !== null ? usageYoYDelta >= 0 : true),
+    is_inaugural: isInaugural,
+    target_vs_reg_median_pct: useTgtMedPct,
+    reg_median_bar_pct: useRegMedPct,
+    target_vs_reg_mean_pct: useTgtMeanPct,
+    reg_mean_bar_pct: useRegMeanPct,
+    target_vs_prior_pct: useTgtPriorPct,
+    prior_bar_pct: usePriorBarPct
   };
 
   // 5. Quality Recognition (Quality / Featured Images - Authentic Commons Distinct Counts)
@@ -1739,15 +1860,19 @@ export function generateHealthMetrics(
   const baseQualityCount = !isInaugural && baselineStructural?.quality_images_count !== undefined ? baselineStructural.quality_images_count : null;
   const qualYoYDelta = baseQuality !== null ? parseFloat((rawQuality - baseQuality).toFixed(1)) : null;
   const qualRateBm = typeof benchmarks.quality === 'number' ? benchmarks.quality : null;
-  const qualCountBm = typeof benchmarks.quality_count === 'number' ? benchmarks.quality_count : null;
+  const qualCountBm = typeof benchmarks.quality_count === 'number' ? Math.round(benchmarks.quality_count) : null;
   const qualRateMean = typeof benchmarksMean?.quality === 'number' ? benchmarksMean.quality : null;
-  const qualCountMean = typeof benchmarksMean?.quality_count === 'number' ? benchmarksMean.quality_count : null;
+  const qualCountMean = typeof benchmarksMean?.quality_count === 'number' ? Math.round(benchmarksMean.quality_count) : null;
   const qualRegDelta = qualRateBm !== null ? parseFloat((rawQuality - qualRateBm).toFixed(1)) : null;
   const qualMeanDelta = qualRateMean !== null ? parseFloat((rawQuality - qualRateMean).toFixed(1)) : null;
+  const qualRegDeltaFormatted = qualRegDelta !== null ? (qualRegDelta >= 0 ? `▲ +${qualRegDelta.toFixed(1)}% vs peer median` : `▼ ${qualRegDelta.toFixed(1)}% vs peer median`) : `${rawQuality.toFixed(1)}% QI`;
+  const qualMeanDeltaFormatted = qualMeanDelta !== null ? (qualMeanDelta >= 0 ? `▲ +${qualMeanDelta.toFixed(1)}% vs peer mean` : `▼ ${qualMeanDelta.toFixed(1)}% vs peer mean`) : `${rawQuality.toFixed(1)}% QI`;
   const qualYoYFormatted = qualYoYDelta !== null
     ? (qualYoYDelta >= 0 ? `▲ +${qualYoYDelta.toFixed(1)}% YoY` : `▼ ${qualYoYDelta.toFixed(1)}% YoY`)
-    : (qualRegDelta !== null ? (qualRegDelta >= 0 ? `▲ +${qualRegDelta.toFixed(1)}% vs regional norm` : `▼ ${qualRegDelta.toFixed(1)}% vs regional norm`) : `${rawQuality.toFixed(1)}% QI`);
-  const qualMeanDeltaFormatted = qualMeanDelta !== null ? (qualMeanDelta >= 0 ? `▲ +${qualMeanDelta.toFixed(1)}% vs regional norm` : `▼ ${qualMeanDelta.toFixed(1)}% vs regional norm`) : `${rawQuality.toFixed(1)}% QI`;
+    : 'Inaugural';
+  const [qualTgtMedPct, qualRegMedPct] = computeBarPair(rawQuality, qualRateBm);
+  const [qualTgtMeanPct, qualRegMeanPct] = computeBarPair(rawQuality, qualRateMean);
+  const [qualTgtPriorPct, qualPriorBarPct] = computeBarPair(rawQuality, baseQuality);
 
   metrics.Quality = {
     raw: rawQuality,
@@ -1755,20 +1880,32 @@ export function generateHealthMetrics(
     baseline_count: baseQualityCount,
     raw_formatted: `${rawQualityCount.toLocaleString()} works (${rawQuality.toFixed(1)}%)`,
     baseline_val: baseQuality !== null ? baseQuality : qualRateBm,
+    prior_val_formatted: baseQuality !== null
+      ? `${baseQualityCount !== null ? baseQualityCount.toLocaleString() + ' works (' : ''}${baseQuality.toFixed(1)}%${baseQualityCount !== null ? ')' : ''}`
+      : 'Inaugural',
     yoy_delta: qualYoYDelta !== null ? qualYoYDelta : qualRegDelta,
     yoy_delta_pct: rawQuality,
     yoy_delta_formatted: qualYoYFormatted,
+    yoy_is_positive: qualYoYDelta !== null ? qualYoYDelta >= 0 : true,
     regional_median: qualRateBm,
     regional_delta: qualRegDelta,
+    regional_delta_formatted: qualRegDeltaFormatted,
+    regional_is_positive: qualRegDelta !== null ? qualRegDelta >= 0 : true,
     regional_mean: qualRateMean,
     regional_mean_delta: qualMeanDelta,
-    mean_benchmark_count: qualCountMean !== null ? Math.round(qualCountMean) : null,
+    mean_benchmark_count: qualCountMean,
     mean_delta_formatted: qualMeanDeltaFormatted,
     mean_is_positive: qualMeanDelta !== null ? qualMeanDelta >= 0 : true,
     benchmark: qualRateBm,
-    benchmark_count: qualCountBm !== null ? Math.round(qualCountBm) : null,
-    is_positive: qualYoYDelta !== null ? qualYoYDelta >= 0 : (qualRegDelta !== null ? qualRegDelta >= 0 : true),
-    is_inaugural: false
+    benchmark_count: qualCountBm,
+    is_positive: qualRegDelta !== null ? qualRegDelta >= 0 : (qualYoYDelta !== null ? qualYoYDelta >= 0 : true),
+    is_inaugural: isInaugural,
+    target_vs_reg_median_pct: qualTgtMedPct,
+    reg_median_bar_pct: qualRegMedPct,
+    target_vs_reg_mean_pct: qualTgtMeanPct,
+    reg_mean_bar_pct: qualRegMeanPct,
+    target_vs_prior_pct: qualTgtPriorPct,
+    prior_bar_pct: qualPriorBarPct
   };
 
   // 6. Contributor Diversity (Top 10% Upload Share)
@@ -1779,47 +1916,87 @@ export function generateHealthMetrics(
   const divMean = typeof benchmarksMean?.diversity === 'number' ? benchmarksMean.diversity : null;
   const divRegDelta = divBm !== null ? parseFloat((rawDiversity - divBm).toFixed(1)) : null;
   const divMeanDelta = divMean !== null ? parseFloat((rawDiversity - divMean).toFixed(1)) : null;
+  const divRegDeltaFormatted = divRegDelta !== null ? (divRegDelta <= 0 ? `▲ ${Math.abs(divRegDelta).toFixed(1)}% broader` : `▼ +${divRegDelta.toFixed(1)}% concentrated`) : `${rawDiversity.toFixed(1)}% by top 10%`;
+  const divMeanDeltaFormatted = divMeanDelta !== null ? (divMeanDelta <= 0 ? `▲ ${Math.abs(divMeanDelta).toFixed(1)}% broader` : `▼ +${divMeanDelta.toFixed(1)}% concentrated`) : `${rawDiversity.toFixed(1)}% by top 10%`;
   const divYoYFormatted = divYoYDelta !== null
     ? (divYoYDelta <= 0 ? `▲ ${Math.abs(divYoYDelta).toFixed(1)}% broader YoY` : `▼ +${divYoYDelta.toFixed(1)}% conc. YoY`)
-    : (divRegDelta !== null ? (divRegDelta <= 0 ? `▲ ${Math.abs(divRegDelta).toFixed(1)}% broader` : `▼ +${divRegDelta.toFixed(1)}% concentrated`) : `${rawDiversity.toFixed(1)}% by top 10%`);
-  const divMeanDeltaFormatted = divMeanDelta !== null ? (divMeanDelta <= 0 ? `▲ ${Math.abs(divMeanDelta).toFixed(1)}% broader` : `▼ +${divMeanDelta.toFixed(1)}% concentrated`) : `${rawDiversity.toFixed(1)}% by top 10%`;
+    : 'Inaugural';
+  const [divTgtMedPct, divRegMedPct] = computeBarPair(rawDiversity, divBm);
+  const [divTgtMeanPct, divRegMeanPct] = computeBarPair(rawDiversity, divMean);
+  const [divTgtPriorPct, divPriorBarPct] = computeBarPair(rawDiversity, baseDiversity);
 
   metrics.Diversity = {
     raw: rawDiversity,
     raw_formatted: `${rawDiversity.toFixed(1)}% by top 10%`,
     count: Math.max(1, Math.ceil(targetCount * 0.10)),
     baseline_val: baseDiversity !== null ? baseDiversity : divBm,
+    prior_val_formatted: baseDiversity !== null ? `${baseDiversity.toFixed(1)}%` : 'Inaugural',
     yoy_delta: divYoYDelta !== null ? divYoYDelta : divRegDelta,
     yoy_delta_pct: rawDiversity,
     yoy_delta_formatted: divYoYFormatted,
+    yoy_is_positive: divYoYDelta !== null ? divYoYDelta <= 0 : true,
     regional_median: divBm,
     regional_delta: divRegDelta,
+    regional_delta_formatted: divRegDeltaFormatted,
+    regional_is_positive: divRegDelta !== null ? divRegDelta <= 0 : true,
     regional_mean: divMean,
     regional_mean_delta: divMeanDelta,
     mean_delta_formatted: divMeanDeltaFormatted,
     mean_is_positive: divMeanDelta !== null ? divMeanDelta <= 0 : true,
     benchmark: divBm,
-    is_positive: divYoYDelta !== null ? divYoYDelta <= 0 : (divRegDelta !== null ? divRegDelta <= 0 : true),
-    is_inaugural: false
+    is_positive: divRegDelta !== null ? divRegDelta <= 0 : (divYoYDelta !== null ? divYoYDelta <= 0 : true),
+    is_inaugural: isInaugural,
+    target_vs_reg_median_pct: divTgtMedPct,
+    reg_median_bar_pct: divRegMedPct,
+    target_vs_reg_mean_pct: divTgtMeanPct,
+    reg_mean_bar_pct: divRegMeanPct,
+    target_vs_prior_pct: divTgtPriorPct,
+    prior_bar_pct: divPriorBarPct
   };
 
   // 7. Total Submissions Volume
+  const uploadsBm = typeof benchmarks.uploads === 'number' ? Math.round(benchmarks.uploads) : null;
+  const uploadsMean = typeof benchmarksMean?.uploads === 'number' ? Math.round(benchmarksMean.uploads) : null;
+  const uploadsRegDelta = uploadsBm !== null ? Math.round(totalUploads - uploadsBm) : null;
+  const uploadsMeanDelta = uploadsMean !== null ? Math.round(totalUploads - uploadsMean) : null;
+  const uploadsRegDeltaFormatted = uploadsRegDelta !== null ? (uploadsRegDelta >= 0 ? `▲ +${uploadsRegDelta.toLocaleString()} vs peer median` : `▼ ${uploadsRegDelta.toLocaleString()} vs peer median`) : '—';
+  const uploadsMeanDeltaFormatted = uploadsMeanDelta !== null ? (uploadsMeanDelta >= 0 ? `▲ +${uploadsMeanDelta.toLocaleString()} vs peer mean` : `▼ ${uploadsMeanDelta.toLocaleString()} vs peer mean`) : '—';
   const uploadsDelta = !isInaugural && baseUploads > 0 ? totalUploads - baseUploads : null;
   const uploadsDeltaPct = !isInaugural && baseUploads > 0 ? parseFloat((((totalUploads - baseUploads) / baseUploads) * 100).toFixed(1)) : null;
   let uploadsDeltaFormatted = 'Inaugural';
   if (!isInaugural && uploadsDelta !== null && uploadsDeltaPct !== null) {
     uploadsDeltaFormatted = uploadsDelta >= 0 ? `▲ +${uploadsDelta.toLocaleString()} (+${uploadsDeltaPct}%)` : `▼ -${Math.abs(uploadsDelta).toLocaleString()} (${uploadsDeltaPct}%)`;
   }
+  const [upTgtMedPct, upRegMedPct] = computeBarPair(totalUploads, uploadsBm);
+  const [upTgtMeanPct, upRegMeanPct] = computeBarPair(totalUploads, uploadsMean);
+  const [upTgtPriorPct, upPriorBarPct] = computeBarPair(totalUploads, !isInaugural ? baseUploads : 0);
 
   metrics.Uploads = {
     raw: `${totalUploads.toLocaleString()} files`,
     count: totalUploads,
     baseline_val: baseUploads,
+    prior_val_formatted: !isInaugural && baseUploads > 0 ? `${baseUploads.toLocaleString()} files` : 'Inaugural',
     yoy_delta: uploadsDelta,
     yoy_delta_pct: uploadsDeltaPct,
     yoy_delta_formatted: uploadsDeltaFormatted,
-    is_positive: uploadsDelta !== null ? uploadsDelta >= 0 : true,
-    is_inaugural: isInaugural
+    yoy_is_positive: uploadsDelta !== null ? uploadsDelta >= 0 : true,
+    regional_median: uploadsBm,
+    regional_delta: uploadsRegDelta,
+    regional_delta_formatted: uploadsRegDeltaFormatted,
+    regional_is_positive: uploadsRegDelta !== null ? uploadsRegDelta >= 0 : true,
+    regional_mean: uploadsMean,
+    regional_mean_delta: uploadsMeanDelta,
+    mean_delta_formatted: uploadsMeanDeltaFormatted,
+    mean_is_positive: uploadsMeanDelta !== null ? uploadsMeanDelta >= 0 : true,
+    benchmark: uploadsBm,
+    is_positive: uploadsRegDelta !== null ? uploadsRegDelta >= 0 : (uploadsDelta !== null ? uploadsDelta >= 0 : true),
+    is_inaugural: isInaugural,
+    target_vs_reg_median_pct: upTgtMedPct,
+    reg_median_bar_pct: upRegMedPct,
+    target_vs_reg_mean_pct: upTgtMeanPct,
+    reg_mean_bar_pct: upRegMeanPct,
+    target_vs_prior_pct: upTgtPriorPct,
+    prior_bar_pct: upPriorBarPct
   };
 
   return metrics;
@@ -1965,73 +2142,99 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
 
   const categories = getCategoryCandidates(clean);
 
-  let totalSampled = 0;
-  let usedFilesCount = 0;
+  const seenPageIds = new Set<string>();
+  const usedPageIds = new Set<string>();
   let totalUsages = 0;
   const uniqueArticles = new Set<string>();
   const projectDist: Record<string, number> = {};
   const mediaUsages: any[] = [];
-  const uploaderUtility: Record<string, { used_files: number; total_usages: number; articles: Set<string> }> = {};
+  const uploaderUtility: Record<string, { used_files: Set<string>; total_usages: number; articles: Set<string> }> = {};
 
   for (const cat of categories) {
     try {
-      const data = await fetchCommonsApi({
-        action: 'query',
-        generator: 'categorymembers',
-        gcmtitle: `Category:${cat}`,
-        gcmtype: 'file',
-        gcmlimit: '50',
-        prop: 'imageinfo|globalusage',
-        iiprop: 'user|url',
-        iiurlwidth: '300',
-        gulimit: '10'
-      }, 7000);
-      const pages = data?.query?.pages || {};
-      for (const pid of Object.keys(pages)) {
-        const p = pages[pid];
-        totalSampled++;
-        const title = p.title || '';
-        const gu = p.globalusage || [];
-        const ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
-        const rawUser = ii.user || '';
-        const uploader = normalizeMediaWikiUsername(rawUser);
-        const thumbUrl = ii.thumburl || '';
-        const descUrl = ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+      let continueParams: Record<string, string> | undefined = undefined;
+      let iterations = 0;
+      const startTime = Date.now();
 
-        if (gu.length > 0 && uploader && !isBotAccount(uploader)) {
-          usedFilesCount++;
-          totalUsages += gu.length;
-          if (!uploaderUtility[uploader]) {
-            uploaderUtility[uploader] = { used_files: 0, total_usages: 0, articles: new Set<string>() };
-          }
-          uploaderUtility[uploader].used_files++;
-          uploaderUtility[uploader].total_usages += gu.length;
+      while (iterations < 60 && Date.now() - startTime < 15000) {
+        iterations++;
+        const queryParams: Record<string, string> = {
+          action: 'query',
+          generator: 'categorymembers',
+          gcmtitle: `Category:${cat}`,
+          gcmtype: 'file',
+          gcmlimit: '500',
+          prop: 'imageinfo|globalusage',
+          iiprop: 'user|url',
+          iiurlwidth: '300',
+          gulimit: '500',
+          ...(continueParams || {})
+        };
+        const data = await fetchCommonsApi(queryParams, 7000);
+        const pages = data?.query?.pages || {};
+        for (const pid of Object.keys(pages)) {
+          if (pid === '-1') continue;
+          const p = pages[pid];
+          seenPageIds.add(pid);
+          const title = p.title || '';
+          const gu = p.globalusage || [];
+          const ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
+          const rawUser = ii.user || '';
+          const uploader = normalizeMediaWikiUsername(rawUser);
+          const thumbUrl = ii.thumburl || '';
+          const descUrl = ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
-          for (const u of gu) {
-            const wiki = u.wiki || 'unknown';
-            const art = (u.title || '').replace(/_/g, ' ');
-            projectDist[wiki] = (projectDist[wiki] || 0) + 1;
-            uniqueArticles.add(`${wiki}:${art}`);
-            uploaderUtility[uploader].articles.add(`${wiki}:${art}`);
-            if (mediaUsages.length < 25) {
-              mediaUsages.push({
-                file_title: title.replace('File:', '').replace(/_/g, ' '),
-                full_title: title,
-                article: art,
-                wiki: wiki,
-                commons_url: descUrl,
-                thumb_url: thumbUrl
-              });
+          if (gu.length > 0 && (!rawUser || (uploader && !isBotAccount(uploader)))) {
+            usedPageIds.add(pid);
+            totalUsages += gu.length;
+            if (uploader) {
+              if (!uploaderUtility[uploader]) {
+                uploaderUtility[uploader] = { used_files: new Set<string>(), total_usages: 0, articles: new Set<string>() };
+              }
+              uploaderUtility[uploader].used_files.add(pid);
+              uploaderUtility[uploader].total_usages += gu.length;
+            }
+
+            for (const u of gu) {
+              const wiki = u.wiki || 'unknown';
+              const art = (u.title || '').replace(/_/g, ' ');
+              projectDist[wiki] = (projectDist[wiki] || 0) + 1;
+              uniqueArticles.add(`${wiki}:${art}`);
+              if (uploader && uploaderUtility[uploader]) {
+                uploaderUtility[uploader].articles.add(`${wiki}:${art}`);
+              }
+              if (mediaUsages.length < 25) {
+                mediaUsages.push({
+                  file_title: title.replace('File:', '').replace(/_/g, ' '),
+                  full_title: title,
+                  article: art,
+                  wiki: wiki,
+                  commons_url: descUrl,
+                  thumb_url: thumbUrl
+                });
+              }
             }
           }
+        }
+        if (data?.continue) {
+          continueParams = {};
+          for (const [k, v] of Object.entries(data.continue)) {
+            if (typeof v === 'string' || typeof v === 'number') {
+              continueParams[k] = String(v);
+            }
+          }
+        } else {
+          break;
         }
       }
     } catch {
       // Network failure
     }
-    if (totalSampled > 0) break;
+    if (seenPageIds.size > 0) break;
   }
 
+  const totalSampled = seenPageIds.size;
+  const usedFilesCount = usedPageIds.size;
   const usageRate = totalSampled > 0 ? parseFloat(((usedFilesCount / totalSampled) * 100).toFixed(1)) : 0.0;
   const topProject = Object.keys(projectDist).sort((a, b) => projectDist[b] - projectDist[a])[0] || primaryWiki;
 
@@ -2043,8 +2246,8 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       rank: i + 1,
       uploader: u,
       username: u,
-      used_files_count: uploaderUtility[u].used_files,
-      used_images_count: uploaderUtility[u].used_files,
+      used_files_count: uploaderUtility[u].used_files.size,
+      used_images_count: uploaderUtility[u].used_files.size,
       total_usages: uploaderUtility[u].total_usages,
       distinct_articles_count: uploaderUtility[u].articles.size,
       primary_wiki: primaryWiki
@@ -2449,6 +2652,7 @@ export async function computeHealthEvaluation(
 
   // Compute Regional Benchmarks
   const repScales: number[] = [];
+  const repUploads: number[] = [];
   const repRetentions: number[] = [];
   const repGrowths: number[] = [];
   const repQualityRates: number[] = [];
@@ -2465,6 +2669,9 @@ export async function computeHealthEvaluation(
     const struct = structuralMetrics[tCode] || {};
 
     if (tU.size > 0) repScales.push(tU.size);
+    if (struct.total_uploads !== undefined && struct.total_uploads > 0) {
+      repUploads.push(struct.total_uploads);
+    }
 
     if (bU.size > 0 && tU.size > 0) {
       let o = 0;
@@ -2501,7 +2708,8 @@ export async function computeHealthEvaluation(
     diversity: computeEmpiricalMedian(repDiversities),
     usage: computeEmpiricalMedian(repUsages),
     usage_count: computeEmpiricalMedian(repUsageCounts),
-    scale: computeEmpiricalMedian(repScales)
+    scale: computeEmpiricalMedian(repScales),
+    uploads: computeEmpiricalMedian(repUploads)
   };
 
   const benchmarks_mean: HealthBenchmarks = {
@@ -2514,7 +2722,8 @@ export async function computeHealthEvaluation(
     diversity: repDiversities.length > 0 ? parseFloat(computeEmpiricalMean(repDiversities).toFixed(1)) : null,
     usage: repUsages.length > 0 ? parseFloat(computeEmpiricalMean(repUsages).toFixed(1)) : null,
     usage_count: repUsageCounts.length > 0 ? Math.round(computeEmpiricalMean(repUsageCounts)) : null,
-    scale: repScales.length > 0 ? Math.round(computeEmpiricalMean(repScales)) : null
+    scale: repScales.length > 0 ? Math.round(computeEmpiricalMean(repScales)) : null,
+    uploads: repUploads.length > 0 ? Math.round(computeEmpiricalMean(repUploads)) : null
   };
 
   const benchmarks = benchmarks_median;
@@ -2535,7 +2744,36 @@ export async function computeHealthEvaluation(
       for (const u of pSet) allPriorUsers.add(u);
     }
   }
-  const metrics = generateHealthMetrics(targetUsers, baseUsers, targetStructural, benchmarks, baseStructural, benchmarks_mean, allPriorUsers);
+
+  // Compute prior edition's own retention and newcomer counts (from yearInt - 2 -> yearInt - 1)
+  const baseMatch = CODE_RE.exec(baselineEvent.toLowerCase());
+  const baseYearInt = baseMatch ? parseInt(baseMatch[3], 10) : yearInt - 1;
+  const twoYearsAgoCode = `${eventType}${targetCc}${String((baseYearInt - 1 + 100) % 100).padStart(2, '0')}`;
+  const twoYearsAgoUsers = allFetched[twoYearsAgoCode] || new Set<string>();
+  let priorRetRate: number | null = null;
+  let priorNewcomersCount: number | null = baseUsers.size > 0 ? baseUsers.size : null;
+  if (baseUsers.size > 0 && twoYearsAgoUsers.size > 0) {
+    let priorOverlap = 0;
+    for (const u of baseUsers) {
+      if (twoYearsAgoUsers.has(u)) priorOverlap++;
+    }
+    priorRetRate = parseFloat(((priorOverlap / twoYearsAgoUsers.size) * 100).toFixed(1));
+    priorNewcomersCount = Math.max(0, baseUsers.size - priorOverlap);
+  }
+
+  const metrics = generateHealthMetrics(
+    targetUsers,
+    baseUsers,
+    targetStructural,
+    benchmarks,
+    baseStructural,
+    benchmarks_mean,
+    allPriorUsers,
+    {
+      retention_rate: priorRetRate,
+      newcomers_count: priorNewcomersCount
+    }
+  );
   let overlap = 0;
   for (const u of targetUsers) if (baseUsers.has(u)) overlap++;
 
@@ -2587,9 +2825,11 @@ export async function computeHealthEvaluation(
     code: targetEvent.toLowerCase(),
     uploaders: targetUsers.size,
     uploads: targetUploads,
+    newcomers: metrics.Growth?.count ?? Math.max(0, targetUsers.size - overlap),
     retention_pct: targetRetPct,
     quality_count: targetStructural.quality_images_count ?? 0,
-    usage_count: targetStructural.used_images_sample_count ?? 0
+    usage_count: targetStructural.used_images_sample_count ?? 0,
+    usage_rate_pct: targetStructural.usage_share ?? 0
   });
 
   for (const cc of peerList) {
@@ -2610,9 +2850,11 @@ export async function computeHealthEvaluation(
       code: pCode,
       uploaders: pUsers.size,
       uploads: pUploads,
+      newcomers: Math.max(0, pUsers.size - pOverlap),
       retention_pct: pRetPct,
       quality_count: pStruct.quality_images_count ?? 0,
-      usage_count: pStruct.used_images_sample_count ?? 0
+      usage_count: pStruct.used_images_sample_count ?? 0,
+      usage_rate_pct: pStruct.usage_share ?? 0
     });
   }
 
