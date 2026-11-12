@@ -326,24 +326,6 @@
                     <div class="camp-shell-left">
                         <h2 class="camp-shell-title">Retention Analysis &amp; Cohort Overlap</h2>
                         <div class="camp-shell-subtitle">Longitudinal contributor survival and retention matrices across consecutive campaign editions.</div>
-                        <details class="camp-data-notes">
-                            <summary class="camp-data-notes-summary">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                <span>Learn more about this data &amp; caveats</span>
-                            </summary>
-                            <div class="camp-data-notes-body">
-                                <div class="camp-data-notes-grid">
-                                    <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Cohort Overlap Definition</span>
-                                        <p class="camp-data-notes-text">Retention rate between Year A and Year B measures the percentage of unique uploaders in Year A who uploaded at least one media file during Year B.</p>
-                                    </div>
-                                    <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Data Scope &amp; Interpretation</span>
-                                        <p class="camp-data-notes-text">Matrices evaluate distinct participants filtered through Wikimedia Commons campaign categories. Non-uploading edits (e.g. talk pages) are excluded from Commons uploader cohorts.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </details>
                     </div>
                     <div class="camp-shell-right">
                         <span class="camp-telemetry-badge">
@@ -547,7 +529,25 @@
                         {% endif %}
                     </div> <!-- End of #retention-view-table -->
 
-
+                    <!-- Data Methodology, Attribution & Caveats (Positioned at Bottom of Analysis) -->
+                    <details class="camp-data-notes camp-data-notes-bottom">
+                        <summary class="camp-data-notes-summary">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span>Data Attribution, Methodology &amp; Caveats</span>
+                        </summary>
+                        <div class="camp-data-notes-body">
+                            <div class="camp-data-notes-grid">
+                                <div class="camp-data-notes-col">
+                                    <span class="camp-data-notes-heading">Cohort Overlap Definition</span>
+                                    <p class="camp-data-notes-text">Retention rate between Year A and Year B measures the percentage of unique uploaders in Year A who uploaded at least one media file during Year B.</p>
+                                </div>
+                                <div class="camp-data-notes-col">
+                                    <span class="camp-data-notes-heading">Data Scope &amp; Interpretation</span>
+                                    <p class="camp-data-notes-text">Matrices evaluate distinct participants filtered through Wikimedia Commons campaign categories. Non-uploading edits (e.g. talk pages) are excluded from Commons uploader cohorts.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- Analytical Suite Signature Footer -->

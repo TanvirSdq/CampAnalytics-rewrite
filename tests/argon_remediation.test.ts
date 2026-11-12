@@ -207,3 +207,93 @@ test('MATH-05: Comparative mobility module produces valid points and methodology
   assert.ok(comp.metadata_card.license.includes('CC BY-SA 4.0'));
   analytics.setCommonsFetchMock(null);
 });
+
+test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication and paginated QI/FP harvesting', async () => {
+  analytics.primeParticipantCache('wlmde24', ['Alice', 'Bob'], new Map([['Alice', 10], ['Bob', 5]]));
+  analytics.primeParticipantCache('wlede24', ['Alice', 'Carol'], new Map([['Alice', 4], ['Carol', 6]]));
+  analytics.primeParticipantCache('wlfde24', [], new Map());
+
+  analytics.setCommonsFetchMock(async (params: Record<string, string>) => {
+    if (params.prop === 'imageinfo|globalusage') {
+      if (params.gcmtitle?.includes('Monuments')) {
+        return {
+          query: {
+            pages: {
+              '101': {
+                title: 'File:Castle1.jpg',
+                imageinfo: [{ user: 'Alice', thumburl: '/thumb1.jpg' }],
+                globalusage: [
+                  { wiki: 'de.wikipedia.org', title: 'Berlin' },
+                  { wiki: 'en.wikipedia.org', title: 'Berlin' }
+                ]
+              }
+            }
+          }
+        };
+      }
+      if (params.gcmtitle?.includes('Earth')) {
+        return {
+          query: {
+            pages: {
+              '202': {
+                title: 'File:Forest1.jpg',
+                imageinfo: [{ user: 'Carol', thumburl: '/thumb2.jpg' }],
+                globalusage: [
+                  { wiki: 'de.wikipedia.org', title: 'Berlin' },
+                  { wiki: 'de.wikipedia.org', title: 'Black_Forest' }
+                ]
+              }
+            }
+          }
+        };
+      }
+      return { query: { pages: {} } };
+    }
+
+    if (params.prop === 'categoryinfo') {
+      if (params.titles?.includes('Quality images from Wiki Loves Monuments 2024 in Germany')) {
+        return { query: { pages: { '500': { categoryinfo: { files: 3 } } } } };
+      }
+      return { query: { pages: {} } };
+    }
+
+    if (params.prop === 'imageinfo' && params.gcmtitle?.includes('Quality images from Wiki Loves Monuments 2024 in Germany')) {
+      if (!params.gcmcontinue) {
+        return {
+          continue: { gcmcontinue: 'page2_token' },
+          query: {
+            pages: {
+              '301': { title: 'File:QI1.jpg', imageinfo: [{ user: 'Alice', thumburl: '/q1.jpg' }] },
+              '302': { title: 'File:QI2.jpg', imageinfo: [{ user: 'Bob', thumburl: '/q2.jpg' }] }
+            }
+          }
+        };
+      } else if (params.gcmcontinue === 'page2_token') {
+        return {
+          query: {
+            pages: {
+              '303': { title: 'File:QI3.jpg', imageinfo: [{ user: 'Carol', thumburl: '/q3.jpg' }] }
+            }
+          }
+        };
+      }
+    }
+
+    return { query: { pages: {} } };
+  });
+
+  const utilAll = await analytics.computeContentUtilityDeep('allde24');
+  assert.equal(utilAll.unique_articles_count, 3, 'All Campaigns must deduplicate unique articles across sub-campaigns');
+  assert.equal(utilAll.distinct_articles, 3);
+  assert.equal(utilAll.total_global_usages, 4);
+
+  const qualWlm = await analytics.computeQualityRecognitionDeep('wlmde24');
+  assert.equal(qualWlm.qi_count, 3);
+  assert.equal(qualWlm.honored_photographers_count, 3, 'Must paginate gcmcontinue to count all 3 honored photographers');
+
+  const qualAll = await analytics.computeQualityRecognitionDeep('allde24');
+  assert.equal(qualAll.honored_photographers_count, 3, 'All Campaigns must aggregate all_uploader_honors across sub-campaigns');
+
+  analytics.setCommonsFetchMock(null);
+});
+

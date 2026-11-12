@@ -260,24 +260,6 @@
                     <div class="camp-shell-left">
                         <h2 class="camp-shell-title">Quality Recognition &amp; Top Photographers</h2>
                         <div class="camp-shell-subtitle">Commons community-reviewed distinctions (QI) and recognized photographer portfolios for {{ quality_result.code|upper }} ({{ quality_result.year }}).</div>
-                        <details class="camp-data-notes">
-                            <summary class="camp-data-notes-summary">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                <span>Learn more about this data &amp; caveats</span>
-                            </summary>
-                            <div class="camp-data-notes-body">
-                                <div class="camp-data-notes-grid">
-                                    <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Quality Hierarchy</span>
-                                        <p class="camp-data-notes-text">Quality designations track <strong>Featured Pictures (FP)</strong> and <strong>Quality Images (QI)</strong> assessed through Wikimedia Commons community reviews. <em>Note on Valued Images (VI):</em> Valued Images are excluded from automated tracking because Commons does not maintain campaign-level subcategory trees for VI, leading to non-uniform categorization across campaigns.</p>
-                                    </div>
-                                    <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Assessment Timing &amp; Caveats</span>
-                                        <p class="camp-data-notes-text">Community reviews often take several months post-competition; recent editions may see QI counts increase as reviews conclude.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </details>
                     </div>
                     <div class="camp-shell-right">
                         <span class="camp-telemetry-badge">
@@ -513,8 +495,25 @@
                         </div>
                     </div>
 
-
-
+                    <!-- Data Methodology, Attribution & Caveats (Positioned at Bottom of Analysis) -->
+                    <details class="camp-data-notes camp-data-notes-bottom">
+                        <summary class="camp-data-notes-summary">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span>Data Attribution, Methodology &amp; Caveats</span>
+                        </summary>
+                        <div class="camp-data-notes-body">
+                            <div class="camp-data-notes-grid">
+                                <div class="camp-data-notes-col">
+                                    <span class="camp-data-notes-heading">Quality Hierarchy</span>
+                                    <p class="camp-data-notes-text">Quality designations track <strong>Featured Pictures (FP)</strong> and <strong>Quality Images (QI)</strong> assessed through Wikimedia Commons community reviews. <em>Note on Valued Images (VI):</em> Valued Images are excluded from automated tracking because Commons does not maintain campaign-level subcategory trees for VI, leading to non-uniform categorization across campaigns.</p>
+                                </div>
+                                <div class="camp-data-notes-col">
+                                    <span class="camp-data-notes-heading">Assessment Timing &amp; Caveats</span>
+                                    <p class="camp-data-notes-text">Community reviews often take several months post-competition; recent editions may see QI counts increase as reviews conclude.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- Analytical Suite Signature Footer -->

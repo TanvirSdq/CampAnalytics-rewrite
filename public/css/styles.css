@@ -5141,23 +5141,28 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
     margin-top: 5px;
 }
 
-/* Research Transparency & Data Notes Disclosure */
+/* Research Transparency & Data Notes Disclosure (Positioned at Bottom of Analysis) */
 .camp-data-notes {
-    margin-top: 10px;
+    margin-top: 20px;
     background: #f8f9fa;
     border: 1px solid var(--border-color);
     border-radius: 0;
     font-size: 0.82rem;
 }
 
+.camp-data-notes-bottom {
+    margin-top: 24px;
+    border-top: 2px solid var(--border-color);
+}
+
 .camp-data-notes-summary {
     cursor: pointer;
-    padding: 6px 12px;
+    padding: 9px 14px;
     font-weight: 600;
     color: var(--wiki-blue);
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     user-select: none;
     list-style: none;
     transition: background 0.15s ease, color 0.15s ease;
@@ -5178,23 +5183,23 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
 }
 
 .camp-data-notes-body {
-    padding: 14px 16px;
+    padding: 16px 18px;
     background: #ffffff;
     color: var(--text-ink);
-    line-height: 1.55;
-    font-size: 0.82rem;
+    line-height: 1.6;
+    font-size: 0.84rem;
 }
 
 .camp-data-notes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
 }
 
 .camp-data-notes-col {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .camp-data-notes-heading {
@@ -5206,9 +5211,9 @@ details.manual-code-toggle[open] > summary svg.chevron-icon {
 }
 
 .camp-data-notes-text {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     color: #54595d;
-    line-height: 1.5;
+    line-height: 1.55;
     margin: 0;
 }
 

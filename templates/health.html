@@ -132,24 +132,6 @@
                     <div class="camp-shell-left">
                         <h2 class="camp-shell-title">Campaign Performance Dynamics &amp; Longitudinal Observability</h2>
                         <div class="camp-shell-subtitle">Multi-dimensional performance dynamics calibrated against {{ region }} regional peer benchmarks.</div>
-                        <details class="camp-data-notes">
-                            <summary class="camp-data-notes-summary">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                <span>Learn more about this data &amp; caveats</span>
-                            </summary>
-                            <div class="camp-data-notes-body">
-                                <div class="camp-data-notes-grid">
-                                    <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Empirical Observability</span>
-                                        <p class="camp-data-notes-text">Observational metrics reflect actual activity logs from Wikimedia Commons. Year-over-Year (YoY) velocity measures actual net shifts in active photographers, submissions, transclusions, and distinctions without synthetic scores.</p>
-                                    </div>
-                                    <div class="camp-data-notes-col">
-                                        <span class="camp-data-notes-heading">Regional Peer Context</span>
-                                        <p class="camp-data-notes-text">Regional benchmarks represent central tendencies (median P₅₀ and arithmetic mean) across active national affiliates in the {{ region or 'Global' }} cluster, providing non-graded comparative perspective.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </details>
                     </div>
                     <div class="camp-shell-right">
                         <span class="camp-telemetry-badge">
@@ -948,6 +930,26 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Data Methodology, Attribution & Caveats (Positioned at Bottom of Analysis) -->
+                    <details class="camp-data-notes camp-data-notes-bottom">
+                        <summary class="camp-data-notes-summary">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span>Data Attribution, Methodology &amp; Caveats</span>
+                        </summary>
+                        <div class="camp-data-notes-body">
+                            <div class="camp-data-notes-grid">
+                                <div class="camp-data-notes-col">
+                                    <span class="camp-data-notes-heading">Empirical Observability</span>
+                                    <p class="camp-data-notes-text">Observational metrics reflect actual activity logs from Wikimedia Commons. Year-over-Year (YoY) velocity measures actual net shifts in active photographers, submissions, transclusions, and distinctions without synthetic scores.</p>
+                                </div>
+                                <div class="camp-data-notes-col">
+                                    <span class="camp-data-notes-heading">Regional Peer Context</span>
+                                    <p class="camp-data-notes-text">Regional benchmarks represent central tendencies (median P₅₀ and arithmetic mean) across active national affiliates in the {{ region or 'Global' }} cluster, providing non-graded comparative perspective.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- Analytical Suite Signature Footer -->

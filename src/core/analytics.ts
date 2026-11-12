@@ -2084,8 +2084,14 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       totalSampled += subRes.total_sampled || 0;
       usedFilesCount += subRes.distinct_used_images || 0;
       totalUsages += subRes.total_global_usages || 0;
+      for (const ak of (subRes.unique_article_keys || [])) {
+        uniqueArticles.add(ak);
+      }
       for (const mu of (subRes.media_usages || [])) {
         const fileKey = mu.full_title || mu.file_title;
+        if (mu.wiki && mu.article) {
+          uniqueArticles.add(`${mu.wiki}:${mu.article}`);
+        }
         if (!seenFiles.has(fileKey)) {
           seenFiles.add(fileKey);
           if (mediaUsages.length < 25) {
@@ -2105,6 +2111,9 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
         }
         uploaderUtility[u].used_files += tp.used_files_count || 0;
         uploaderUtility[u].total_usages += tp.total_usages || 0;
+        for (const ak of (tp.article_keys || [])) {
+          uploaderUtility[u].articles.add(ak);
+        }
       }
     }
 
@@ -2123,6 +2132,7 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
         used_images_count: uploaderUtility[u].used_files,
         total_usages: uploaderUtility[u].total_usages,
         distinct_articles_count: uploaderUtility[u].articles.size || uploaderUtility[u].used_files,
+        article_keys: Array.from(uploaderUtility[u].articles),
         primary_wiki: primaryWiki
       }));
 
@@ -2143,6 +2153,7 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       usage_rate_pct: usageRate,
       total_global_usages: totalUsages,
       unique_articles_count: uniqueArticles.size,
+      unique_article_keys: Array.from(uniqueArticles),
       top_consuming_project: topProject,
       total_sampled: totalSampled,
       total_uploads: totalUploads,
@@ -2266,6 +2277,7 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       used_images_count: uploaderUtility[u].used_files.size,
       total_usages: uploaderUtility[u].total_usages,
       distinct_articles_count: uploaderUtility[u].articles.size,
+      article_keys: Array.from(uploaderUtility[u].articles),
       primary_wiki: primaryWiki
     }));
 
@@ -2286,6 +2298,7 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
     usage_rate_pct: usageRate,
     total_global_usages: totalUsages,
     unique_articles_count: uniqueArticles.size,
+    unique_article_keys: Array.from(uniqueArticles),
     top_consuming_project: topProject,
     total_sampled: totalSampled,
     total_uploads: totalUploads,
@@ -2326,7 +2339,8 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       honored_photographers_count: 0,
       recognized_count: 0,
       recognized_files: [],
-      leaderboard: []
+      leaderboard: [],
+      all_uploader_honors: {}
     };
   }
 
@@ -2358,24 +2372,37 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
           recognizedFiles.push(rf);
         }
       }
-      for (const lb of (subRes.leaderboard || [])) {
-        const rawU = lb.uploader || lb.username;
-        const u = normalizeMediaWikiUsername(rawU);
-        if (!u || isBotAccount(u)) continue;
-        if (!uploaderHonors[u]) {
-          uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
+      if (subRes.all_uploader_honors && Object.keys(subRes.all_uploader_honors).length > 0) {
+        for (const [rawU, h] of Object.entries(subRes.all_uploader_honors as Record<string, { qi: number; fp: number; vi: number }>)) {
+          const u = normalizeMediaWikiUsername(rawU);
+          if (!u || isBotAccount(u)) continue;
+          if (!uploaderHonors[u]) {
+            uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
+          }
+          uploaderHonors[u].qi += h.qi || 0;
+          uploaderHonors[u].fp += h.fp || 0;
+          uploaderHonors[u].vi += h.vi || 0;
         }
-        uploaderHonors[u].qi += lb.qi_count || 0;
-        uploaderHonors[u].fp += lb.fp_count || 0;
-        uploaderHonors[u].vi += lb.vi_count || 0;
+      } else {
+        for (const lb of (subRes.leaderboard || [])) {
+          const rawU = lb.uploader || lb.username;
+          const u = normalizeMediaWikiUsername(rawU);
+          if (!u || isBotAccount(u)) continue;
+          if (!uploaderHonors[u]) {
+            uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
+          }
+          uploaderHonors[u].qi += lb.qi_count || 0;
+          uploaderHonors[u].fp += lb.fp_count || 0;
+          uploaderHonors[u].vi += lb.vi_count || 0;
+        }
       }
     }
 
     const totalRecognized = fpCount + qiCount + viCount;
     const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
+    const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
 
-    const leaderboard = Object.keys(uploaderHonors)
-      .filter((u) => !isBotAccount(u))
+    const leaderboard = distinctHonoredPhotographers
       .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
       .slice(0, 10)
       .map((u, i) => ({
@@ -2387,7 +2414,9 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         fp_count: uploaderHonors[u].fp,
         vi_count: uploaderHonors[u].vi,
         recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
-        quality_share_pct: totalUploads > 0 ? parseFloat(((uploaderHonors[u].qi / totalUploads) * 100).toFixed(1)) : 0.0
+        quality_share_pct: totalRecognized > 0
+          ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp) / totalRecognized) * 100).toFixed(1))
+          : 0.0
       }));
 
     return {
@@ -2400,10 +2429,11 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       qi_count: qiCount,
       fp_count: fpCount,
       vi_count: viCount,
-      honored_photographers_count: leaderboard.length,
-      recognized_count: recognizedFiles.length,
+      honored_photographers_count: distinctHonoredPhotographers.length,
+      recognized_count: totalRecognized,
       recognized_files: recognizedFiles.slice(0, 30),
-      leaderboard: leaderboard
+      leaderboard: leaderboard,
+      all_uploader_honors: uploaderHonors
     };
   }
 
@@ -2426,41 +2456,58 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         const cinfo = pages[pid]?.categoryinfo;
         if (cinfo && cinfo.files > 0) {
           qiCount = cinfo.files;
-          const fData = await fetchCommonsApi({
-            action: 'query',
-            generator: 'categorymembers',
-            gcmtitle: `Category:${qcat}`,
-            gcmtype: 'file',
-            gcmlimit: '250',
-            prop: 'imageinfo',
-            iiprop: 'user|timestamp|url',
-            iiurlwidth: '300'
-          }, 6000);
-          const fPages = fData?.query?.pages || {};
-          for (const fPid of Object.keys(fPages)) {
-            const fpObj = fPages[fPid];
-            const title = fpObj.title || '';
-            const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
-            const rawUser = ii.user || '';
-            const uploader = normalizeMediaWikiUsername(rawUser);
-            if (!uploader || isBotAccount(uploader)) continue;
-            const thumb = ii.thumburl || '';
-            const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
-
-            recognizedFiles.push({
-              title,
-              file_title: title,
-              thumb_url: thumb,
-              honors: ['Quality Image'],
-              uploader,
-              commons_url: commonsUrl,
-              details: 'Certified as Quality Image on Wikimedia Commons.'
-            });
-
-            if (!uploaderHonors[uploader]) {
-              uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+          let gcmContinue: string | undefined = undefined;
+          let iterations = 0;
+          const startTime = Date.now();
+          while (iterations < 10 && Date.now() - startTime < 8000) {
+            iterations++;
+            const queryParams: Record<string, string> = {
+              action: 'query',
+              generator: 'categorymembers',
+              gcmtitle: `Category:${qcat}`,
+              gcmtype: 'file',
+              gcmlimit: '500',
+              prop: 'imageinfo',
+              iiprop: 'user|timestamp|url',
+              iiurlwidth: '300'
+            };
+            if (gcmContinue) {
+              queryParams.gcmcontinue = gcmContinue;
             }
-            uploaderHonors[uploader].qi++;
+            const fData = await fetchCommonsApi(queryParams, 6000);
+            const fPages = fData?.query?.pages || {};
+            for (const fPid of Object.keys(fPages)) {
+              const fpObj = fPages[fPid];
+              const title = fpObj.title || '';
+              const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
+              const rawUser = ii.user || '';
+              const uploader = normalizeMediaWikiUsername(rawUser);
+              if (!uploader || isBotAccount(uploader)) continue;
+              const thumb = ii.thumburl || '';
+              const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+
+              if (recognizedFiles.length < 30) {
+                recognizedFiles.push({
+                  title,
+                  file_title: title,
+                  thumb_url: thumb,
+                  honors: ['Quality Image'],
+                  uploader,
+                  commons_url: commonsUrl,
+                  details: 'Certified as Quality Image on Wikimedia Commons.'
+                });
+              }
+
+              if (!uploaderHonors[uploader]) {
+                uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+              }
+              uploaderHonors[uploader].qi++;
+            }
+            if (fData?.continue?.gcmcontinue) {
+              gcmContinue = String(fData.continue.gcmcontinue);
+            } else {
+              break;
+            }
           }
           break;
         }
@@ -2484,36 +2531,51 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         const cinfo = pages[pid]?.categoryinfo;
         if (cinfo && cinfo.files > 0) {
           fpCount = cinfo.files;
-          const fpFilesData = await fetchCommonsApi({
-            action: 'query',
-            generator: 'categorymembers',
-            gcmtitle: `Category:${fpCat}`,
-            gcmtype: 'file',
-            gcmlimit: '100',
-            prop: 'imageinfo',
-            iiprop: 'user|timestamp|url',
-            iiurlwidth: '300'
-          }, 6000);
-          const fpPages = fpFilesData?.query?.pages || {};
-          for (const fpPid of Object.keys(fpPages)) {
-            const fpObj = fpPages[fpPid];
-            const title = fpObj.title || '';
-            const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
-            const uploader = normalizeMediaWikiUsername(ii.user || '');
-            if (!uploader || isBotAccount(uploader)) continue;
-            const thumb = ii.thumburl || '';
-            const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
-            recognizedFiles.unshift({
-              title,
-              file_title: title,
-              thumb_url: thumb,
-              honors: ['Featured Picture'],
-              uploader,
-              commons_url: commonsUrl,
-              details: 'Certified as Featured Picture on Wikimedia Commons.'
-            });
-            if (!uploaderHonors[uploader]) uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
-            uploaderHonors[uploader].fp++;
+          let gcmContinue: string | undefined = undefined;
+          let iterations = 0;
+          const startTime = Date.now();
+          while (iterations < 10 && Date.now() - startTime < 8000) {
+            iterations++;
+            const queryParams: Record<string, string> = {
+              action: 'query',
+              generator: 'categorymembers',
+              gcmtitle: `Category:${fpCat}`,
+              gcmtype: 'file',
+              gcmlimit: '500',
+              prop: 'imageinfo',
+              iiprop: 'user|timestamp|url',
+              iiurlwidth: '300'
+            };
+            if (gcmContinue) {
+              queryParams.gcmcontinue = gcmContinue;
+            }
+            const fpFilesData = await fetchCommonsApi(queryParams, 6000);
+            const fpPages = fpFilesData?.query?.pages || {};
+            for (const fpPid of Object.keys(fpPages)) {
+              const fpObj = fpPages[fpPid];
+              const title = fpObj.title || '';
+              const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
+              const uploader = normalizeMediaWikiUsername(ii.user || '');
+              if (!uploader || isBotAccount(uploader)) continue;
+              const thumb = ii.thumburl || '';
+              const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+              recognizedFiles.unshift({
+                title,
+                file_title: title,
+                thumb_url: thumb,
+                honors: ['Featured Picture'],
+                uploader,
+                commons_url: commonsUrl,
+                details: 'Certified as Featured Picture on Wikimedia Commons.'
+              });
+              if (!uploaderHonors[uploader]) uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+              uploaderHonors[uploader].fp++;
+            }
+            if (fpFilesData?.continue?.gcmcontinue) {
+              gcmContinue = String(fpFilesData.continue.gcmcontinue);
+            } else {
+              break;
+            }
           }
           break;
         }
@@ -2558,7 +2620,8 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
     honored_photographers_count: distinctHonoredPhotographers.length,
     recognized_count: recognizedFiles.length,
     recognized_files: recognizedFiles.slice(0, 30),
-    leaderboard: leaderboard
+    leaderboard: leaderboard,
+    all_uploader_honors: uploaderHonors
   };
 }
 
