@@ -1249,23 +1249,23 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
 
   function getColor(pct: number): string {
     const clamped = Math.max(0, Math.min(100, pct));
-    if (clamped === 100) return '#0f172a'; // Full retention / self-cohort (Solid Dark Slate, L=11%)
-    if (clamped >= 75) return '#172554';   // Peak Longitudinal Overlap (Solid Midnight Navy, L=21%)
-    if (clamped >= 60) return '#1e3a8a';   // Exceptional Overlap (Solid Deep Navy, L=33%)
-    if (clamped >= 45) return '#1e40af';   // Very High upper (Solid Dark Sapphire, L=40%)
-    if (clamped >= 35) return '#1d4ed8';   // Very High mid (Solid Deep Blue, L=48%)
-    if (clamped >= 27) return '#2563eb';   // Very High entry (Solid Royal Blue, L=53%)
-    if (clamped >= 20) return '#3b82f6';   // High (Solid Vivid Blue, L=60%)
-    if (clamped >= 15) return '#60a5fa';   // Sustained upper (Solid Light Blue, L=68%)
-    if (clamped >= 10) return '#93c5fd';   // Sustained baseline (Solid Soft Blue, L=79%)
-    if (clamped >= 6) return '#bfdbfe';    // Developing upper (Solid Pale Blue, L=87%)
-    if (clamped >= 3) return '#dbeafe';    // Developing baseline (Solid Ice Blue, L=93%)
-    if (clamped > 0) return '#eff6ff';     // Low (Solid Whisper Blue, L=97%)
+    if (clamped === 100) return '#0f172a'; // Full retention / self-cohort identity (Solid Dark Slate, L=11%)
+    if (clamped >= 50) return '#172554';   // Peak Empirical Overlap >=50% (Solid Midnight Navy, L=21%)
+    if (clamped >= 40) return '#1e3a8a';   // Exceptional Overlap 40%-50% (Solid Deep Navy, L=33%)
+    if (clamped >= 32) return '#1e40af';   // Very High upper 32%-40% (Solid Dark Sapphire, L=40%)
+    if (clamped >= 25) return '#1d4ed8';   // Very High baseline 25%-32% (Solid Deep Blue, L=48%)
+    if (clamped >= 20) return '#2563eb';   // High upper 20%-25% (Solid Royal Blue, L=53%)
+    if (clamped >= 15) return '#3b82f6';   // High baseline 15%-20% (Solid Vivid Blue, L=60%)
+    if (clamped >= 11) return '#60a5fa';   // Sustained upper 11%-15% (Solid Light Blue, L=68%)
+    if (clamped >= 8) return '#93c5fd';    // Sustained baseline 8%-11% (Solid Soft Blue, L=79%)
+    if (clamped >= 5) return '#bfdbfe';    // Developing upper 5%-8% (Solid Pale Blue, L=87%)
+    if (clamped >= 2.5) return '#dbeafe';  // Developing baseline 2.5%-5% (Solid Ice Blue, L=93%)
+    if (clamped > 0) return '#eff6ff';     // Low >0%-2.5% (Solid Whisper Blue, L=97%)
     return '#f8fafc';                      // Zero overlap (Solid Neutral Off-White)
   }
 
   function getTextColor(pct: number): string {
-    if (pct >= 27 || pct === 100) return '#ffffff';
+    if (pct >= 20 || pct === 100) return '#ffffff';
     return '#0f172a';
   }
 
