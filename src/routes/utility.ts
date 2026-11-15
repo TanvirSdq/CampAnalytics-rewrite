@@ -83,10 +83,9 @@ export async function handleUtility(req: Request, res: Response): Promise<void> 
   let utilityResult: any = null;
 
   if (targetCampaign) {
-    const isCustom = analytics.isCustomCategoryCode(targetCampaign);
-    const m = !isCustom ? analytics.CODE_RE.exec(targetCampaign.toLowerCase()) : null;
-    if (!m && !isCustom && !comparativeResult) {
-      error = `Invalid campaign code format '${targetCampaign}'. Please specify in standard syntax e.g. wlmde24, wlmit23, or Category:Images_from_...`;
+    const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
+    if (!m && !comparativeResult) {
+      error = `Invalid campaign code format '${targetCampaign}'. Please specify in standard syntax e.g. wlmde24, wlmit23.`;
     } else if (m) {
       const [, evt, cc] = m;
       const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
@@ -99,18 +98,10 @@ export async function handleUtility(req: Request, res: Response): Promise<void> 
           error = `Error evaluating content utility: ${err.message}`;
         }
       }
-    } else if (isCustom) {
-      try {
-        utilityResult = await analytics.computeContentUtilityDeep(targetCampaign);
-      } catch (err: any) {
-        error = `Error evaluating content utility: ${err.message}`;
-      }
     }
   }
 
-  const mCode = targetCampaign && !analytics.isCustomCategoryCode(targetCampaign)
-    ? analytics.CODE_RE.exec(targetCampaign.toLowerCase())
-    : null;
+  const mCode = targetCampaign ? analytics.CODE_RE.exec(targetCampaign.toLowerCase()) : null;
 
   res.render('utility.html', {
     ...getGlobalContext(req),
@@ -158,19 +149,16 @@ export async function handleUtilityApi(req: Request, res: Response): Promise<voi
     res.status(400).json({ error: 'Missing target_campaign or countries parameter' });
     return;
   }
-  const isCustom = analytics.isCustomCategoryCode(targetCampaign);
-  const m = !isCustom ? analytics.CODE_RE.exec(targetCampaign.toLowerCase()) : null;
-  if (!m && !isCustom) {
+  const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
+  if (!m) {
     res.status(400).json({ error: `Invalid campaign code format '${targetCampaign}'` });
     return;
   }
-  if (m) {
-    const [, evt, cc] = m;
-    const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
-    if (scopeNotice) {
-      res.status(400).json({ error: scopeNotice });
-      return;
-    }
+  const [, evt, cc] = m;
+  const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
+  if (scopeNotice) {
+    res.status(400).json({ error: scopeNotice });
+    return;
   }
   try {
     const utilityResult = await analytics.computeContentUtilityDeep(targetCampaign);

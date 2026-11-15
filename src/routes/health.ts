@@ -213,19 +213,16 @@ export async function handleHealthApi(req: Request, res: Response): Promise<void
     res.status(400).json({ error: 'Missing target_campaign parameter' });
     return;
   }
-  const isCustom = analytics.isCustomCategoryCode(targetCampaign);
-  const m = !isCustom ? analytics.CODE_RE.exec(targetCampaign.toLowerCase()) : null;
-  if (!m && !isCustom) {
+  const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
+  if (!m) {
     res.status(400).json({ error: `Invalid campaign code format '${targetCampaign}'` });
     return;
   }
-  if (m) {
-    const [, evt, cc] = m;
-    const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
-    if (scopeNotice) {
-      res.status(400).json({ error: scopeNotice });
-      return;
-    }
+  const [, evt, cc] = m;
+  const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
+  if (scopeNotice) {
+    res.status(400).json({ error: scopeNotice });
+    return;
   }
   try {
     const region = asScalarString(req.query.region).trim();

@@ -473,40 +473,4 @@ test('UPGRADE-01: Pure-Node MariaDB/MySQL wire-protocol v10 client handshake & C
   assert.deepEqual(rows[0], ['Alice', '12']);
 });
 
-test('UPGRADE-04: Custom Category support for ad-hoc Commons campaigns', async () => {
-  const customCode = 'Category:Images_from_Wiki_Loves_Science_2024_in_Germany';
-  const baseCustomCode = 'Category:Images_from_Wiki_Loves_Science_2023_in_Germany';
-
-  assert.equal(analytics.isCustomCategoryCode(customCode), true);
-  assert.equal(analytics.codeToCategory(customCode), 'Images_from_Wiki_Loves_Science_2024_in_Germany');
-  assert.ok(
-    analytics.getQualityCategoryCandidates(customCode).includes('Quality images from Wiki Loves Science 2024 in Germany')
-  );
-
-  analytics.primeParticipantCache(
-    baseCustomCode,
-    ['VeteranA'],
-    new Map([['VeteranA', 8]])
-  );
-  analytics.primeParticipantCache(
-    customCode,
-    ['VeteranA', 'Newcomer1', 'Newcomer2'],
-    new Map([
-      ['VeteranA', 12],
-      ['Newcomer1', 5],
-      ['Newcomer2', 2]
-    ])
-  );
-
-  analytics.setCommonsFetchMock(async () => ({ query: { pages: {} } }));
-
-  const healthRes = await analytics.computeHealthEvaluation(customCode, 'Northern & Western Europe');
-  assert.equal(healthRes.target_campaign, customCode);
-  assert.equal(healthRes.target_users_count, 3);
-  assert.equal(healthRes.baseline_users_count, 1);
-  assert.equal(healthRes.overlap_users_count, 1);
-
-  analytics.setCommonsFetchMock(null);
-});
-
 
