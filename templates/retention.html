@@ -36,7 +36,7 @@
                         <div>
                             <!-- Event Matrix Checkboxes -->
                             <div class="form-group">
-                                <label class="form-label">Event Matrix</label>
+                                <label class="form-label">Campaign Type</label>
                                 <div class="pill-group" id="event-pill-group">
                                     <input type="checkbox" name="builder_events" value="all" id="evt-all" class="pill-checkbox" onchange="onRetentionEventChange(this)" onclick="onRetentionEventChange(this)">
                                     <label for="evt-all" class="pill-label" onclick="setTimeout(() => onRetentionEventChange(document.getElementById('evt-all')), 10)">All Campaigns</label>
@@ -98,7 +98,7 @@
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                             <label for="target_campaigns" class="form-label" style="margin-bottom: 0;">
-                                                Campaign Code String
+                                                Target Campaign Codes
                                             </label>
                                             <button type="button" class="btn btn-sm" onclick="clearTargetCampaigns()" title="Clear target campaigns" style="padding: 2px 8px; font-size: 0.78rem; background: #fff; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">
                                                 Clear Codes
@@ -112,9 +112,9 @@
 
                         <!-- Right: Projection Model & Metric Settings -->
                         <div class="example-box retention-settings">
-                            <div class="example-box-title">Output &amp; Projection Settings</div>
+                            <div class="example-box-title">Display Settings</div>
                             <div class="form-group">
-                                <label class="form-label">Visual Projection</label>
+                                <label class="form-label">Display Views</label>
                                 <select name="view_mode" class="form-control" style="font-size: 0.85rem;">
                                     <option value="Both" {% if view_mode == 'Both' or not view_mode %}selected{% endif %}>All: Choropleth, Heatmaps &amp; Tables</option>
                                     <option value="Map" {% if view_mode == 'Map' %}selected{% endif %}>Choropleth Map Only</option>
@@ -124,7 +124,7 @@
                             </div>
 
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label class="form-label" style="margin-bottom: 6px;">Map Metric Choice</label>
+                                <label class="form-label" style="margin-bottom: 6px;">Map Retention Metric</label>
                                 <div class="radio-options">
                                     <label class="radio-option" style="font-size: 0.82rem; padding: 6px 10px;">
                                         <input type="radio" name="metric_choice" value="Average" {% if metric_choice == 'Average' or not metric_choice %}checked{% endif %}>
@@ -151,7 +151,7 @@
 
                     <button type="submit" id="btn-run-retention" class="btn btn-primary builder-action-btn" onclick="setLoadingState(this, 'Running Analysis…')">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                        <span>Run Retention Analysis</span>
+                        <span>Compute Retention Analysis</span>
                     </button>
                 </div>
             </div>

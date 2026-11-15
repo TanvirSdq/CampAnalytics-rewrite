@@ -65,16 +65,16 @@
                                 <div class="manual-code-body">
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label for="target_event" class="form-label">
-                                            Target Campaign Registry Code
+                                            Target Campaign Code
                                         </label>
-                                        <input type="text" id="target_event" name="target_event" value="{{ target_event if target_event else '' }}" placeholder="e.g., wlmde24" class="form-control form-control-code" oninput="parseCodeToHealthBuilder()">
-                                        <div class="form-hint" id="health-scope-hint">Standard event code syntax: prefix (all / wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmde24, allde24, wlang23).</div>
+                                        <input type="text" id="target_event" name="target_event" value="{{ target_event if target_event else '' }}" placeholder="e.g. wlmde24" class="form-control form-control-code" oninput="parseCodeToHealthBuilder()">
+                                        <div class="form-hint" id="health-scope-hint" style="display: none;"></div>
                                     </div>
                                 </div>
                             </details>
 
                             <div class="form-group">
-                                <label class="form-label">Benchmark Baseline</label>
+                                <label class="form-label">Baseline Comparison</label>
                                 <div class="radio-options">
                                     <label class="radio-option">
                                         <input type="radio" name="comp_mode" value="Previous Year Baseline" id="comp-prev" {% if comp_mode == 'Previous Year Baseline' or not comp_mode %}checked{% endif %} onchange="toggleCustomBaseline()">
@@ -89,19 +89,17 @@
 
                             <div class="form-group" id="custom-baseline-group" style="{% if comp_mode != 'Custom Verification Code' %}display: none;{% endif %}">
                                 <label for="baseline_event" class="form-label">Custom Baseline Campaign Code</label>
-                                <input type="text" id="baseline_event" name="baseline_event" value="{{ baseline_event if baseline_event else '' }}" placeholder="e.g., wlmde22" class="form-control form-control-code">
-                                <div class="form-hint">Specify prior reference edition for custom longitudinal comparison.</div>
+                                <input type="text" id="baseline_event" name="baseline_event" value="{{ baseline_event if baseline_event else '' }}" placeholder="e.g. wlmde22" class="form-control form-control-code">
                             </div>
 
                             <div class="form-group">
-                                <label for="region" class="form-label">Geographic Standardization Framework</label>
+                                <label for="region" class="form-label">Regional Benchmark Cluster</label>
                                 <select id="region" name="region" class="form-control" onchange="onRegionSelectChange(this)">
                                     <option value="">-- Auto-Detect from Country --</option>
                                     {% for reg in REGION_COUNTRY_MAPPING.keys() %}
                                         <option value="{{ reg }}" {% if region == reg %}selected{% endif %}>{{ reg }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="form-hint">Regional benchmark norms are calibrated against top peer campaigns in this geographic cluster (auto-detected or customized).</div>
                             </div>
                         </div>
                     </div>
@@ -110,7 +108,7 @@
                     <div class="builder-action-bar">
                         <button type="submit" class="btn btn-primary builder-action-btn" onclick="setLoadingState(this, 'Evaluating Performance…')">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-                            <span>Evaluate Event Performance</span>
+                            <span>Evaluate Performance</span>
                         </button>
                     </div>
                 </div>

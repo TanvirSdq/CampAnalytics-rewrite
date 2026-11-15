@@ -51,7 +51,7 @@
                                 </div>
                                 <div class="form-group">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; min-height: 24px;">
-                                        <label for="quality_year" class="form-label" style="margin-bottom: 0;">Campaign Edition Year</label>
+                                        <label for="quality_year" class="form-label" style="margin-bottom: 0;">Campaign Year</label>
                                     </div>
                                     <input type="number" id="quality_year" name="quality_year" value="{{ quality_year or (CURRENT_YEAR - 1) }}" min="2010" max="2040" class="form-control" onchange="syncQualityBuilder()" oninput="syncQualityBuilder()">
                                 </div>
@@ -67,7 +67,7 @@
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label for="target_campaign_quality" class="form-label">Target Campaign Code</label>
                                         <input type="text" id="target_campaign_quality" name="target_campaign" value="{{ target_campaign if target_campaign else '' }}" placeholder="e.g. wlmde24" class="form-control form-control-code" style="max-width: 280px;" oninput="parseCodeToQualityBuilder()">
-                                        <div class="form-hint" id="quality-scope-hint">Single campaign code for quality recognition &amp; honors analysis.</div>
+                                        <div class="form-hint" id="quality-scope-hint" style="display: none;"></div>
                                     </div>
                                 </div>
                             </details>
@@ -78,7 +78,7 @@
                     <div class="builder-action-bar">
                         <button type="submit" class="btn btn-primary builder-action-btn" onclick="setLoadingState(this, 'Evaluating Quality…')">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            <span>Evaluate Quality Recognition</span>
+                            <span>Evaluate Quality</span>
                         </button>
                     </div>
                 </div>

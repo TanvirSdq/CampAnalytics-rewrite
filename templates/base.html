@@ -485,7 +485,7 @@
             if (evt === 'wlb') {
                 const allowed = (scope && typeof scope === 'object' && scope.countries) ? scope.countries : scope;
                 if (!allowed.includes(cc)) {
-                    return `Wiki Loves Bangla is dedicated to the global Bengali community (primarily Bangladesh and India). It does not hold separate national editions in ${cName}.`;
+                    return `Wiki Loves Bangla is dedicated to the global Bengali community, primarily in Bangladesh and India. It does not hold separate national editions in ${cName}.`;
                 }
             } else if (evt === 'wla') {
                 const allowed = Array.isArray(scope) ? scope : [];
@@ -818,8 +818,10 @@
                     const notice = getScopeNoticeJS(evt, cc);
                     if (notice) {
                         healthHint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                        healthHint.style.display = 'block';
                     } else {
-                        healthHint.innerText = 'Standard event code syntax: prefix (wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmbd24, wlede22, wlang23).';
+                        healthHint.innerHTML = '';
+                        healthHint.style.display = 'none';
                     }
                 }
             }
@@ -970,8 +972,10 @@
                 const notice = getScopeNoticeJS(evt, cc);
                 if (notice) {
                     influxHint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                    influxHint.style.display = 'block';
                 } else {
-                    influxHint.innerText = 'Chronological campaign sequence to evaluate (includes ' + baselineYr + ' as prior baseline).';
+                    influxHint.innerHTML = '';
+                    influxHint.style.display = 'none';
                 }
             }
         }
@@ -1047,8 +1051,10 @@
                     const notice = getScopeNoticeJS(evt, cc);
                     if (notice) {
                         influxHint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                        influxHint.style.display = 'block';
                     } else {
-                        influxHint.innerText = 'Chronological campaign sequence to evaluate.';
+                        influxHint.innerHTML = '';
+                        influxHint.style.display = 'none';
                     }
                 }
             }
@@ -1069,15 +1075,13 @@
             }
             const hint = document.getElementById('utility-scope-hint');
             if (hint) {
-                if (cc) {
-                    const notice = getScopeNoticeJS(evt, cc);
-                    if (notice) {
-                        hint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
-                    } else {
-                        hint.innerText = 'Single campaign code for content utility & global usage analysis.';
-                    }
+                const notice = cc ? getScopeNoticeJS(evt, cc) : null;
+                if (notice) {
+                    hint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                    hint.style.display = 'block';
                 } else {
-                    hint.innerText = 'Select a country above or type a campaign code (e.g. wlmde24).';
+                    hint.innerHTML = '';
+                    hint.style.display = 'none';
                 }
             }
         }
@@ -1127,15 +1131,13 @@
             }
             const hint = document.getElementById('quality-scope-hint');
             if (hint) {
-                if (cc) {
-                    const notice = getScopeNoticeJS(evt, cc);
-                    if (notice) {
-                        hint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
-                    } else {
-                        hint.innerText = 'Single campaign code for quality recognition & honors analysis.';
-                    }
+                const notice = cc ? getScopeNoticeJS(evt, cc) : null;
+                if (notice) {
+                    hint.innerHTML = '<span style="color: #d97706; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> ' + notice + '</span>';
+                    hint.style.display = 'block';
                 } else {
-                    hint.innerText = 'Select a country above or type a campaign code (e.g. wlmde24).';
+                    hint.innerHTML = '';
+                    hint.style.display = 'none';
                 }
             }
         }

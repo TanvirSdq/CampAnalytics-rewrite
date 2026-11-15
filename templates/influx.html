@@ -81,13 +81,13 @@
                                 <div class="manual-code-body">
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                            <label for="influx_codes" class="form-label" style="margin-bottom: 0;">Generated Campaign Sequence</label>
+                                            <label for="influx_codes" class="form-label" style="margin-bottom: 0;">Campaign Sequence</label>
                                             <button type="button" class="btn btn-sm" onclick="clearInfluxCodes()" title="Clear campaign codes" style="padding: 2px 8px; font-size: 0.78rem; background: #fff; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 0; cursor: pointer;">
                                                 Clear Codes
                                             </button>
                                         </div>
                                         <input type="text" id="influx_codes" name="influx_codes" class="form-control form-control-code" value="{{ influx_codes|default('') }}" placeholder="e.g. wlmde22 wlmde23 wlmde24 wlmde25 wlmde26" oninput="parseCodeToInfluxBuilder(true)">
-                                        <div class="form-hint" id="influx-scope-hint">Chronological campaign sequence to evaluate.</div>
+                                        <div class="form-hint" id="influx-scope-hint" style="display: none;"></div>
                                     </div>
                                 </div>
                             </details>
