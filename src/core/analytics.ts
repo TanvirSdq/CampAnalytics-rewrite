@@ -1101,11 +1101,11 @@ export function createWorldMapHtml(
             text: ${jsonHover},
             hoverinfo: 'text',
             colorscale: [
-              [0.0, '#eef7fa'],
-              [0.2, '#a8dfed'],
-              [0.4, '#72ded6'],
-              [0.7, '#256d85'],
-              [1.0, '#183f54']
+              [0.0, '#f0f9ff'],
+              [0.2, '#bae6fd'],
+              [0.45, '#38bdf8'],
+              [0.75, '#2563eb'],
+              [1.0, '#1e40af']
             ],
             autocolorscale: false,
             marker: { line: { color: '#ffffff', width: 1.2 } },
@@ -1223,17 +1223,18 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
   function getColor(pct: number): string {
     const clamped = Math.max(0, Math.min(100, pct));
     if (clamped === 100) return '#0f172a'; // Full retention / self-cohort (Solid Dark Slate)
-    if (clamped >= 50) return '#1e40af';   // Solid Deep Blue
-    if (clamped >= 30) return '#2563eb';   // Solid Royal Blue
-    if (clamped >= 20) return '#38bdf8';   // Solid Vibrant Sky Blue
-    if (clamped >= 10) return '#bae6fd';   // Solid Soft Sky Blue
-    if (clamped > 0) return '#f0f9ff';     // Solid Pale Ice Blue
+    if (clamped >= 50) return '#172554';   // Solid Deep Navy (Exceptional cohort overlap >50%)
+    if (clamped >= 25) return '#1e40af';   // Solid Deep Blue (Benchmark / Top Tier 25%+)
+    if (clamped >= 18) return '#2563eb';   // Solid Royal Blue (High 18%-25%)
+    if (clamped >= 12) return '#38bdf8';   // Solid Vibrant Sky Blue (Sustained 12%-18%)
+    if (clamped >= 5) return '#bae6fd';    // Solid Soft Sky Blue (Developing 5%-12%)
+    if (clamped > 0) return '#f0f9ff';     // Solid Pale Ice Blue (Baseline <5%)
     return '#f8fafc';                      // Solid Neutral Off-White (0% overlap)
   }
 
   function getTextColor(pct: number): string {
-    if (pct >= 30) return '#ffffff';
-    if (pct >= 20) return '#0f172a';
+    if (pct >= 18 || pct === 100) return '#ffffff';
+    if (pct >= 12) return '#0f172a';
     return '#475569';
   }
 
