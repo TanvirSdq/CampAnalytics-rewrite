@@ -316,6 +316,7 @@ export function getSubCampaignCodes(code: string): string[] {
   if (event !== 'all') return [clean];
   const subCodes: string[] = [];
   for (const e of Object.keys(EVENT_MAP)) {
+    if (!isEventScopedForCountry(e, cc)) continue;
     const scope = EVENT_COUNTRY_SCOPE[e] || '*';
     if (typeof scope === 'object' && scope.countries) {
       if (scope.countries.includes(cc)) {
@@ -1223,19 +1224,23 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
   function getColor(pct: number): string {
     const clamped = Math.max(0, Math.min(100, pct));
     if (clamped === 100) return '#0f172a'; // Full retention / self-cohort (Solid Dark Slate)
-    if (clamped >= 50) return '#172554';   // Solid Deep Navy (Exceptional cohort overlap >50%)
-    if (clamped >= 25) return '#1e40af';   // Solid Deep Blue (Benchmark / Top Tier 25%+)
-    if (clamped >= 18) return '#2563eb';   // Solid Royal Blue (High 18%-25%)
-    if (clamped >= 12) return '#38bdf8';   // Solid Vibrant Sky Blue (Sustained 12%-18%)
-    if (clamped >= 5) return '#bae6fd';    // Solid Soft Sky Blue (Developing 5%-12%)
-    if (clamped > 0) return '#f0f9ff';     // Solid Pale Ice Blue (Baseline <5%)
-    return '#f8fafc';                      // Solid Neutral Off-White (0% overlap)
+    if (clamped >= 70) return '#172554';   // Peak Longitudinal Overlap (Solid Midnight Navy)
+    if (clamped >= 50) return '#1e3a8a';   // Exceptional Overlap >50% (Solid Deep Navy)
+    if (clamped >= 40) return '#1e40af';   // Very High upper (Solid Deep Cobalt)
+    if (clamped >= 30) return '#1d4ed8';   // Very High entry (Solid Royal Blue)
+    if (clamped >= 23) return '#2563eb';   // High (Solid Vivid Blue)
+    if (clamped >= 18) return '#0284c7';   // Sustained upper (Solid Ocean Blue)
+    if (clamped >= 13) return '#0ea5e9';   // Sustained (Solid Sky Blue)
+    if (clamped >= 9) return '#38bdf8';    // Developing upper (Solid Vibrant Light Blue)
+    if (clamped >= 5) return '#bae6fd';    // Developing (Solid Soft Sky Blue)
+    if (clamped > 0) return '#f0f9ff';     // Low (Solid Pale Ice Blue)
+    return '#f8fafc';                      // Zero overlap (Solid Neutral Off-White)
   }
 
   function getTextColor(pct: number): string {
-    if (pct >= 18 || pct === 100) return '#ffffff';
-    if (pct >= 12) return '#0f172a';
-    return '#475569';
+    if (pct >= 23 || pct === 100) return '#ffffff';
+    if (pct >= 13) return '#0f172a';
+    return '#334155';
   }
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;">`;

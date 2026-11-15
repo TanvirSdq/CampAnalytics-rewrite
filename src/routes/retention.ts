@@ -5,8 +5,8 @@ import * as analytics from '../core/analytics.js';
 import { parseCountryList, resolveCampaignQueryParams, asScalarString } from '../core/utils.js';
 
 const VALID_RETENTION_METRICS = new Set(['Average', 'Forward', 'Median', 'Maximum']);
-const MAX_WILDCARDS = 4;
-const MAX_TOTAL_CODES = 260;
+const MAX_WILDCARDS = 15;
+const MAX_TOTAL_CODES = 800;
 
 const router = Router();
 

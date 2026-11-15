@@ -335,7 +335,7 @@ async function runDailySync(): Promise<void> {
   const eventsArg = args.find((a) => a.startsWith('--events='));
 
   const currentYear = new Date().getFullYear();
-  const startYear = startYearArg ? parseInt(startYearArg.split('=')[1], 10) : Math.max(2015, currentYear - 6);
+  const startYear = startYearArg ? parseInt(startYearArg.split('=')[1], 10) : 2010;
   const endYear = endYearArg ? parseInt(endYearArg.split('=')[1], 10) : currentYear;
 
   const events = eventsArg
@@ -385,13 +385,13 @@ async function runDailySync(): Promise<void> {
   let updatedCount = 0;
   let skippedHistoricalCount = 0;
   const nowMs = Date.now();
-  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const dailyCadenceMs = 20 * 60 * 60 * 1000; // 20 hours cadence guarantees daily refresh while preventing intra-day retry stampedes
 
-  await mapConcurrent(targetCodes, useReplicaSql ? 4 : 6, async ({ code, year }) => {
+  await mapConcurrent(targetCodes, useReplicaSql ? 6 : 8, async ({ code, year }) => {
     const existing = campaignsMap[code];
-    if (!fullRefresh && existing && year < currentYear) {
+    if (!fullRefresh && existing) {
       const updatedMs = Date.parse(existing.updated_at || '');
-      if (!isNaN(updatedMs) && nowMs - updatedMs < sevenDaysMs) {
+      if (!isNaN(updatedMs) && nowMs - updatedMs < dailyCadenceMs) {
         skippedHistoricalCount++;
         return;
       }
@@ -501,6 +501,77 @@ async function runDailySync(): Promise<void> {
     }
   });
 
+  // Materialize composite 'all' cohort editions across all countries and years
+  let compositeAllCount = 0;
+  for (const cc of countries) {
+    for (let yr = startYear; yr <= endYear; yr++) {
+      const yy = String(yr % 100).padStart(2, '0');
+      const allCode = `all${cc}${yy}`;
+      const mergedCounts: Record<string, number> = {};
+      let totalUploads = 0;
+      let qualityCount = 0;
+      let usedCount = 0;
+      let foundAny = false;
+
+      for (const evt of events) {
+        if (!isEventScopedForCountry(evt, cc)) continue;
+        const subCode = `${evt}${cc}${yy}`;
+        const sub = campaignsMap[subCode];
+        if (sub && sub.user_counts) {
+          foundAny = true;
+          for (const [u, cnt] of Object.entries(sub.user_counts)) {
+            mergedCounts[u] = (mergedCounts[u] || 0) + cnt;
+          }
+          if (sub.structural_metrics) {
+            totalUploads += sub.structural_metrics.total_uploads || 0;
+            qualityCount += sub.structural_metrics.quality_images_count || 0;
+            usedCount += sub.structural_metrics.used_images_sample_count || 0;
+          }
+        }
+      }
+
+      if (foundAny && totalUploads > 0) {
+        const uploaders = Object.values(mergedCounts).sort((a, b) => b - a);
+        const top10K = Math.max(1, Math.ceil(uploaders.length * 0.1));
+        const top10Uploads = uploaders.slice(0, top10K).reduce((a, b) => a + b, 0);
+        const top10Share =
+          totalUploads > 0 && top10Uploads > 0
+            ? parseFloat(((top10Uploads / totalUploads) * 100).toFixed(1))
+            : 0;
+        const qualityShare =
+          totalUploads > 0 ? parseFloat(((qualityCount / totalUploads) * 100).toFixed(1)) : 0;
+        const usageShare =
+          totalUploads > 0 ? parseFloat(((usedCount / totalUploads) * 100).toFixed(1)) : 0;
+
+        const record: CampaignSnapshotRecord = {
+          code: allCode,
+          updated_at: new Date().toISOString(),
+          user_counts: mergedCounts,
+          structural_metrics: {
+            quality_image_share: qualityShare,
+            quality_images_count: qualityCount,
+            top10_uploader_share: top10Share,
+            usage_share: usageShare,
+            total_uploads: totalUploads,
+            used_images_sample_count: usedCount,
+            sampled_files_count: totalUploads
+          }
+        };
+
+        campaignsMap[allCode] = record;
+        compositeAllCount++;
+
+        if (useReplicaSql && cnfPath && mysqlBin && toolsDbName) {
+          try {
+            await syncRecordToToolsDb(mysqlBin, cnfPath, toolsDbName, record);
+          } catch {
+            // Non-fatal ToolsDB mirror
+          }
+        }
+      }
+    }
+  }
+
   const snapshotData: DailySnapshotStoreData = {
     version: '1.1.0',
     generated_at: new Date().toISOString(),
@@ -514,6 +585,7 @@ async function runDailySync(): Promise<void> {
       level: 'info',
       event: 'daily_sync_complete',
       updated_count: updatedCount,
+      composite_all_count: compositeAllCount,
       skipped_historical_count: skippedHistoricalCount,
       total_cached_campaigns: Object.keys(campaignsMap).length,
       saved_path: savedPath

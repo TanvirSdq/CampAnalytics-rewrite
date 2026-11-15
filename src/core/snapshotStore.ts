@@ -103,7 +103,65 @@ export function getSnapshotCampaignRecord(code: string): CampaignSnapshotRecord 
   const snap = loadDailySnapshot();
   if (!snap || !snap.campaigns) return null;
   const clean = code.replace(/\s+/g, '').toLowerCase();
-  return snap.campaigns[clean] || null;
+  if (snap.campaigns[clean]) {
+    return snap.campaigns[clean];
+  }
+
+  // Composite 'all' campaign on-the-fly aggregation across subcampaigns in snapshot
+  const match = /^(all)([a-z]{2,3})(\d{2})$/.exec(clean);
+  if (match) {
+    const [, , cc, yr] = match;
+    const mergedCounts: Record<string, number> = {};
+    let totalUploads = 0;
+    let qualityCount = 0;
+    let usedCount = 0;
+    let foundAny = false;
+
+    for (const evt of ['wlm', 'wle', 'wlf', 'wla', 'wlb']) {
+      const subCode = `${evt}${cc}${yr}`;
+      const subRec = snap.campaigns[subCode];
+      if (subRec && (subRec.user_counts || subRec.upload_counts)) {
+        foundAny = true;
+        const counts = subRec.user_counts || subRec.upload_counts || {};
+        for (const [u, cnt] of Object.entries(counts)) {
+          mergedCounts[u] = (mergedCounts[u] || 0) + cnt;
+        }
+        if (subRec.structural_metrics) {
+          totalUploads += subRec.structural_metrics.total_uploads || 0;
+          qualityCount += subRec.structural_metrics.quality_images_count || 0;
+          usedCount += subRec.structural_metrics.used_images_sample_count || 0;
+        }
+      }
+    }
+
+    if (foundAny) {
+      const uploaders = Object.values(mergedCounts).sort((a, b) => b - a);
+      const top10K = Math.max(1, Math.ceil(uploaders.length * 0.1));
+      const top10Uploads = uploaders.slice(0, top10K).reduce((a, b) => a + b, 0);
+      const top10Share = totalUploads > 0 && top10Uploads > 0 ? parseFloat(((top10Uploads / totalUploads) * 100).toFixed(1)) : 0;
+      const qualityShare = totalUploads > 0 ? parseFloat(((qualityCount / totalUploads) * 100).toFixed(1)) : 0;
+      const usageShare = totalUploads > 0 ? parseFloat(((usedCount / totalUploads) * 100).toFixed(1)) : 0;
+
+      const compositeRecord: CampaignSnapshotRecord = {
+        code: clean,
+        updated_at: snap.generated_at,
+        user_counts: mergedCounts,
+        structural_metrics: {
+          total_uploads: totalUploads,
+          quality_images_count: qualityCount,
+          used_images_sample_count: usedCount,
+          quality_image_share: qualityShare,
+          usage_share: usageShare,
+          top10_uploader_share: top10Share
+        }
+      };
+      // Memoize in snapshot cache
+      snap.campaigns[clean] = compositeRecord;
+      return compositeRecord;
+    }
+  }
+
+  return null;
 }
 
 export function getSnapshotStatus(): {
