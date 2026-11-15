@@ -61,13 +61,13 @@
                             <details class="manual-code-toggle" id="quality-code-toggle" {% if target_campaign and not quality_country %}open{% endif %}>
                                 <summary class="manual-code-summary">
                                     <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                    <span>Advanced: Enter campaign code manually</span>
+                                    <span>Advanced: Enter campaign code or category manually</span>
                                 </summary>
                                 <div class="manual-code-body">
                                     <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="target_campaign_quality" class="form-label">Target Campaign Code</label>
-                                        <input type="text" id="target_campaign_quality" name="target_campaign" value="{{ target_campaign if target_campaign else '' }}" placeholder="e.g. wlmde24" class="form-control form-control-code" style="max-width: 280px;" oninput="parseCodeToQualityBuilder()">
-                                        <div class="form-hint" id="quality-scope-hint">Single campaign code for quality recognition &amp; honors analysis.</div>
+                                        <label for="target_campaign_quality" class="form-label">Target Campaign Code or Category</label>
+                                        <input type="text" id="target_campaign_quality" name="target_campaign" value="{{ target_campaign if target_campaign else '' }}" placeholder="e.g. wlmde24 or Category:Images_from_..." class="form-control form-control-code" style="max-width: 540px;" oninput="parseCodeToQualityBuilder()">
+                                        <div class="form-hint" id="quality-scope-hint">Accepts standard event codes (e.g. wlmde24) or full Commons categories (e.g. Category:Images_from_Wiki_Loves_Monuments_2024_in_Bangladesh).</div>
                                     </div>
                                 </div>
                             </details>

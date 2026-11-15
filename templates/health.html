@@ -60,15 +60,15 @@
                             <details class="manual-code-toggle" id="health-code-toggle" {% if target_event and not health_country %}open{% endif %}>
                                 <summary class="manual-code-summary">
                                     <svg class="chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                    <span>Advanced: Enter campaign code manually</span>
+                                    <span>Advanced: Enter campaign code or category manually</span>
                                 </summary>
                                 <div class="manual-code-body">
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label for="target_event" class="form-label">
-                                            Target Campaign Registry Code
+                                            Target Campaign Code or Category
                                         </label>
-                                        <input type="text" id="target_event" name="target_event" value="{{ target_event if target_event else '' }}" placeholder="e.g., wlmde24" class="form-control form-control-code" oninput="parseCodeToHealthBuilder()">
-                                        <div class="form-hint" id="health-scope-hint">Standard event code syntax: prefix (all / wlm / wle / wlf / wla / wlb) + country code (2 letters) + 2-digit year (e.g. wlmde24, allde24, wlang23).</div>
+                                        <input type="text" id="target_event" name="target_event" value="{{ target_event if target_event else '' }}" placeholder="e.g. wlmbd24 or Category:Images_from_..." class="form-control form-control-code" oninput="parseCodeToHealthBuilder()">
+                                        <div class="form-hint" id="health-scope-hint">Accepts standard event codes (e.g. wlmbd24) or full Commons categories (e.g. Category:Images_from_Wiki_Loves_Monuments_2024_in_Bangladesh).</div>
                                     </div>
                                 </div>
                             </details>
@@ -88,9 +88,9 @@
                             </div>
 
                             <div class="form-group" id="custom-baseline-group" style="{% if comp_mode != 'Custom Verification Code' %}display: none;{% endif %}">
-                                <label for="baseline_event" class="form-label">Custom Baseline Campaign Code</label>
-                                <input type="text" id="baseline_event" name="baseline_event" value="{{ baseline_event if baseline_event else '' }}" placeholder="e.g., wlmde22" class="form-control form-control-code">
-                                <div class="form-hint">Specify prior reference edition for custom longitudinal comparison.</div>
+                                <label for="baseline_event" class="form-label">Custom Baseline Campaign Code or Category</label>
+                                <input type="text" id="baseline_event" name="baseline_event" value="{{ baseline_event if baseline_event else '' }}" placeholder="e.g. wlmbd23 or Category:Images_from_..." class="form-control form-control-code">
+                                <div class="form-hint">Specify prior reference edition or baseline Commons category.</div>
                             </div>
 
                             <div class="form-group">
