@@ -207,6 +207,7 @@ export interface CountrySeries {
   summary: {
     latest_year: number;
     latest_value: number;
+    latest_formatted?: string;
     min_value: number;
     max_value: number;
     avg_value: number;
@@ -217,11 +218,14 @@ export interface CountrySeries {
 export interface ComparativeTableRow {
   country_code: string;
   country_name: string;
+  color?: string;
   values: Record<number, number | null>;
   formatted_values: Record<number, string>;
   latest: number | null;
   average: number | null;
   yoy_change: number | null;
+  yoy_change_formatted?: string;
+  is_positive?: boolean | null;
 }
 
 export interface MapTimelinePoint {
@@ -243,6 +247,14 @@ export interface IndicatorMetadata {
   caveats: string[];
 }
 
+export interface CohortSurvivalHorizonPoint {
+  cohort_year: number;
+  cohort_size: number;
+  survival_1y_pct: number | null;
+  survival_2y_pct: number | null;
+  survival_3y_pct: number | null;
+}
+
 export interface ComparativeAnalyticsResult {
   module: 'influx' | 'retention' | 'quality' | 'utility' | 'mobility' | 'diversity';
   indicator_id: string;
@@ -259,6 +271,7 @@ export interface ComparativeAnalyticsResult {
   };
   map_timeline_data: Record<number, MapTimelinePoint[]>;
   metadata_card: IndicatorMetadata;
+  survival_horizons?: Record<string, CohortSurvivalHorizonPoint[]>;
 }
 
 export interface ComparativeParams {
@@ -375,5 +388,3 @@ export interface DiversityResult {
   };
   metadata_card: IndicatorMetadata;
 }
-
-

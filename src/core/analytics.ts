@@ -26,7 +26,8 @@ import {
   DiversityResult
 } from './types.js';
 
-import { BoundedCache, mapConcurrent, computeEmpiricalMean, escapeHtml, safeJsonForScript } from './utils.js';
+import { BoundedCache, mapConcurrent, computeEmpiricalMean, escapeHtml, safeJsonForScript, getCampaignTtlMs } from './utils.js';
+import { getSnapshotCampaignRecord } from './snapshotStore.js';
 
 export type {
   HealthEvaluationResult,
@@ -328,12 +329,26 @@ export function getSubCampaignCodes(code: string): string[] {
 }
 
 
-// In-Memory Participant & Metrics Cache (Bounded to prevent memory leaks)
+// In-Memory Participant & Metrics Cache (Bounded LRU to prevent memory leaks)
 const _participantCache = new BoundedCache<string, { users: Set<string>; ts: number }>(1000);
 const _userCountsCache = new BoundedCache<string, { counts: Map<string, number>; ts: number }>(1000);
 const _metricsCache = new BoundedCache<string, { data: any; ts: number }>(1000);
 const _categoryFileCountCache = new BoundedCache<string, { count: number; ts: number }>(2000);
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const _utilityDeepCache = new BoundedCache<string, { data: any; ts: number }>(500);
+const _qualityDeepCache = new BoundedCache<string, { data: any; ts: number }>(500);
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour default fallback
+
+export function getAnalyticsCacheStats(): Record<string, any> {
+  return {
+    participants: _participantCache.getStats(),
+    user_counts: _userCountsCache.getStats(),
+    structural_metrics: _metricsCache.getStats(),
+    category_counts: _categoryFileCountCache.getStats(),
+    utility_deep: _utilityDeepCache.getStats(),
+    quality_deep: _qualityDeepCache.getStats()
+  };
+}
+export const getAnalyticsCacheTelemetry = getAnalyticsCacheStats;
 
 const COMMONS_USER_AGENT = 'CampTools/1.0 (https://camptools.toolforge.org; tanvirsdq@toolforge.org)';
 
@@ -553,9 +568,20 @@ export async function fetchParticipantsForCategory(category: string): Promise<Se
 
 export async function getParticipants(code: string): Promise<Set<string>> {
   const clean = code.replace(/\s+/g, '').toLowerCase();
+  const ttl = getCampaignTtlMs(clean);
   const cached = _participantCache.get(clean);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.ts < ttl) {
     return cached.users;
+  }
+
+  if (!_commonsFetchMock) {
+    const snap = getSnapshotCampaignRecord(clean);
+    const rawCounts = snap?.user_counts || snap?.upload_counts;
+    if (rawCounts && Object.keys(rawCounts).length > 0) {
+      const snapUsers = new Set<string>(Object.keys(rawCounts));
+      _participantCache.set(clean, { users: snapUsers, ts: Date.now() }, ttl);
+      return snapUsers;
+    }
   }
 
   const match = CODE_RE.exec(clean);
@@ -574,7 +600,7 @@ export async function getParticipants(code: string): Promise<Set<string>> {
       for (const u of s) combined.add(u);
     }
     if (!anyError) {
-      _participantCache.set(clean, { users: combined, ts: Date.now() });
+      _participantCache.set(clean, { users: combined, ts: Date.now() }, ttl);
     }
     return combined;
   }
@@ -583,22 +609,33 @@ export async function getParticipants(code: string): Promise<Set<string>> {
   for (const cat of categories) {
     const fetched = await fetchParticipantsForCategory(cat);
     if (fetched.size > 0) {
-      _participantCache.set(clean, { users: fetched, ts: Date.now() });
+      _participantCache.set(clean, { users: fetched, ts: Date.now() }, ttl);
       return fetched;
     }
   }
 
   // Strict empirical reporting: return empty set if campaign did not take place or has no recorded uploads
   const emptyUsers = new Set<string>();
-  _participantCache.set(clean, { users: emptyUsers, ts: Date.now() });
+  _participantCache.set(clean, { users: emptyUsers, ts: Date.now() }, ttl);
   return emptyUsers;
 }
 
 export async function getParticipantsWithUploadCounts(code: string): Promise<Map<string, number>> {
   const clean = code.replace(/\s+/g, '').toLowerCase();
+  const ttl = getCampaignTtlMs(clean);
   const cached = _userCountsCache.get(clean);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.ts < ttl) {
     return cached.counts;
+  }
+
+  if (!_commonsFetchMock) {
+    const snap = getSnapshotCampaignRecord(clean);
+    const rawCounts = snap?.user_counts || snap?.upload_counts;
+    if (rawCounts && Object.keys(rawCounts).length > 0) {
+      const snapCounts = new Map<string, number>(Object.entries(rawCounts));
+      _userCountsCache.set(clean, { counts: snapCounts, ts: Date.now() }, ttl);
+      return snapCounts;
+    }
   }
 
   const match = CODE_RE.exec(clean);
@@ -616,7 +653,7 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
         combinedCounts.set(u, (combinedCounts.get(u) || 0) + cnt);
       }
     }
-    _userCountsCache.set(clean, { counts: combinedCounts, ts: Date.now() });
+    _userCountsCache.set(clean, { counts: combinedCounts, ts: Date.now() }, ttl);
     return combinedCounts;
   }
 
@@ -624,14 +661,14 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
   for (const cat of categories) {
     const catCached = _userCountsCache.get(cat.toLowerCase());
     if (catCached && catCached.counts.size > 0) {
-      _userCountsCache.set(clean, { counts: catCached.counts, ts: Date.now() });
+      _userCountsCache.set(clean, { counts: catCached.counts, ts: Date.now() }, ttl);
       return catCached.counts;
     }
     const fetched = await fetchParticipantsForCategory(cat);
     if (fetched.size > 0) {
       const afterFetch = _userCountsCache.get(cat.toLowerCase());
       if (afterFetch && afterFetch.counts.size > 0) {
-        _userCountsCache.set(clean, { counts: afterFetch.counts, ts: Date.now() });
+        _userCountsCache.set(clean, { counts: afterFetch.counts, ts: Date.now() }, ttl);
         return afterFetch.counts;
       }
     }
@@ -639,7 +676,7 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
 
   // Strict empirical reporting: return empty map if campaign did not take place or has no recorded uploads
   const emptyCounts = new Map<string, number>();
-  _userCountsCache.set(clean, { counts: emptyCounts, ts: Date.now() });
+  _userCountsCache.set(clean, { counts: emptyCounts, ts: Date.now() }, ttl);
   return emptyCounts;
 }
 
@@ -655,6 +692,9 @@ export function primeParticipantCache(
     const countsMap = counts instanceof Map ? counts : new Map(Object.entries(counts));
     _userCountsCache.set(norm, { counts: countsMap, ts: Date.now() });
   }
+  _metricsCache.delete(norm);
+  _utilityDeepCache.delete(norm);
+  _qualityDeepCache.delete(norm);
 }
 
 export async function fetchAllConcurrently(
@@ -683,9 +723,17 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
   sampled_files_count?: number;
 }> {
   const clean = code.replace(/\s+/g, '').toLowerCase();
+  const ttl = getCampaignTtlMs(clean);
   const cached = _metricsCache.get(clean);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.ts < ttl) {
     return cached.data;
+  }
+  if (!_commonsFetchMock) {
+    const snap = getSnapshotCampaignRecord(clean);
+    if (snap && snap.structural_metrics) {
+      _metricsCache.set(clean, { data: snap.structural_metrics, ts: Date.now() }, ttl);
+      return snap.structural_metrics;
+    }
   }
 
   const match = CODE_RE.exec(clean);
@@ -1228,7 +1276,7 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
   }
 
   // Subtle watermark at bottom right
-  svg += `<text x="${width - 16}" y="${height - 8}" text-anchor="end" font-size="8.5" font-weight="500" fill="#94a3b8">camptools.toolforge.org · CampTools</text>`;
+  svg += `<text x="${width - 16}" y="${height - 8}" text-anchor="end" font-size="8.5" font-weight="500" fill="#54595d">camptools.toolforge.org · CampTools</text>`;
 
   svg += `</svg>`;
   return Buffer.from(svg).toString('base64');
@@ -1577,8 +1625,8 @@ export function createInfluxBarchartSvg(records: any[], title: string): string {
   }
 
   // Subtle attribution and tool URL watermark at bottom corners
-  svg += `<text x="${margin.left}" y="${height - 10}" text-anchor="start" font-size="9" fill="#94a3b8">Wikimedia Contributor Volume</text>`;
-  svg += `<text x="${width - margin.right}" y="${height - 10}" text-anchor="end" font-size="9" font-weight="500" fill="#94a3b8">camptools.toolforge.org · CampTools</text>`;
+  svg += `<text x="${margin.left}" y="${height - 10}" text-anchor="start" font-size="9" fill="#54595d">Wikimedia Contributor Volume</text>`;
+  svg += `<text x="${width - margin.right}" y="${height - 10}" text-anchor="end" font-size="9" font-weight="500" fill="#54595d">camptools.toolforge.org · CampTools</text>`;
 
   svg += `</svg>`;
   return Buffer.from(svg).toString('base64');
@@ -2024,99 +2072,267 @@ export function generateHealthMetrics(
 
 export async function computeContentUtilityDeep(targetCampaign: string): Promise<any> {
   const clean = targetCampaign.replace(/\s+/g, '').toLowerCase();
-  const m = CODE_RE.exec(clean);
-  const evt = m ? m[1] : 'wlm';
-  const cc = m ? m[2] : 'de';
-  const yr = m ? 2000 + parseInt(m[3], 10) : 2024;
-  const cName = countryDisplayName(cc);
-  const eventName = EVENT_MAP[evt] || evt.toUpperCase();
-
-  const users = await getParticipants(clean);
-  const countsMap = await getParticipantsWithUploadCounts(clean);
-  const totalUploads = Array.from(countsMap.values()).reduce((a, b) => a + b, 0);
-
-  if (users.size === 0 || totalUploads === 0) {
-    return {
-      code: clean,
-      year: yr,
-      country: cName,
-      event: eventName,
-      global_utility_rate_pct: 0.0,
-      usage_rate_pct: 0.0,
-      total_global_usages: 0,
-      unique_articles_count: 0,
-      top_consuming_project: 'None',
-      total_sampled: 0,
-      total_uploads: 0,
-      distinct_uploaders: 0,
-      distinct_used_images: 0,
-      distinct_articles: 0,
-      cross_wiki_projects_count: 0,
-      media_usages: [],
-      top_photographers: [],
-      project_distribution: []
-    };
+  const ttl = getCampaignTtlMs(clean);
+  const cached = _utilityDeepCache.get(clean);
+  if (cached && Date.now() - cached.ts < ttl) {
+    return cached.data;
+  }
+  if (!_commonsFetchMock) {
+    const snap = getSnapshotCampaignRecord(clean);
+    if (snap && snap.utility_deep) {
+      _utilityDeepCache.set(clean, { data: snap.utility_deep, ts: Date.now() }, ttl);
+      return snap.utility_deep;
+    }
   }
 
-  const primaryWiki = `${cc === 'de' ? 'de' : cc === 'it' ? 'it' : cc === 'fr' ? 'fr' : cc === 'es' ? 'es' : cc === 'bd' ? 'bn' : 'en'}.wikipedia.org`;
+  return coalesceInFlight(`utility_deep:${clean}`, async () => {
+    const doubleCheck = _utilityDeepCache.get(clean);
+    if (doubleCheck && Date.now() - doubleCheck.ts < ttl) {
+      return doubleCheck.data;
+    }
 
-  if (evt === 'all') {
-    const subCodes = getSubCampaignCodes(clean);
-    let totalSampled = 0;
-    let usedFilesCount = 0;
+    const m = CODE_RE.exec(clean);
+    const evt = m ? m[1] : 'wlm';
+    const cc = m ? m[2] : 'de';
+    const yr = m ? 2000 + parseInt(m[3], 10) : 2024;
+    const cName = countryDisplayName(cc);
+    const eventName = EVENT_MAP[evt] || evt.toUpperCase();
+
+    const users = await getParticipants(clean);
+    const countsMap = await getParticipantsWithUploadCounts(clean);
+    const totalUploads = Array.from(countsMap.values()).reduce((a, b) => a + b, 0);
+
+    if (users.size === 0 || totalUploads === 0) {
+      const emptyResult = {
+        code: clean,
+        year: yr,
+        country: cName,
+        event: eventName,
+        global_utility_rate_pct: 0.0,
+        usage_rate_pct: 0.0,
+        total_global_usages: 0,
+        unique_articles_count: 0,
+        top_consuming_project: 'None',
+        total_sampled: 0,
+        total_uploads: 0,
+        distinct_uploaders: 0,
+        distinct_used_images: 0,
+        distinct_articles: 0,
+        cross_wiki_projects_count: 0,
+        media_usages: [],
+        top_photographers: [],
+        project_distribution: []
+      };
+      _utilityDeepCache.set(clean, { data: emptyResult, ts: Date.now() }, ttl);
+      return emptyResult;
+    }
+
+    const primaryWiki = `${cc === 'de' ? 'de' : cc === 'it' ? 'it' : cc === 'fr' ? 'fr' : cc === 'es' ? 'es' : cc === 'bd' ? 'bn' : 'en'}.wikipedia.org`;
+
+    if (evt === 'all') {
+      const subCodes = getSubCampaignCodes(clean);
+      let totalSampled = 0;
+      let usedFilesCount = 0;
+      let totalUsages = 0;
+      const uniqueArticles = new Set<string>();
+      const projectDist: Record<string, number> = {};
+      const mediaUsages: any[] = [];
+      const uploaderUtility: Record<string, { used_files: number; total_usages: number; articles: Set<string> }> = {};
+      const seenFiles = new Set<string>();
+
+      const subResults = await mapConcurrent(subCodes, 6, async (sc) => {
+        try {
+          return await computeContentUtilityDeep(sc);
+        } catch {
+          return null;
+        }
+      });
+
+      for (const subRes of subResults) {
+        if (!subRes) continue;
+        totalSampled += subRes.total_sampled || 0;
+        usedFilesCount += subRes.distinct_used_images || 0;
+        totalUsages += subRes.total_global_usages || 0;
+        for (const ak of (subRes.unique_article_keys || [])) {
+          uniqueArticles.add(ak);
+        }
+        for (const mu of (subRes.media_usages || [])) {
+          const fileKey = mu.full_title || mu.file_title;
+          if (mu.wiki && mu.article) {
+            uniqueArticles.add(`${mu.wiki}:${mu.article}`);
+          }
+          if (!seenFiles.has(fileKey)) {
+            seenFiles.add(fileKey);
+            if (mediaUsages.length < 25) {
+              mediaUsages.push(mu);
+            }
+          }
+        }
+        for (const pd of (subRes.project_distribution || [])) {
+          projectDist[pd.project] = (projectDist[pd.project] || 0) + (pd.count || 0);
+        }
+        for (const tp of (subRes.top_photographers || [])) {
+          const rawU = tp.uploader || tp.username;
+          const u = normalizeMediaWikiUsername(rawU);
+          if (!u || isBotAccount(u)) continue;
+          if (!uploaderUtility[u]) {
+            uploaderUtility[u] = { used_files: 0, total_usages: 0, articles: new Set<string>() };
+          }
+          uploaderUtility[u].used_files += tp.used_files_count || 0;
+          uploaderUtility[u].total_usages += tp.total_usages || 0;
+          for (const ak of (tp.article_keys || [])) {
+            uploaderUtility[u].articles.add(ak);
+          }
+        }
+      }
+
+      const usageRate = totalSampled > 0 ? parseFloat(((usedFilesCount / totalSampled) * 100).toFixed(1)) : 0.0;
+      const topProject = Object.keys(projectDist).sort((a, b) => projectDist[b] - projectDist[a])[0] || primaryWiki;
+
+      const topPhotographers = Object.keys(uploaderUtility)
+        .filter((u) => !isBotAccount(u))
+        .sort((a, b) => uploaderUtility[b].total_usages - uploaderUtility[a].total_usages)
+        .slice(0, 15)
+        .map((u, i) => ({
+          rank: i + 1,
+          uploader: u,
+          username: u,
+          used_files_count: uploaderUtility[u].used_files,
+          used_images_count: uploaderUtility[u].used_files,
+          total_usages: uploaderUtility[u].total_usages,
+          distinct_articles_count: uploaderUtility[u].articles.size || uploaderUtility[u].used_files,
+          article_keys: Array.from(uploaderUtility[u].articles),
+          primary_wiki: primaryWiki
+        }));
+
+      const projectDistribution = Object.entries(projectDist)
+        .sort((a, b) => b[1] - a[1])
+        .map(([wiki, count]) => ({
+          project: wiki,
+          count,
+          percentage: totalUsages > 0 ? parseFloat(((count / totalUsages) * 100).toFixed(1)) : 0.0
+        }));
+
+      const allResult = {
+        code: clean,
+        year: yr,
+        country: cName,
+        event: 'All Campaigns',
+        global_utility_rate_pct: usageRate,
+        usage_rate_pct: usageRate,
+        total_global_usages: totalUsages,
+        unique_articles_count: uniqueArticles.size,
+        unique_article_keys: Array.from(uniqueArticles),
+        top_consuming_project: topProject,
+        total_sampled: totalSampled,
+        total_uploads: totalUploads,
+        distinct_uploaders: users.size,
+        distinct_used_images: usedFilesCount,
+        distinct_articles: uniqueArticles.size,
+        cross_wiki_projects_count: Object.keys(projectDist).length,
+        media_usages: mediaUsages,
+        top_photographers: topPhotographers,
+        project_distribution: projectDistribution
+      };
+      _utilityDeepCache.set(clean, { data: allResult, ts: Date.now() }, ttl);
+      return allResult;
+    }
+
+    const categories = getCategoryCandidates(clean);
+
+    const seenPageIds = new Set<string>();
+    const usedPageIds = new Set<string>();
     let totalUsages = 0;
     const uniqueArticles = new Set<string>();
     const projectDist: Record<string, number> = {};
     const mediaUsages: any[] = [];
-    const uploaderUtility: Record<string, { used_files: number; total_usages: number; articles: Set<string> }> = {};
-    const seenFiles = new Set<string>();
+    const uploaderUtility: Record<string, { used_files: Set<string>; total_usages: number; articles: Set<string> }> = {};
 
-    const subResults = await mapConcurrent(subCodes, 6, async (sc) => {
+    for (const cat of categories) {
       try {
-        return await computeContentUtilityDeep(sc);
-      } catch {
-        return null;
-      }
-    });
+        let continueParams: Record<string, string> | undefined = undefined;
+        let iterations = 0;
+        const startTime = Date.now();
 
-    for (const subRes of subResults) {
-      if (!subRes) continue;
-      totalSampled += subRes.total_sampled || 0;
-      usedFilesCount += subRes.distinct_used_images || 0;
-      totalUsages += subRes.total_global_usages || 0;
-      for (const ak of (subRes.unique_article_keys || [])) {
-        uniqueArticles.add(ak);
-      }
-      for (const mu of (subRes.media_usages || [])) {
-        const fileKey = mu.full_title || mu.file_title;
-        if (mu.wiki && mu.article) {
-          uniqueArticles.add(`${mu.wiki}:${mu.article}`);
-        }
-        if (!seenFiles.has(fileKey)) {
-          seenFiles.add(fileKey);
-          if (mediaUsages.length < 25) {
-            mediaUsages.push(mu);
+        while (iterations < 60 && Date.now() - startTime < 15000) {
+          iterations++;
+          const queryParams: Record<string, string> = {
+            action: 'query',
+            generator: 'categorymembers',
+            gcmtitle: `Category:${cat}`,
+            gcmtype: 'file',
+            gcmlimit: '500',
+            prop: 'imageinfo|globalusage',
+            iiprop: 'user|url',
+            iiurlwidth: '300',
+            gulimit: '500',
+            ...(continueParams || {})
+          };
+          const data = await fetchCommonsApi(queryParams, 7000);
+          const pages = data?.query?.pages || {};
+          for (const pid of Object.keys(pages)) {
+            if (pid === '-1') continue;
+            const p = pages[pid];
+            seenPageIds.add(pid);
+            const title = p.title || '';
+            const gu = p.globalusage || [];
+            const ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
+            const rawUser = ii.user || '';
+            const uploader = normalizeMediaWikiUsername(rawUser);
+            const thumbUrl = ii.thumburl || '';
+            const descUrl = ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+
+            if (gu.length > 0 && (!rawUser || (uploader && !isBotAccount(uploader)))) {
+              usedPageIds.add(pid);
+              totalUsages += gu.length;
+              if (uploader) {
+                if (!uploaderUtility[uploader]) {
+                  uploaderUtility[uploader] = { used_files: new Set<string>(), total_usages: 0, articles: new Set<string>() };
+                }
+                uploaderUtility[uploader].used_files.add(pid);
+                uploaderUtility[uploader].total_usages += gu.length;
+              }
+
+              for (const u of gu) {
+                const wiki = u.wiki || 'unknown';
+                const art = (u.title || '').replace(/_/g, ' ');
+                projectDist[wiki] = (projectDist[wiki] || 0) + 1;
+                uniqueArticles.add(`${wiki}:${art}`);
+                if (uploader && uploaderUtility[uploader]) {
+                  uploaderUtility[uploader].articles.add(`${wiki}:${art}`);
+                }
+                if (mediaUsages.length < 25) {
+                  mediaUsages.push({
+                    file_title: title.replace('File:', '').replace(/_/g, ' '),
+                    full_title: title,
+                    article: art,
+                    wiki: wiki,
+                    commons_url: descUrl,
+                    thumb_url: thumbUrl
+                  });
+                }
+              }
+            }
+          }
+          if (data?.continue) {
+            continueParams = {};
+            for (const [k, v] of Object.entries(data.continue)) {
+              if (typeof v === 'string' || typeof v === 'number') {
+                continueParams[k] = String(v);
+              }
+            }
+          } else {
+            break;
           }
         }
+      } catch {
+        // Network failure
       }
-      for (const pd of (subRes.project_distribution || [])) {
-        projectDist[pd.project] = (projectDist[pd.project] || 0) + (pd.count || 0);
-      }
-      for (const tp of (subRes.top_photographers || [])) {
-        const rawU = tp.uploader || tp.username;
-        const u = normalizeMediaWikiUsername(rawU);
-        if (!u || isBotAccount(u)) continue;
-        if (!uploaderUtility[u]) {
-          uploaderUtility[u] = { used_files: 0, total_usages: 0, articles: new Set<string>() };
-        }
-        uploaderUtility[u].used_files += tp.used_files_count || 0;
-        uploaderUtility[u].total_usages += tp.total_usages || 0;
-        for (const ak of (tp.article_keys || [])) {
-          uploaderUtility[u].articles.add(ak);
-        }
-      }
+      if (seenPageIds.size > 0) break;
     }
 
+    const totalSampled = seenPageIds.size;
+    const usedFilesCount = usedPageIds.size;
     const usageRate = totalSampled > 0 ? parseFloat(((usedFilesCount / totalSampled) * 100).toFixed(1)) : 0.0;
     const topProject = Object.keys(projectDist).sort((a, b) => projectDist[b] - projectDist[a])[0] || primaryWiki;
 
@@ -2128,10 +2344,10 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
         rank: i + 1,
         uploader: u,
         username: u,
-        used_files_count: uploaderUtility[u].used_files,
-        used_images_count: uploaderUtility[u].used_files,
+        used_files_count: uploaderUtility[u].used_files.size,
+        used_images_count: uploaderUtility[u].used_files.size,
         total_usages: uploaderUtility[u].total_usages,
-        distinct_articles_count: uploaderUtility[u].articles.size || uploaderUtility[u].used_files,
+        distinct_articles_count: uploaderUtility[u].articles.size,
         article_keys: Array.from(uploaderUtility[u].articles),
         primary_wiki: primaryWiki
       }));
@@ -2144,11 +2360,11 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
         percentage: totalUsages > 0 ? parseFloat(((count / totalUsages) * 100).toFixed(1)) : 0.0
       }));
 
-    return {
+    const singleResult = {
       code: clean,
       year: yr,
       country: cName,
-      event: 'All Campaigns',
+      event: eventName,
       global_utility_rate_pct: usageRate,
       usage_rate_pct: usageRate,
       total_global_usages: totalUsages,
@@ -2165,243 +2381,340 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
       top_photographers: topPhotographers,
       project_distribution: projectDistribution
     };
-  }
-
-  const categories = getCategoryCandidates(clean);
-
-  const seenPageIds = new Set<string>();
-  const usedPageIds = new Set<string>();
-  let totalUsages = 0;
-  const uniqueArticles = new Set<string>();
-  const projectDist: Record<string, number> = {};
-  const mediaUsages: any[] = [];
-  const uploaderUtility: Record<string, { used_files: Set<string>; total_usages: number; articles: Set<string> }> = {};
-
-  for (const cat of categories) {
-    try {
-      let continueParams: Record<string, string> | undefined = undefined;
-      let iterations = 0;
-      const startTime = Date.now();
-
-      while (iterations < 60 && Date.now() - startTime < 15000) {
-        iterations++;
-        const queryParams: Record<string, string> = {
-          action: 'query',
-          generator: 'categorymembers',
-          gcmtitle: `Category:${cat}`,
-          gcmtype: 'file',
-          gcmlimit: '500',
-          prop: 'imageinfo|globalusage',
-          iiprop: 'user|url',
-          iiurlwidth: '300',
-          gulimit: '500',
-          ...(continueParams || {})
-        };
-        const data = await fetchCommonsApi(queryParams, 7000);
-        const pages = data?.query?.pages || {};
-        for (const pid of Object.keys(pages)) {
-          if (pid === '-1') continue;
-          const p = pages[pid];
-          seenPageIds.add(pid);
-          const title = p.title || '';
-          const gu = p.globalusage || [];
-          const ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
-          const rawUser = ii.user || '';
-          const uploader = normalizeMediaWikiUsername(rawUser);
-          const thumbUrl = ii.thumburl || '';
-          const descUrl = ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
-
-          if (gu.length > 0 && (!rawUser || (uploader && !isBotAccount(uploader)))) {
-            usedPageIds.add(pid);
-            totalUsages += gu.length;
-            if (uploader) {
-              if (!uploaderUtility[uploader]) {
-                uploaderUtility[uploader] = { used_files: new Set<string>(), total_usages: 0, articles: new Set<string>() };
-              }
-              uploaderUtility[uploader].used_files.add(pid);
-              uploaderUtility[uploader].total_usages += gu.length;
-            }
-
-            for (const u of gu) {
-              const wiki = u.wiki || 'unknown';
-              const art = (u.title || '').replace(/_/g, ' ');
-              projectDist[wiki] = (projectDist[wiki] || 0) + 1;
-              uniqueArticles.add(`${wiki}:${art}`);
-              if (uploader && uploaderUtility[uploader]) {
-                uploaderUtility[uploader].articles.add(`${wiki}:${art}`);
-              }
-              if (mediaUsages.length < 25) {
-                mediaUsages.push({
-                  file_title: title.replace('File:', '').replace(/_/g, ' '),
-                  full_title: title,
-                  article: art,
-                  wiki: wiki,
-                  commons_url: descUrl,
-                  thumb_url: thumbUrl
-                });
-              }
-            }
-          }
-        }
-        if (data?.continue) {
-          continueParams = {};
-          for (const [k, v] of Object.entries(data.continue)) {
-            if (typeof v === 'string' || typeof v === 'number') {
-              continueParams[k] = String(v);
-            }
-          }
-        } else {
-          break;
-        }
-      }
-    } catch {
-      // Network failure
-    }
-    if (seenPageIds.size > 0) break;
-  }
-
-  const totalSampled = seenPageIds.size;
-  const usedFilesCount = usedPageIds.size;
-  const usageRate = totalSampled > 0 ? parseFloat(((usedFilesCount / totalSampled) * 100).toFixed(1)) : 0.0;
-  const topProject = Object.keys(projectDist).sort((a, b) => projectDist[b] - projectDist[a])[0] || primaryWiki;
-
-  const topPhotographers = Object.keys(uploaderUtility)
-    .filter((u) => !isBotAccount(u))
-    .sort((a, b) => uploaderUtility[b].total_usages - uploaderUtility[a].total_usages)
-    .slice(0, 15)
-    .map((u, i) => ({
-      rank: i + 1,
-      uploader: u,
-      username: u,
-      used_files_count: uploaderUtility[u].used_files.size,
-      used_images_count: uploaderUtility[u].used_files.size,
-      total_usages: uploaderUtility[u].total_usages,
-      distinct_articles_count: uploaderUtility[u].articles.size,
-      article_keys: Array.from(uploaderUtility[u].articles),
-      primary_wiki: primaryWiki
-    }));
-
-  const projectDistribution = Object.entries(projectDist)
-    .sort((a, b) => b[1] - a[1])
-    .map(([wiki, count]) => ({
-      project: wiki,
-      count,
-      percentage: totalUsages > 0 ? parseFloat(((count / totalUsages) * 100).toFixed(1)) : 0.0
-    }));
-
-  return {
-    code: clean,
-    year: yr,
-    country: cName,
-    event: eventName,
-    global_utility_rate_pct: usageRate,
-    usage_rate_pct: usageRate,
-    total_global_usages: totalUsages,
-    unique_articles_count: uniqueArticles.size,
-    unique_article_keys: Array.from(uniqueArticles),
-    top_consuming_project: topProject,
-    total_sampled: totalSampled,
-    total_uploads: totalUploads,
-    distinct_uploaders: users.size,
-    distinct_used_images: usedFilesCount,
-    distinct_articles: uniqueArticles.size,
-    cross_wiki_projects_count: Object.keys(projectDist).length,
-    media_usages: mediaUsages,
-    top_photographers: topPhotographers,
-    project_distribution: projectDistribution
-  };
+    _utilityDeepCache.set(clean, { data: singleResult, ts: Date.now() }, ttl);
+    return singleResult;
+  });
 }
 
 export async function computeQualityRecognitionDeep(targetCampaign: string): Promise<any> {
   const clean = targetCampaign.replace(/\s+/g, '').toLowerCase();
-  const m = CODE_RE.exec(clean);
-  const evt = m ? m[1] : 'wlm';
-  const cc = m ? m[2] : 'de';
-  const yr = m ? 2000 + parseInt(m[3], 10) : 2024;
-  const cName = countryDisplayName(cc);
-  const eventName = EVENT_MAP[evt] || evt.toUpperCase();
-
-  const users = await getParticipants(clean);
-  const countsMap = await getParticipantsWithUploadCounts(clean);
-  const totalUploads = Array.from(countsMap.values()).reduce((a, b) => a + b, 0);
-
-  if (users.size === 0 || totalUploads === 0) {
-    return {
-      code: clean,
-      year: yr,
-      country: cName,
-      event: eventName,
-      total_uploads: 0,
-      quality_rate_pct: 0.0,
-      qi_count: 0,
-      fp_count: 0,
-      vi_count: 0,
-      honored_photographers_count: 0,
-      recognized_count: 0,
-      recognized_files: [],
-      leaderboard: [],
-      all_uploader_honors: {}
-    };
+  const ttl = getCampaignTtlMs(clean);
+  const cached = _qualityDeepCache.get(clean);
+  if (cached && Date.now() - cached.ts < ttl) {
+    return cached.data;
+  }
+  if (!_commonsFetchMock) {
+    const snap = getSnapshotCampaignRecord(clean);
+    if (snap && snap.quality_deep) {
+      _qualityDeepCache.set(clean, { data: snap.quality_deep, ts: Date.now() }, ttl);
+      return snap.quality_deep;
+    }
   }
 
-  if (evt === 'all') {
-    const subCodes = getSubCampaignCodes(clean);
+  return coalesceInFlight(`quality_deep:${clean}`, async () => {
+    const doubleCheck = _qualityDeepCache.get(clean);
+    if (doubleCheck && Date.now() - doubleCheck.ts < ttl) {
+      return doubleCheck.data;
+    }
+
+    const m = CODE_RE.exec(clean);
+    const evt = m ? m[1] : 'wlm';
+    const cc = m ? m[2] : 'de';
+    const yr = m ? 2000 + parseInt(m[3], 10) : 2024;
+    const cName = countryDisplayName(cc);
+    const eventName = EVENT_MAP[evt] || evt.toUpperCase();
+
+    const users = await getParticipants(clean);
+    const countsMap = await getParticipantsWithUploadCounts(clean);
+    const totalUploads = Array.from(countsMap.values()).reduce((a, b) => a + b, 0);
+
+    if (users.size === 0 || totalUploads === 0) {
+      const emptyResult = {
+        code: clean,
+        year: yr,
+        country: cName,
+        event: eventName,
+        total_uploads: 0,
+        quality_rate_pct: 0.0,
+        qi_count: 0,
+        fp_count: 0,
+        vi_count: 0,
+        honored_photographers_count: 0,
+        recognized_count: 0,
+        recognized_files: [],
+        leaderboard: [],
+        all_uploader_honors: {}
+      };
+      _qualityDeepCache.set(clean, { data: emptyResult, ts: Date.now() }, ttl);
+      return emptyResult;
+    }
+
+    if (evt === 'all') {
+      const subCodes = getSubCampaignCodes(clean);
+      let qiCount = 0;
+      let fpCount = 0;
+      let viCount = 0;
+      const recognizedFiles: any[] = [];
+      const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
+      const seenTitles = new Map<string, any>();
+      let dualHonoredCount = 0;
+
+      const subResults = await mapConcurrent(subCodes, 6, async (sc) => {
+        try {
+          return await computeQualityRecognitionDeep(sc);
+        } catch {
+          return null;
+        }
+      });
+
+      for (const subRes of subResults) {
+        if (!subRes) continue;
+        qiCount += subRes.qi_count || 0;
+        fpCount += subRes.fp_count || 0;
+        viCount += subRes.vi_count || 0;
+        for (const rf of (subRes.recognized_files || [])) {
+          const existing = seenTitles.get(rf.title);
+          if (!existing) {
+            const clone = { ...rf, honors: [...(rf.honors || [])] };
+            seenTitles.set(rf.title, clone);
+            recognizedFiles.push(clone);
+          } else {
+            for (const h of (rf.honors || [])) {
+              if (!existing.honors.includes(h)) {
+                existing.honors.push(h);
+                dualHonoredCount++;
+              }
+            }
+          }
+        }
+        if (subRes.all_uploader_honors && Object.keys(subRes.all_uploader_honors).length > 0) {
+          for (const [rawU, h] of Object.entries(subRes.all_uploader_honors as Record<string, { qi: number; fp: number; vi: number }>)) {
+            const u = normalizeMediaWikiUsername(rawU);
+            if (!u || isBotAccount(u)) continue;
+            if (!uploaderHonors[u]) {
+              uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
+            }
+            uploaderHonors[u].qi += h.qi || 0;
+            uploaderHonors[u].fp += h.fp || 0;
+            uploaderHonors[u].vi += h.vi || 0;
+          }
+        } else {
+          for (const lb of (subRes.leaderboard || [])) {
+            const rawU = lb.uploader || lb.username;
+            const u = normalizeMediaWikiUsername(rawU);
+            if (!u || isBotAccount(u)) continue;
+            if (!uploaderHonors[u]) {
+              uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
+            }
+            uploaderHonors[u].qi += lb.qi_count || 0;
+            uploaderHonors[u].fp += lb.fp_count || 0;
+            uploaderHonors[u].vi += lb.vi_count || 0;
+          }
+        }
+      }
+
+      const totalRecognized = Math.max(0, fpCount + qiCount + viCount - dualHonoredCount);
+      const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
+      const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
+
+      const leaderboard = distinctHonoredPhotographers
+        .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
+        .slice(0, 10)
+        .map((u, i) => ({
+          rank: i + 1,
+          uploader: u,
+          username: u,
+          total_honors: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
+          qi_count: uploaderHonors[u].qi,
+          fp_count: uploaderHonors[u].fp,
+          vi_count: uploaderHonors[u].vi,
+          recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
+          quality_share_pct: totalRecognized > 0
+            ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp) / totalRecognized) * 100).toFixed(1))
+            : 0.0
+        }));
+
+      const allResult = {
+        code: clean,
+        year: yr,
+        country: cName,
+        event: 'All Campaigns',
+        total_uploads: totalUploads,
+        quality_rate_pct: qualityRate,
+        qi_count: qiCount,
+        fp_count: fpCount,
+        vi_count: viCount,
+        honored_photographers_count: distinctHonoredPhotographers.length,
+        recognized_count: totalRecognized,
+        recognized_files: recognizedFiles.slice(0, 30),
+        leaderboard: leaderboard,
+        all_uploader_honors: uploaderHonors
+      };
+      _qualityDeepCache.set(clean, { data: allResult, ts: Date.now() }, ttl);
+      return allResult;
+    }
+
     let qiCount = 0;
     let fpCount = 0;
     let viCount = 0;
-    const recognizedFiles: any[] = [];
+    let dualHonoredCount = 0;
+    const recognizedByTitle = new Map<string, any>();
     const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
-    const seenTitles = new Set<string>();
 
-    const subResults = await mapConcurrent(subCodes, 6, async (sc) => {
+    const qiCandidates = getQualityCategoryCandidates(clean);
+    for (const qcat of qiCandidates) {
       try {
-        return await computeQualityRecognitionDeep(sc);
-      } catch {
-        return null;
-      }
-    });
+        const data = await fetchCommonsApi({
+          action: 'query',
+          titles: `Category:${qcat}`,
+          prop: 'categoryinfo'
+        }, 5000);
+        const pages = data?.query?.pages || {};
+        for (const pid of Object.keys(pages)) {
+          const cinfo = pages[pid]?.categoryinfo;
+          if (cinfo && cinfo.files > 0) {
+            qiCount = cinfo.files;
+            let gcmContinue: string | undefined = undefined;
+            let iterations = 0;
+            const startTime = Date.now();
+            while (iterations < 10 && Date.now() - startTime < 8000) {
+              iterations++;
+              const queryParams: Record<string, string> = {
+                action: 'query',
+                generator: 'categorymembers',
+                gcmtitle: `Category:${qcat}`,
+                gcmtype: 'file',
+                gcmlimit: '500',
+                prop: 'imageinfo',
+                iiprop: 'user|timestamp|url',
+                iiurlwidth: '300'
+              };
+              if (gcmContinue) {
+                queryParams.gcmcontinue = gcmContinue;
+              }
+              const fData = await fetchCommonsApi(queryParams, 6000);
+              const fPages = fData?.query?.pages || {};
+              for (const fPid of Object.keys(fPages)) {
+                const fpObj = fPages[fPid];
+                const title = fpObj.title || '';
+                const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
+                const rawUser = ii.user || '';
+                const uploader = normalizeMediaWikiUsername(rawUser);
+                if (!uploader || isBotAccount(uploader)) continue;
+                const thumb = ii.thumburl || '';
+                const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
-    for (const subRes of subResults) {
-      if (!subRes) continue;
-      qiCount += subRes.qi_count || 0;
-      fpCount += subRes.fp_count || 0;
-      viCount += subRes.vi_count || 0;
-      for (const rf of (subRes.recognized_files || [])) {
-        if (!seenTitles.has(rf.title)) {
-          seenTitles.add(rf.title);
-          recognizedFiles.push(rf);
-        }
-      }
-      if (subRes.all_uploader_honors && Object.keys(subRes.all_uploader_honors).length > 0) {
-        for (const [rawU, h] of Object.entries(subRes.all_uploader_honors as Record<string, { qi: number; fp: number; vi: number }>)) {
-          const u = normalizeMediaWikiUsername(rawU);
-          if (!u || isBotAccount(u)) continue;
-          if (!uploaderHonors[u]) {
-            uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
+                if (!recognizedByTitle.has(title)) {
+                  recognizedByTitle.set(title, {
+                    title,
+                    file_title: title,
+                    thumb_url: thumb,
+                    honors: ['Quality Image'],
+                    uploader,
+                    commons_url: commonsUrl,
+                    details: 'Certified as Quality Image on Wikimedia Commons.'
+                  });
+                }
+
+                if (!uploaderHonors[uploader]) {
+                  uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+                }
+                uploaderHonors[uploader].qi++;
+              }
+              if (fData?.continue?.gcmcontinue) {
+                gcmContinue = String(fData.continue.gcmcontinue);
+              } else {
+                break;
+              }
+            }
+            break;
           }
-          uploaderHonors[u].qi += h.qi || 0;
-          uploaderHonors[u].fp += h.fp || 0;
-          uploaderHonors[u].vi += h.vi || 0;
         }
-      } else {
-        for (const lb of (subRes.leaderboard || [])) {
-          const rawU = lb.uploader || lb.username;
-          const u = normalizeMediaWikiUsername(rawU);
-          if (!u || isBotAccount(u)) continue;
-          if (!uploaderHonors[u]) {
-            uploaderHonors[u] = { qi: 0, fp: 0, vi: 0 };
-          }
-          uploaderHonors[u].qi += lb.qi_count || 0;
-          uploaderHonors[u].fp += lb.fp_count || 0;
-          uploaderHonors[u].vi += lb.vi_count || 0;
-        }
+      } catch {
+        // Fall through
       }
+      if (qiCount > 0) break;
     }
 
-    const totalRecognized = fpCount + qiCount + viCount;
-    const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
-    const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
+    const fpCandidates = getFeaturedCategoryCandidates(clean);
+    for (const fpCat of fpCandidates) {
+      try {
+        const data = await fetchCommonsApi({
+          action: 'query',
+          titles: `Category:${fpCat}`,
+          prop: 'categoryinfo'
+        }, 5000);
+        const pages = data?.query?.pages || {};
+        for (const pid of Object.keys(pages)) {
+          const cinfo = pages[pid]?.categoryinfo;
+          if (cinfo && cinfo.files > 0) {
+            fpCount = cinfo.files;
+            let gcmContinue: string | undefined = undefined;
+            let iterations = 0;
+            const startTime = Date.now();
+            while (iterations < 10 && Date.now() - startTime < 8000) {
+              iterations++;
+              const queryParams: Record<string, string> = {
+                action: 'query',
+                generator: 'categorymembers',
+                gcmtitle: `Category:${fpCat}`,
+                gcmtype: 'file',
+                gcmlimit: '500',
+                prop: 'imageinfo',
+                iiprop: 'user|timestamp|url',
+                iiurlwidth: '300'
+              };
+              if (gcmContinue) {
+                queryParams.gcmcontinue = gcmContinue;
+              }
+              const fpFilesData = await fetchCommonsApi(queryParams, 6000);
+              const fpPages = fpFilesData?.query?.pages || {};
+              for (const fpPid of Object.keys(fpPages)) {
+                const fpObj = fpPages[fpPid];
+                const title = fpObj.title || '';
+                const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
+                const uploader = normalizeMediaWikiUsername(ii.user || '');
+                if (!uploader || isBotAccount(uploader)) continue;
+                const thumb = ii.thumburl || '';
+                const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
+                const existing = recognizedByTitle.get(title);
+                if (existing) {
+                  if (!existing.honors.includes('Featured Picture')) {
+                    existing.honors.unshift('Featured Picture');
+                    existing.details = 'Certified as Featured Picture and Quality Image on Wikimedia Commons.';
+                    dualHonoredCount++;
+                  }
+                } else {
+                  recognizedByTitle.set(title, {
+                    title,
+                    file_title: title,
+                    thumb_url: thumb,
+                    honors: ['Featured Picture'],
+                    uploader,
+                    commons_url: commonsUrl,
+                    details: 'Certified as Featured Picture on Wikimedia Commons.'
+                  });
+                }
+                if (!uploaderHonors[uploader]) uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+                uploaderHonors[uploader].fp++;
+              }
+              if (fpFilesData?.continue?.gcmcontinue) {
+                gcmContinue = String(fpFilesData.continue.gcmcontinue);
+              } else {
+                break;
+              }
+            }
+            break;
+          }
+        }
+      } catch {
+        // Fall through
+      }
+      if (fpCount > 0) break;
+    }
 
+    const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => {
+      const aFp = a.honors.includes('Featured Picture') ? 1 : 0;
+      const bFp = b.honors.includes('Featured Picture') ? 1 : 0;
+      return bFp - aFp;
+    });
+    const totalRecognized = Math.max(
+      recognizedByTitle.size,
+      Math.max(0, fpCount + qiCount + viCount - dualHonoredCount)
+    );
+    const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
+
+    const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
     const leaderboard = distinctHonoredPhotographers
       .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
       .slice(0, 10)
@@ -2419,11 +2732,11 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
           : 0.0
       }));
 
-    return {
+    const singleResult = {
       code: clean,
       year: yr,
       country: cName,
-      event: 'All Campaigns',
+      event: eventName,
       total_uploads: totalUploads,
       quality_rate_pct: qualityRate,
       qi_count: qiCount,
@@ -2435,194 +2748,9 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       leaderboard: leaderboard,
       all_uploader_honors: uploaderHonors
     };
-  }
-
-  let qiCount = 0;
-  let fpCount = 0;
-  let viCount = 0;
-  const recognizedFiles: any[] = [];
-  const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
-
-  const qiCandidates = getQualityCategoryCandidates(clean);
-  for (const qcat of qiCandidates) {
-    try {
-      const data = await fetchCommonsApi({
-        action: 'query',
-        titles: `Category:${qcat}`,
-        prop: 'categoryinfo'
-      }, 5000);
-      const pages = data?.query?.pages || {};
-      for (const pid of Object.keys(pages)) {
-        const cinfo = pages[pid]?.categoryinfo;
-        if (cinfo && cinfo.files > 0) {
-          qiCount = cinfo.files;
-          let gcmContinue: string | undefined = undefined;
-          let iterations = 0;
-          const startTime = Date.now();
-          while (iterations < 10 && Date.now() - startTime < 8000) {
-            iterations++;
-            const queryParams: Record<string, string> = {
-              action: 'query',
-              generator: 'categorymembers',
-              gcmtitle: `Category:${qcat}`,
-              gcmtype: 'file',
-              gcmlimit: '500',
-              prop: 'imageinfo',
-              iiprop: 'user|timestamp|url',
-              iiurlwidth: '300'
-            };
-            if (gcmContinue) {
-              queryParams.gcmcontinue = gcmContinue;
-            }
-            const fData = await fetchCommonsApi(queryParams, 6000);
-            const fPages = fData?.query?.pages || {};
-            for (const fPid of Object.keys(fPages)) {
-              const fpObj = fPages[fPid];
-              const title = fpObj.title || '';
-              const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
-              const rawUser = ii.user || '';
-              const uploader = normalizeMediaWikiUsername(rawUser);
-              if (!uploader || isBotAccount(uploader)) continue;
-              const thumb = ii.thumburl || '';
-              const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
-
-              if (recognizedFiles.length < 30) {
-                recognizedFiles.push({
-                  title,
-                  file_title: title,
-                  thumb_url: thumb,
-                  honors: ['Quality Image'],
-                  uploader,
-                  commons_url: commonsUrl,
-                  details: 'Certified as Quality Image on Wikimedia Commons.'
-                });
-              }
-
-              if (!uploaderHonors[uploader]) {
-                uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
-              }
-              uploaderHonors[uploader].qi++;
-            }
-            if (fData?.continue?.gcmcontinue) {
-              gcmContinue = String(fData.continue.gcmcontinue);
-            } else {
-              break;
-            }
-          }
-          break;
-        }
-      }
-    } catch {
-      // Fall through
-    }
-    if (qiCount > 0) break;
-  }
-
-  const fpCandidates = getFeaturedCategoryCandidates(clean);
-  for (const fpCat of fpCandidates) {
-    try {
-      const data = await fetchCommonsApi({
-        action: 'query',
-        titles: `Category:${fpCat}`,
-        prop: 'categoryinfo'
-      }, 5000);
-      const pages = data?.query?.pages || {};
-      for (const pid of Object.keys(pages)) {
-        const cinfo = pages[pid]?.categoryinfo;
-        if (cinfo && cinfo.files > 0) {
-          fpCount = cinfo.files;
-          let gcmContinue: string | undefined = undefined;
-          let iterations = 0;
-          const startTime = Date.now();
-          while (iterations < 10 && Date.now() - startTime < 8000) {
-            iterations++;
-            const queryParams: Record<string, string> = {
-              action: 'query',
-              generator: 'categorymembers',
-              gcmtitle: `Category:${fpCat}`,
-              gcmtype: 'file',
-              gcmlimit: '500',
-              prop: 'imageinfo',
-              iiprop: 'user|timestamp|url',
-              iiurlwidth: '300'
-            };
-            if (gcmContinue) {
-              queryParams.gcmcontinue = gcmContinue;
-            }
-            const fpFilesData = await fetchCommonsApi(queryParams, 6000);
-            const fpPages = fpFilesData?.query?.pages || {};
-            for (const fpPid of Object.keys(fpPages)) {
-              const fpObj = fpPages[fpPid];
-              const title = fpObj.title || '';
-              const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
-              const uploader = normalizeMediaWikiUsername(ii.user || '');
-              if (!uploader || isBotAccount(uploader)) continue;
-              const thumb = ii.thumburl || '';
-              const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
-              recognizedFiles.unshift({
-                title,
-                file_title: title,
-                thumb_url: thumb,
-                honors: ['Featured Picture'],
-                uploader,
-                commons_url: commonsUrl,
-                details: 'Certified as Featured Picture on Wikimedia Commons.'
-              });
-              if (!uploaderHonors[uploader]) uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
-              uploaderHonors[uploader].fp++;
-            }
-            if (fpFilesData?.continue?.gcmcontinue) {
-              gcmContinue = String(fpFilesData.continue.gcmcontinue);
-            } else {
-              break;
-            }
-          }
-          break;
-        }
-      }
-    } catch {
-      // Fall through
-    }
-    if (fpCount > 0) break;
-  }
-
-  const totalRecognized = fpCount + qiCount + viCount;
-  const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
-
-  const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
-  const leaderboard = distinctHonoredPhotographers
-    .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
-    .slice(0, 10)
-    .map((u, i) => ({
-      rank: i + 1,
-      uploader: u,
-      username: u,
-      total_honors: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
-      qi_count: uploaderHonors[u].qi,
-      fp_count: uploaderHonors[u].fp,
-      vi_count: uploaderHonors[u].vi,
-      recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
-      quality_share_pct: totalRecognized > 0
-        ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp) / totalRecognized) * 100).toFixed(1))
-        : 0.0
-    }));
-
-  return {
-    code: clean,
-    year: yr,
-    country: cName,
-    event: eventName,
-    total_uploads: totalUploads,
-    quality_rate_pct: qualityRate,
-    qi_count: qiCount,
-    fp_count: fpCount,
-    vi_count: viCount,
-    honored_photographers_count: distinctHonoredPhotographers.length,
-    recognized_count: recognizedFiles.length,
-    recognized_files: recognizedFiles.slice(0, 30),
-    leaderboard: leaderboard,
-    all_uploader_honors: uploaderHonors
-  };
+    _qualityDeepCache.set(clean, { data: singleResult, ts: Date.now() }, ttl);
+    return singleResult;
+  });
 }
 
 export function resolveRegionName(input?: string, fallbackCc?: string): string {
@@ -2937,7 +3065,8 @@ export async function computeHealthEvaluation(
     });
   }
 
-  const newcomerCount = Math.max(0, targetUsers.size - overlap);
+  const newcomerCount = metrics.Growth?.count ?? Math.max(0, targetUsers.size - overlap);
+  const returningCount = Math.max(0, targetUsers.size - newcomerCount);
   const newcomerPct = targetUsers.size > 0 ? parseFloat(((newcomerCount / targetUsers.size) * 100).toFixed(1)) : 0;
   const retentionPct = baseUsers.size > 0 ? parseFloat(((overlap / baseUsers.size) * 100).toFixed(1)) : 0;
   const totalUploadsEst = targetStructural.total_uploads || 0;
@@ -2954,7 +3083,7 @@ export async function computeHealthEvaluation(
     generated_date: new Date().toISOString().split('T')[0],
     total_uploaders: targetUsers.size,
     newcomer_uploaders: newcomerCount,
-    returning_uploaders: overlap,
+    returning_uploaders: returningCount,
     newcomer_share_pct: newcomerPct,
     baseline_code: baselineEvent.toLowerCase(),
     baseline_uploaders: baseUsers.size,
@@ -3047,9 +3176,13 @@ export async function computeComparativeAnalytics(
     years.push(y);
   }
 
-  // Pre-fetch codes: from startYear - 1 up to endYear (for historical continuity)
-  // For influx analysis, newcomer identification requires the complete historical cohort back to campaign inception (2010)
-  const fetchStart = module === 'influx' ? 2010 : Math.max(2010, startYear - 1);
+  // Pre-fetch codes: only fetch prior years when needed for longitudinal cohort continuity (influx/retention)
+  const fetchStart =
+    module === 'influx'
+      ? 2010
+      : module === 'retention'
+      ? Math.max(2010, startYear - 1)
+      : startYear;
   const allCodes: string[] = [];
   for (const cc of requestedCountries) {
     for (let y = fetchStart; y <= endYear; y++) {
@@ -3057,21 +3190,29 @@ export async function computeComparativeAnalytics(
     }
   }
 
+  // Window codes strictly within [startYear, endYear] for expensive deep category scans
+  const windowCodes: string[] = [];
+  for (const cc of requestedCountries) {
+    for (const y of years) {
+      windowCodes.push(`${eventType}${cc}${String(y % 100).padStart(2, '0')}`);
+    }
+  }
+
   // Concurrent batch fetching
   const participantResults = await fetchAllConcurrently(allCodes);
 
-  // If quality, utility, or diversity, fetch deep analyses concurrently
+  // If quality, utility, or diversity, fetch deep analyses concurrently for the active window
   const qualityResults: Record<string, any> = {};
   const utilityResults: Record<string, any> = {};
   const diversityResults: Record<string, DiversityRecord> = {};
 
   const mobilityResults: Record<string, MobilityResult> = {};
   if (module === 'quality') {
-    await mapConcurrent(allCodes, 6, async (code) => {
+    await mapConcurrent(windowCodes, 6, async (code) => {
       qualityResults[code] = await computeQualityRecognitionDeep(code);
     });
   } else if (module === 'utility') {
-    await mapConcurrent(allCodes, 6, async (code) => {
+    await mapConcurrent(windowCodes, 6, async (code) => {
       utilityResults[code] = await computeContentUtilityDeep(code);
     });
   } else if (module === 'diversity') {
@@ -3212,8 +3353,8 @@ export async function computeComparativeAnalytics(
             val = qData.quality_rate_pct;
             fVal = `${val.toFixed(2)}%`;
           } else {
-            // Default: total honors
-            val = qData.qi_count + qData.fp_count + qData.vi_count;
+            // Default: deduplicated recognized works
+            val = qData.recognized_count ?? (qData.qi_count + qData.fp_count + qData.vi_count);
             fVal = val.toLocaleString();
           }
         }
@@ -3302,6 +3443,7 @@ export async function computeComparativeAnalytics(
     const latestPoint = validPoints.length > 0 ? validPoints[validPoints.length - 1] : null;
     const latestYear = latestPoint ? latestPoint.year : endYear;
     const latestValue = latestPoint ? latestPoint.value! : 0;
+    const latestFormatted = latestPoint ? latestPoint.formatted_value : '—';
     const minValue = validPoints.length > 0 ? Math.min(...validPoints.map((p) => p.value!)) : 0;
     const maxValue = validPoints.length > 0 ? Math.max(...validPoints.map((p) => p.value!)) : 0;
     const avgValue = validPoints.length > 0
@@ -3324,6 +3466,7 @@ export async function computeComparativeAnalytics(
       summary: {
         latest_year: latestYear,
         latest_value: latestValue,
+        latest_formatted: latestFormatted,
         min_value: minValue,
         max_value: maxValue,
         avg_value: avgValue,
@@ -3340,14 +3483,21 @@ export async function computeComparativeAnalytics(
       values[pt.year] = pt.value;
       formatted_values[pt.year] = pt.formatted_value;
     }
+    const yoy = s.summary.yoy_change_pct;
+    const yoyFormatted = yoy !== null ? `${yoy >= 0 ? '+' : ''}${yoy.toFixed(1)}%` : '—';
+    // For Gini/concentration metrics, lower is broader participation; for others, higher is positive
+    const isPositive = yoy === null ? null : (module === 'diversity' ? yoy <= 0 : yoy >= 0);
     return {
       country_code: s.country_code,
       country_name: s.country_name,
+      color: s.color,
       values,
       formatted_values,
       latest: s.summary.latest_value,
       average: s.summary.avg_value,
-      yoy_change: s.summary.yoy_change_pct
+      yoy_change: yoy,
+      yoy_change_formatted: yoyFormatted,
+      is_positive: isPositive
     };
   });
 

@@ -27,7 +27,8 @@ var CampComparativeSuite = (function () {
     searchQuery: '',
     isPlaying: false,
     playTimer: null,
-    highlightedCountry: null
+    highlightedCountry: null,
+    isLoading: false
   };
 
   function init(config) {
@@ -49,32 +50,7 @@ var CampComparativeSuite = (function () {
       state.selectedCountries = ['de', 'it', 'bd'];
     }
 
-    // Determine available countries from global lookups or current series
-    var globalCodes = (typeof window !== 'undefined' && Array.isArray(window.ALL_COUNTRY_CODES)) ? window.ALL_COUNTRY_CODES : [];
-    var nameMap = (typeof window !== 'undefined' && window.COUNTRY_NAME_MAP) ? window.COUNTRY_NAME_MAP : {};
-
-    var allCodes = {};
-    state.series.forEach(function (s) {
-      allCodes[s.country_code] = s.country_name || nameMap[s.country_code] || s.country_code.toUpperCase();
-    });
-    globalCodes.forEach(function (code) {
-      if (!allCodes[code]) {
-        var raw = nameMap[code] || code.toUpperCase();
-        allCodes[code] = raw.replace(/_/g, ' ');
-      }
-    });
-
-    state.availableCountries = Object.keys(allCodes).map(function (code) {
-      var s = state.series.find(function (item) { return item.country_code === code; });
-      var latestVal = (s && s.summary && typeof s.summary.latest_value === 'number') ? s.summary.latest_value : 0;
-      var latestFmt = (s && s.summary && s.summary.latest_formatted) ? s.summary.latest_formatted : '—';
-      return {
-        code: code,
-        name: allCodes[code],
-        latestValue: latestVal,
-        latestFormatted: latestFmt
-      };
-    });
+    rebuildAvailableCountries();
 
     // Check URL hash for initial view (#line, #table)
     var initialView = config.initialView || 'line';
@@ -109,6 +85,44 @@ var CampComparativeSuite = (function () {
     }
   }
 
+  function rebuildAvailableCountries() {
+    var globalCodes = (typeof window !== 'undefined' && Array.isArray(window.ALL_COUNTRY_CODES)) ? window.ALL_COUNTRY_CODES : [];
+    var nameMap = (typeof window !== 'undefined' && window.COUNTRY_NAME_MAP) ? window.COUNTRY_NAME_MAP : {};
+
+    var allCodes = {};
+    state.series.forEach(function (s) {
+      allCodes[s.country_code] = s.country_name || nameMap[s.country_code] || s.country_code.toUpperCase();
+    });
+    globalCodes.forEach(function (code) {
+      if (!allCodes[code]) {
+        var raw = nameMap[code] || code.toUpperCase();
+        allCodes[code] = raw.replace(/_/g, ' ');
+      }
+    });
+
+    state.availableCountries = Object.keys(allCodes).map(function (code) {
+      var s = state.series.find(function (item) { return item.country_code === code; });
+      var latestVal = (s && s.summary && typeof s.summary.latest_value === 'number') ? s.summary.latest_value : 0;
+      var latestFmt = '—';
+      if (s && s.summary) {
+        if (s.summary.latest_formatted) {
+          latestFmt = s.summary.latest_formatted;
+        } else if (Array.isArray(s.points) && s.points.length > 0) {
+          var validPts = s.points.filter(function (p) { return p.value !== null && p.value !== undefined; });
+          if (validPts.length > 0) {
+            latestFmt = validPts[validPts.length - 1].formatted_value || String(latestVal);
+          }
+        }
+      }
+      return {
+        code: code,
+        name: allCodes[code],
+        latestValue: latestVal,
+        latestFormatted: latestFmt
+      };
+    });
+  }
+
   function debounce(fn, wait) {
     var timeout;
     return function () {
@@ -119,6 +133,24 @@ var CampComparativeSuite = (function () {
         fn.apply(ctx, args);
       }, wait);
     };
+  }
+
+  function syncUrlState() {
+    if (typeof window === 'undefined' || !window.history || !window.history.replaceState) return;
+    try {
+      var urlObj = new URL(window.location.href);
+      if (state.selectedCountries && state.selectedCountries.length > 0) {
+        urlObj.searchParams.set('countries', state.selectedCountries.join(','));
+      }
+      if (state.data && state.data.event_type) {
+        urlObj.searchParams.set('event_type', state.data.event_type);
+      }
+      if (state.years && state.years.length > 0) {
+        urlObj.searchParams.set('yr_start', String(state.years[0]));
+        urlObj.searchParams.set('yr_end', String(state.years[state.years.length - 1]));
+      }
+      window.history.replaceState(null, '', urlObj.pathname + urlObj.search + (window.location.hash || ''));
+    } catch (e) {}
   }
 
   /* ── VIEW SWITCHER ──────────────────────────────────────────────────────── */
@@ -144,7 +176,7 @@ var CampComparativeSuite = (function () {
     });
 
     if (!skipHashUpdate && typeof window !== 'undefined' && window.history && window.history.replaceState) {
-      window.history.replaceState(null, '', '#' + viewMode);
+      window.history.replaceState(null, '', (window.location.pathname + window.location.search) + '#' + viewMode);
     }
 
     if (viewMode === 'line') {
@@ -212,7 +244,7 @@ var CampComparativeSuite = (function () {
     // Title & Unit Header
     var headerTitle = (state.data.indicator_title || 'Comparative Analytics') + (state.data.event_name ? ' · ' + state.data.event_name : '');
     svgParts.push('<text x="' + margin.left + '" y="24" class="chart-axis-text" font-size="13" font-weight="700" fill="#202122">' + escapeHtml(headerTitle) + '</text>');
-    svgParts.push('<text x="' + (width - margin.right + 10) + '" y="24" class="chart-axis-text" font-size="11" font-weight="600" fill="#72777d">' + escapeHtml(state.data.indicator_unit || '') + '</text>');
+    svgParts.push('<text x="' + (width - margin.right + 10) + '" y="24" class="chart-axis-text" font-size="11" font-weight="600" fill="#54595d">' + escapeHtml(state.data.indicator_unit || '') + '</text>');
 
     // Horizontal Grid Lines & Y Ticks (5 steps)
     var steps = 5;
@@ -232,7 +264,7 @@ var CampComparativeSuite = (function () {
     svgParts.push('<line class="chart-axis-line" x1="' + margin.left + '" y1="' + (margin.top + plotH) + '" x2="' + (margin.left + plotW) + '" y2="' + (margin.top + plotH) + '" />');
     years.forEach(function (yr) {
       var x = getX(yr);
-      svgParts.push('<line class="chart-gridline" x1="' + x + '" y1="' + (margin.top + plotH) + '" x2="' + x + '" y2="' + (margin.top + plotH + 6) + '" stroke="#72777d" />');
+      svgParts.push('<line class="chart-gridline" x1="' + x + '" y1="' + (margin.top + plotH) + '" x2="' + x + '" y2="' + (margin.top + plotH + 6) + '" stroke="#54595d" />');
       svgParts.push('<text class="chart-axis-text" x="' + x + '" y="' + (margin.top + plotH + 22) + '" text-anchor="middle" font-weight="600">' + yr + '</text>');
     });
 
@@ -335,11 +367,15 @@ var CampComparativeSuite = (function () {
     });
 
     // Transparent Hover Tracker Overlay
-    svgParts.push('<rect id="chart-hover-overlay" class="chart-hover-overlay" x="' + margin.left + '" y="' + margin.top + '" width="' + plotW + '" height="' + plotH + '" />');
+    svgParts.push('<rect id="chart-hover-overlay" class="chart-hover-overlay" x="' + margin.left + '" y="' + margin.top + '" width="' + plotW + '" height="' + plotH + '" rx="0" ry="0" />');
     svgParts.push('</svg>');
 
     // Floating Tooltip Card Container
     svgParts.push('<div id="camp-chart-tooltip" class="chart-tooltip" style="display:none;"></div>');
+
+    if (state.isLoading) {
+      svgParts.push('<div id="camp-comparative-loading" style="position:absolute;inset:0;background:rgba(255,255,255,0.82);display:flex;align-items:center;justify-content:center;gap:8px;font-size:0.86rem;font-weight:600;color:#202122;z-index:20;border-radius:0;"><span class="loading-spinner" style="border-color:#cbd5e1;border-top-color:#3366cc;"></span>Loading comparative series…</div>');
+    }
 
     container.innerHTML = svgParts.join('');
 
@@ -659,7 +695,9 @@ var CampComparativeSuite = (function () {
       state.selectedCountries.push(countryCode);
     }
 
+    syncUrlState();
     ensureSeriesLoaded(countryCode, function () {
+      rebuildAvailableCountries();
       updateDrawerList();
       renderLineChart();
       renderTable();
@@ -671,7 +709,9 @@ var CampComparativeSuite = (function () {
     var topCodes = state.availableCountries.slice(0, 8).map(function (c) { return c.code; });
     state.selectedCountries = topCodes;
 
+    syncUrlState();
     ensureAllSeriesLoaded(topCodes, function () {
+      rebuildAvailableCountries();
       updateDrawerList();
       renderLineChart();
       renderTable();
@@ -682,6 +722,7 @@ var CampComparativeSuite = (function () {
     // Retain only primary first country
     var first = state.availableCountries.length > 0 ? state.availableCountries[0].code : 'de';
     state.selectedCountries = [first];
+    syncUrlState();
     updateDrawerList();
     renderLineChart();
     renderTable();
@@ -689,6 +730,7 @@ var CampComparativeSuite = (function () {
 
   function applyEntities() {
     toggleEntityDrawer(false);
+    syncUrlState();
     renderLineChart();
     renderTable();
   }
@@ -700,6 +742,9 @@ var CampComparativeSuite = (function () {
       return;
     }
 
+    state.isLoading = true;
+    renderLineChart();
+
     var url = '/api/comparative?module=' + encodeURIComponent(state.module) +
       '&event_type=' + encodeURIComponent(state.data.event_type || 'wlm') +
       '&countries=' + encodeURIComponent(state.selectedCountries.join(',')) +
@@ -707,8 +752,12 @@ var CampComparativeSuite = (function () {
       '&end_year=' + encodeURIComponent(state.years[state.years.length - 1]);
 
     fetch(url)
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(function (freshData) {
+        state.isLoading = false;
         if (freshData && Array.isArray(freshData.series)) {
           state.data = freshData;
           state.series = freshData.series;
@@ -716,6 +765,10 @@ var CampComparativeSuite = (function () {
         if (callback) callback();
       })
       .catch(function () {
+        state.isLoading = false;
+        if (typeof window !== 'undefined' && typeof window.showCampToast === 'function') {
+          window.showCampToast('Could not load comparative series from server.');
+        }
         if (callback) callback();
       });
   }
@@ -726,6 +779,9 @@ var CampComparativeSuite = (function () {
       return;
     }
 
+    state.isLoading = true;
+    renderLineChart();
+
     var url = '/api/comparative?module=' + encodeURIComponent(state.module) +
       '&event_type=' + encodeURIComponent(state.data.event_type || 'wlm') +
       '&countries=' + encodeURIComponent(codes.join(',')) +
@@ -733,8 +789,12 @@ var CampComparativeSuite = (function () {
       '&end_year=' + encodeURIComponent(state.years[state.years.length - 1]);
 
     fetch(url)
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
       .then(function (freshData) {
+        state.isLoading = false;
         if (freshData && Array.isArray(freshData.series)) {
           state.data = freshData;
           state.series = freshData.series;
@@ -742,6 +802,10 @@ var CampComparativeSuite = (function () {
         if (callback) callback();
       })
       .catch(function () {
+        state.isLoading = false;
+        if (typeof window !== 'undefined' && typeof window.showCampToast === 'function') {
+          window.showCampToast('Could not load comparative series from server.');
+        }
         if (callback) callback();
       });
   }
@@ -786,11 +850,12 @@ var CampComparativeSuite = (function () {
         html += '<td style="font-variant-numeric: tabular-nums;">' + escapeHtml(String(fmt)) + '</td>';
       });
 
-      html += '<td style="font-weight: 600; font-variant-numeric: tabular-nums;">' + escapeHtml(String(row.latest || '—')) + '</td>' +
-        '<td style="font-variant-numeric: tabular-nums;">' + escapeHtml(String(row.average || '—')) + '</td>';
+      html += '<td style="font-weight: 600; font-variant-numeric: tabular-nums;">' + escapeHtml(String(row.latest !== null && row.latest !== undefined ? row.latest : '—')) + '</td>' +
+        '<td style="font-variant-numeric: tabular-nums;">' + escapeHtml(String(row.average !== null && row.average !== undefined ? row.average : '—')) + '</td>';
 
       var yoyClass = row.is_positive === true ? 'badge-positive' : (row.is_positive === false ? 'badge-negative' : 'badge-neutral');
-      html += '<td><span class="stat-kpi-badge ' + yoyClass + '">' + escapeHtml(String(row.yoy_change || '—')) + '</span></td>' +
+      var yoyDisplay = row.yoy_change_formatted || (typeof row.yoy_change === 'number' ? ((row.yoy_change >= 0 ? '+' : '') + row.yoy_change.toFixed(1) + '%') : (row.yoy_change || '—'));
+      html += '<td><span class="stat-kpi-badge ' + yoyClass + '">' + escapeHtml(String(yoyDisplay)) + '</span></td>' +
         '</tr>';
     });
 

@@ -63,6 +63,32 @@ export function computeEmpiricalMedian(arr: number[]): number | null {
 }
 
 /**
+ * Computes smart cache TTL based on whether a campaign code or category
+ * refers to a completed historical edition (< current year: 24h) or an
+ * active/ongoing current-year edition (15m).
+ */
+export function getCampaignTtlMs(codeOrCategory: string): number {
+  const currentYear = new Date().getFullYear();
+  const clean = (codeOrCategory || '').trim().toLowerCase();
+
+  // Check standard campaign code pattern: e.g. wlmde23, allde24
+  const codeMatch = /^(?:all|wla|wlf|wle|wlm|wlb)[a-z]{0,2}(\d{2})$/.exec(clean);
+  if (codeMatch) {
+    const yr = 2000 + parseInt(codeMatch[1], 10);
+    return yr < currentYear ? 24 * 60 * 60 * 1000 : 15 * 60 * 1000;
+  }
+
+  // Check category year pattern: e.g. Images_from_Wiki_Loves_Monuments_2023_in_Germany
+  const catMatch = /\b(20\d{2})\b/.exec(clean);
+  if (catMatch) {
+    const yr = parseInt(catMatch[1], 10);
+    return yr < currentYear ? 24 * 60 * 60 * 1000 : 15 * 60 * 1000;
+  }
+
+  return 60 * 60 * 1000; // Default 1 hour
+}
+
+/**
  * Bounded concurrency async map to prevent outbound socket/FD exhaustion
  * and respect upstream rate limits (e.g. Wikimedia Commons API).
  */
@@ -88,25 +114,42 @@ export async function mapConcurrent<T, R>(
 }
 
 /**
- * Memory-bounded in-memory cache with FIFO eviction.
+ * Memory-bounded in-memory cache with true LRU eviction and TTL awareness.
  * Prevents monotonically growing heap memory in long-running processes.
  */
 export class BoundedCache<K, V> {
   private map = new Map<K, V>();
+  private hits = 0;
+  private misses = 0;
 
-  constructor(private maxEntries: number = 1000) {}
+  constructor(private maxEntries: number = 1000, private defaultTtlMs: number = 3600000) {}
 
   get(key: K): V | undefined {
-    return this.map.get(key);
+    if (!this.map.has(key)) {
+      this.misses++;
+      return undefined;
+    }
+    const val = this.map.get(key)!;
+    // Refresh key recency for true LRU ordering
+    this.map.delete(key);
+    this.map.set(key, val);
+    this.hits++;
+    return val;
   }
 
-  set(key: K, value: V): void {
-    if (this.map.size >= this.maxEntries && !this.map.has(key)) {
+  set(key: K, value: V, ttlMs?: number): void {
+    if (ttlMs !== undefined && value && typeof value === 'object') {
+      (value as any).ttlMs = ttlMs;
+    }
+    if (this.map.has(key)) {
+      this.map.delete(key);
+    } else if (this.map.size >= this.maxEntries) {
       // Prioritize evicting expired entries if available
       const now = Date.now();
       let evicted = false;
       for (const [k, v] of this.map.entries()) {
-        if (v && typeof (v as any).ts === 'number' && now - (v as any).ts >= 3600000) {
+        const entryTtl = (v && typeof (v as any).ttlMs === 'number') ? (v as any).ttlMs : this.defaultTtlMs;
+        if (v && typeof (v as any).ts === 'number' && now - (v as any).ts >= entryTtl) {
           this.map.delete(k);
           evicted = true;
           break;
@@ -136,6 +179,15 @@ export class BoundedCache<K, V> {
 
   get size(): number {
     return this.map.size;
+  }
+
+  getStats(): { size: number; maxEntries: number; hits: number; misses: number } {
+    return {
+      size: this.map.size,
+      maxEntries: this.maxEntries,
+      hits: this.hits,
+      misses: this.misses
+    };
   }
 }
 

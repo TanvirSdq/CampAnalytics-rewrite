@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as analytics from '../src/core/analytics.js';
-import { asScalarString, safeJsonForScript, escapeHtml, BoundedCache } from '../src/core/utils.js';
+import { asScalarString, safeJsonForScript, escapeHtml, BoundedCache, getCampaignTtlMs } from '../src/core/utils.js';
 
 test('DATA-01: Zero Synthetic Extrapolations in structural metrics', async () => {
   analytics.primeParticipantCache('wlmde24', ['UserA', 'UserB'], new Map([['UserA', 10], ['UserB', 20]]));
@@ -79,14 +79,18 @@ test('DATA-04: Bot account detection precision - strict word boundaries', () => 
   assert.equal(analytics.isBotAccount('Robotnik'), false);
 });
 
-test('DATA-05: computeHealthEvaluation accepts customBaselineEvent', async () => {
+test('DATA-05: computeHealthEvaluation accepts customBaselineEvent and reconciles newcomer counts', async () => {
   analytics.setCommonsFetchMock(async () => ({ query: { pages: {} } }));
-  analytics.primeParticipantCache('wlmbd23', ['UserA', 'UserB'], new Map([['UserA', 10], ['UserB', 15]]));
+  analytics.primeParticipantCache('wlmbd21', ['UserOld'], new Map([['UserOld', 5]]));
+  analytics.primeParticipantCache('wlmbd22', ['UserA'], new Map([['UserA', 8]]));
+  analytics.primeParticipantCache('wlmbd23', ['UserA', 'UserOld', 'UserNew'], new Map([['UserA', 10], ['UserOld', 4], ['UserNew', 15]]));
   analytics.primeParticipantCache('wlmbd19', ['UserA'], new Map([['UserA', 10]]));
 
   const evaluation = await analytics.computeHealthEvaluation('wlmbd23', 'South Asia', 'wlmbd19');
   assert.equal(evaluation.target_campaign, 'wlmbd23');
   assert.equal(evaluation.baseline_campaign, 'wlmbd19');
+  // UserOld was active in 2021, so only UserNew is a true first-time newcomer
+  assert.equal(evaluation.dimensions.Growth.count, evaluation.overall_report.newcomer_uploaders);
   analytics.setCommonsFetchMock(null);
 });
 
@@ -109,14 +113,22 @@ test('SEC-01: asScalarString, escapeHtml, and safeJsonForScript security utiliti
   assert.ok(safeScript.includes('\\u003c/script\\u003e'));
 });
 
-test('SEC-01: BoundedCache enforces capacity limits and LRU eviction', () => {
+test('SEC-01 & PERF-01: BoundedCache enforces true LRU eviction and smart campaign TTLs', () => {
   const cache = new BoundedCache<string, number>(2);
   cache.set('a', 1);
   cache.set('b', 2);
+  // Access 'a' so 'a' becomes Most Recently Used and 'b' becomes Least Recently Used
   assert.equal(cache.get('a'), 1);
   cache.set('c', 3);
+  assert.equal(cache.has('a'), true, 'Recently accessed key a must be retained');
+  assert.equal(cache.has('b'), false, 'Least recently used key b must be evicted');
   assert.equal(cache.has('c'), true);
-  assert.equal(cache.size <= 2, true);
+  assert.equal(cache.size, 2);
+
+  // Smart TTL: historical editions get 24h, active current-year gets 15m
+  const curYrShort = String(new Date().getFullYear() % 100).padStart(2, '0');
+  assert.equal(getCampaignTtlMs('wlmde21'), 24 * 60 * 60 * 1000);
+  assert.equal(getCampaignTtlMs(`wlmde${curYrShort}`), 15 * 60 * 1000);
 });
 
 test('MATH-01 & MATH-02: computeSingleDiversityRecord follows Section 5.3 tiers and Math.ceil Pareto decile', async () => {
@@ -187,7 +199,7 @@ test('MATH-04: computeYoYInflux excludes Year 0 from avg_newcomer_share_pct', as
   assert.equal(amberDots, 3, 'Should have exactly 3 cumulative dots for the 3 evaluated years (2022, 2023, 2024)');
 });
 
-test('MATH-05: Comparative mobility module produces valid points and methodology card', async () => {
+test('MATH-05: Comparative mobility module produces valid points, latest_formatted, and YoY fields', async () => {
   analytics.setCommonsFetchMock(async () => ({ query: { pages: {} } }));
   analytics.primeParticipantCache('wlmde22', ['User1', 'User2']);
   analytics.primeParticipantCache('wlede22', ['User2', 'User3']);
@@ -203,12 +215,15 @@ test('MATH-05: Comparative mobility module produces valid points and methodology
   assert.equal(comp.module, 'mobility');
   assert.ok(comp.series.length > 0);
   assert.ok(comp.series[0].points.length > 0);
+  assert.equal(typeof comp.series[0].summary.latest_formatted, 'string');
+  assert.equal(typeof comp.table_data.rows[0].yoy_change_formatted, 'string');
+  assert.equal(typeof comp.table_data.rows[0].color, 'string');
   assert.ok(comp.metadata_card);
   assert.ok(comp.metadata_card.license.includes('CC BY-SA 4.0'));
   analytics.setCommonsFetchMock(null);
 });
 
-test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication and paginated QI/FP harvesting', async () => {
+test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication, QI+FP file deduplication, and paginated harvesting', async () => {
   analytics.primeParticipantCache('wlmde24', ['Alice', 'Bob'], new Map([['Alice', 10], ['Bob', 5]]));
   analytics.primeParticipantCache('wlede24', ['Alice', 'Carol'], new Map([['Alice', 4], ['Carol', 6]]));
   analytics.primeParticipantCache('wlfde24', [], new Map());
@@ -254,6 +269,9 @@ test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication and
       if (params.titles?.includes('Quality images from Wiki Loves Monuments 2024 in Germany')) {
         return { query: { pages: { '500': { categoryinfo: { files: 3 } } } } };
       }
+      if (params.titles?.includes('Featured pictures from Wiki Loves Monuments 2024 in Germany')) {
+        return { query: { pages: { '501': { categoryinfo: { files: 1 } } } } };
+      }
       return { query: { pages: {} } };
     }
 
@@ -279,6 +297,17 @@ test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication and
       }
     }
 
+    if (params.prop === 'imageinfo' && params.gcmtitle?.includes('Featured pictures from Wiki Loves Monuments 2024 in Germany')) {
+      return {
+        query: {
+          pages: {
+            // File:QI1.jpg is ALSO a Featured Picture — must be deduplicated in recognized_count and merged in honors
+            '301': { title: 'File:QI1.jpg', imageinfo: [{ user: 'Alice', thumburl: '/q1.jpg' }] }
+          }
+        }
+      };
+    }
+
     return { query: { pages: {} } };
   });
 
@@ -289,6 +318,9 @@ test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication and
 
   const qualWlm = await analytics.computeQualityRecognitionDeep('wlmde24');
   assert.equal(qualWlm.qi_count, 3);
+  assert.equal(qualWlm.fp_count, 1);
+  assert.equal(qualWlm.recognized_count, 3, 'Dual-honored QI+FP file must be deduplicated in recognized_count');
+  assert.deepEqual(qualWlm.recognized_files[0].honors, ['Featured Picture', 'Quality Image']);
   assert.equal(qualWlm.honored_photographers_count, 3, 'Must paginate gcmcontinue to count all 3 honored photographers');
 
   const qualAll = await analytics.computeQualityRecognitionDeep('allde24');
@@ -296,4 +328,3 @@ test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication and
 
   analytics.setCommonsFetchMock(null);
 });
-

@@ -316,7 +316,8 @@ export async function handleRetentionApi(req: Request, res: Response): Promise<v
       res.json(result);
       return;
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      console.error('[Retention Comparative API Error]', err);
+      res.status(500).json({ error: 'Internal server error while evaluating comparative retention.' });
       return;
     }
   }
@@ -327,7 +328,25 @@ export async function handleRetentionApi(req: Request, res: Response): Promise<v
     return;
   }
   const rawCodes = targetCampaigns.split(/\s+/).filter(Boolean);
-  const valid = rawCodes.map((c) => c.replace(/\s+/g, '').toLowerCase()).filter((c) => analytics.CODE_RE.test(c));
+  let wildcardCount = 0;
+  const expandedCodes: string[] = [];
+  for (const c of rawCodes) {
+    const clean = c.replace(/\s+/g, '').toLowerCase();
+    const mWild = /^(all|wla|wlf|wle|wlm|wlb)(\*|all)(\d{2})$/.exec(clean);
+    if (mWild) {
+      wildcardCount++;
+      if (wildcardCount <= MAX_WILDCARDS) {
+        const [, evt, , yr] = mWild;
+        for (const cc of analytics.COUNTRY_OPTIONS) {
+          expandedCodes.push(`${evt}${cc}${yr}`);
+        }
+      }
+    } else {
+      expandedCodes.push(clean);
+    }
+  }
+  const uniqueCodes = Array.from(new Set(expandedCodes)).slice(0, MAX_TOTAL_CODES);
+  const valid = uniqueCodes.filter((c) => analytics.CODE_RE.test(c));
   if (!valid.length) {
     res.status(400).json({ error: 'No valid campaign codes found' });
     return;
@@ -424,7 +443,8 @@ export async function handleHeatmapsApi(req: Request, res: Response): Promise<vo
       remaining_count: remainingCount
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message, heatmaps: [] });
+    console.error('[Retention Heatmaps API Error]', err);
+    res.status(500).json({ error: 'Internal server error while rendering retention heatmaps.', heatmaps: [] });
   }
 }
 

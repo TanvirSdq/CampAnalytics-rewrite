@@ -46,6 +46,49 @@ app.use(compression() as any);
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 app.use(express.json({ limit: '100kb' }));
 
+// Sliding-Window API Rate Limiter (protects expensive Commons/Replica endpoints on Toolforge)
+const apiRateWindows = new Map<string, { count: number; resetAt: number }>();
+const API_RATE_WINDOW_MS = 60 * 1000;
+const API_RATE_MAX_REQUESTS = parseInt(process.env.API_RATE_LIMIT || '120', 10);
+
+app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV === 'test') {
+    next();
+    return;
+  }
+  const now = Date.now();
+  const clientIp = String(req.ip || req.socket?.remoteAddress || 'unknown');
+
+  if (apiRateWindows.size > 2000) {
+    for (const [k, v] of apiRateWindows.entries()) {
+      if (now >= v.resetAt) apiRateWindows.delete(k);
+    }
+  }
+
+  let bucket = apiRateWindows.get(clientIp);
+  if (!bucket || now >= bucket.resetAt) {
+    bucket = { count: 1, resetAt: now + API_RATE_WINDOW_MS };
+    apiRateWindows.set(clientIp, bucket);
+  } else {
+    bucket.count++;
+  }
+
+  res.setHeader('X-RateLimit-Limit', String(API_RATE_MAX_REQUESTS));
+  res.setHeader('X-RateLimit-Remaining', String(Math.max(0, API_RATE_MAX_REQUESTS - bucket.count)));
+
+  if (bucket.count > API_RATE_MAX_REQUESTS) {
+    const retryAfterSec = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+    res.setHeader('Retry-After', String(retryAfterSec));
+    res.status(429).json({
+      error: 'Rate limit exceeded for API endpoint. Please retry shortly.',
+      retry_after_sec: retryAfterSec
+    });
+    return;
+  }
+
+  next();
+});
+
 // Execution Timing & Memory Profiling Middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = process.hrtime.bigint();
@@ -188,6 +231,13 @@ app.use(indexRouter); // Mounted last to allow root handler and fallbacks
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({
+      error: `API endpoint '${req.path}' not found.`,
+      status: 404
+    });
+    return;
+  }
   res.status(404).render('home.html', {
     ...getGlobalContext(req),
     PAGE_TITLE: 'CampTools — Not Found',
@@ -199,6 +249,13 @@ app.use((req: Request, res: Response) => {
 // 500 Error Handler
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   console.error('Express server error:', err);
+  if (req.path.startsWith('/api/')) {
+    res.status(500).json({
+      error: 'An internal server error occurred while processing the API request.',
+      status: 500
+    });
+    return;
+  }
   res.status(500).render('home.html', {
     ...getGlobalContext(req),
     PAGE_TITLE: 'CampTools — Internal Server Error',

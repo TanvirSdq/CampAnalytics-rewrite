@@ -1715,10 +1715,18 @@
         };
 
         // ── SHARE DEEP-LINK & DYNAMIC URL STATE SYNC ──────────────────────────
+        function getActiveToolForm() {
+            return document.getElementById('retention-form') || 
+                   document.getElementById('health-form') || 
+                   document.getElementById('influx-form') ||
+                   document.getElementById('mobility-form') ||
+                   document.getElementById('diversity-form') ||
+                   document.getElementById('utility-form') ||
+                   document.getElementById('quality-form');
+        }
+
         function syncFormStateToURL() {
-            const activeForm = document.getElementById('retention-form') || 
-                               document.getElementById('health-form') || 
-                               document.getElementById('influx-form');
+            const activeForm = getActiveToolForm();
             if (activeForm && window.history && window.history.replaceState) {
                 const formData = new FormData(activeForm);
                 const params = new URLSearchParams();
@@ -1729,7 +1737,7 @@
                 }
                 const qs = params.toString();
                 if (qs && qs.length < 3500) {
-                    const newUrl = window.location.pathname + '?' + qs;
+                    const newUrl = window.location.pathname + '?' + qs + (window.location.hash || '');
                     window.history.replaceState(null, '', newUrl);
                 }
             }
@@ -1738,9 +1746,7 @@
         function copyCurrentURL(btn) {
             let url = window.location.href;
             if (!window.location.search || window.location.search === '') {
-                const activeForm = document.getElementById('retention-form') || 
-                                   document.getElementById('health-form') || 
-                                   document.getElementById('influx-form');
+                const activeForm = getActiveToolForm();
                 if (activeForm) {
                     const formData = new FormData(activeForm);
                     const params = new URLSearchParams();
@@ -1751,7 +1757,7 @@
                     }
                     const qs = params.toString();
                     if (qs) {
-                        url = window.location.origin + activeForm.getAttribute('action') + '?' + qs;
+                        url = window.location.origin + activeForm.getAttribute('action') + '?' + qs + (window.location.hash || '');
                     }
                 }
             }
