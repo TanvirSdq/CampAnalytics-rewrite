@@ -61,17 +61,38 @@ function findReplicaCnf(): string | null {
   return null;
 }
 
+async function findMysqlBinary(): Promise<string | null> {
+  const candidates = [
+    process.env.MYSQL_BIN || '',
+    'mysql',
+    '/usr/bin/mysql',
+    '/usr/local/bin/mysql',
+    '/layers/heroku_deb-packages/packages/usr/bin/mysql',
+    '/layers/heroku_deb-packages/packages/usr/bin/mariadb'
+  ].filter(Boolean);
+
+  for (const bin of candidates) {
+    try {
+      await execFileAsync(bin, ['--version']);
+      return bin;
+    } catch {
+      // Ignore not found
+    }
+  }
+  return null;
+}
+
 /**
  * Executes a read-only SQL query against `commonswiki_p` on Wikimedia Wiki Replicas
  * using the standard Toolforge `mysql` client and `replica.my.cnf`.
  * Strictly adheres to Wikimedia DBA rules: queries indexed `cl_to`, `page_id`, `img_name`, `actor_id`.
  */
-async function queryCommonsReplicaTsv(cnfPath: string, sql: string): Promise<string[][]> {
+async function queryCommonsReplicaTsv(mysqlBin: string, cnfPath: string, sql: string): Promise<string[][]> {
   const host = process.env.WIKI_REPLICA_HOST || 'commonswiki.analytics.db.svc.wikimedia.cloud';
   const db = process.env.WIKI_REPLICA_DB || 'commonswiki_p';
 
   const { stdout } = await execFileAsync(
-    'mysql',
+    mysqlBin,
     [
       `--defaults-file=${cnfPath}`,
       '-h',
@@ -103,6 +124,7 @@ function escapeSqlLiteral(val: string): string {
  * directly from `commonswiki_p` using indexed `categorylinks` (`cl_to`) joins.
  */
 async function harvestCampaignViaReplicaSql(
+  mysqlBin: string,
   cnfPath: string,
   code: string
 ): Promise<{
@@ -131,7 +153,7 @@ async function harvestCampaignViaReplicaSql(
       WHERE cl.cl_to = '${dbCat}' AND cl.cl_type = 'file'
       GROUP BY a.actor_name;
     `;
-    const rows = await queryCommonsReplicaTsv(cnfPath, sql);
+    const rows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, sql);
     if (rows.length > 0) {
       activeCat = dbCat;
       for (const [rawUser, cntStr] of rows) {
@@ -166,7 +188,7 @@ async function harvestCampaignViaReplicaSql(
       INNER JOIN globalimagelinks gil ON gil.gil_to = p.page_title
       WHERE cl.cl_to = '${activeCat}' AND cl.cl_type = 'file';
     `;
-    const uRows = await queryCommonsReplicaTsv(cnfPath, usageSql);
+    const uRows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, usageSql);
     if (uRows.length > 0 && uRows[0][0]) {
       usedFilesCount = parseInt(uRows[0][0], 10) || 0;
     }
@@ -188,7 +210,7 @@ async function harvestCampaignViaReplicaSql(
         ORDER BY cnt DESC
         LIMIT 1;
       `;
-      const qRows = await queryCommonsReplicaTsv(cnfPath, qiSql);
+      const qRows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, qiSql);
       if (qRows.length > 0 && qRows[0][1]) {
         qualityCount = parseInt(qRows[0][1], 10) || 0;
       }
@@ -211,7 +233,7 @@ async function harvestCampaignViaReplicaSql(
         ORDER BY cnt DESC
         LIMIT 1;
       `;
-      const fRows = await queryCommonsReplicaTsv(cnfPath, fpSql);
+      const fRows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, fpSql);
       if (fRows.length > 0 && fRows[0][1]) {
         featuredCount = parseInt(fRows[0][1], 10) || 0;
       }
@@ -233,7 +255,12 @@ async function harvestCampaignViaReplicaSql(
  * Optional ToolsDB (`tools.db.svc.wikimedia.cloud`) schema & table synchronization.
  * Creates `<user>__camptools_p.campaign_editions` if `TOOLSDB_ENABLED=1` and `replica.my.cnf` is present.
  */
-async function syncRecordToToolsDb(cnfPath: string, dbName: string, rec: CampaignSnapshotRecord): Promise<void> {
+async function syncRecordToToolsDb(
+  mysqlBin: string,
+  cnfPath: string,
+  dbName: string,
+  rec: CampaignSnapshotRecord
+): Promise<void> {
   const host = process.env.TOOLSDB_HOST || 'tools.db.svc.wikimedia.cloud';
   const metrics = rec.structural_metrics || {
     total_uploads: 0,
@@ -277,7 +304,7 @@ async function syncRecordToToolsDb(cnfPath: string, dbName: string, rec: Campaig
     );
   `;
 
-  await execFileAsync('mysql', [`--defaults-file=${cnfPath}`, '-h', host, '-e', sql], {
+  await execFileAsync(mysqlBin, [`--defaults-file=${cnfPath}`, '-h', host, '-e', sql], {
     timeout: 30000
   });
 }
@@ -325,8 +352,9 @@ async function runDailySync(): Promise<void> {
   };
 
   const cnfPath = findReplicaCnf();
+  const mysqlBin = await findMysqlBinary();
   const toolsDbName = cnfPath ? resolveToolsDbName(cnfPath) : null;
-  const useReplicaSql = Boolean(cnfPath) && !args.includes('--api-only');
+  const useReplicaSql = Boolean(cnfPath && mysqlBin) && !args.includes('--api-only');
 
   console.log(
     JSON.stringify({
@@ -334,6 +362,7 @@ async function runDailySync(): Promise<void> {
       event: 'daily_sync_start',
       mode: useReplicaSql ? 'wiki_replica_sql' : 'commons_api',
       replica_cnf: cnfPath,
+      mysql_binary: mysqlBin,
       toolsdb_schema: toolsDbName,
       years: `${startYear}-${endYear}`,
       events_count: events.length,
@@ -368,10 +397,12 @@ async function runDailySync(): Promise<void> {
       }
     }
 
-    try {
-      if (useReplicaSql && cnfPath) {
-        const sqlRes = await harvestCampaignViaReplicaSql(cnfPath, code);
-        if (sqlRes) {
+    let harvested = false;
+
+    if (useReplicaSql && cnfPath && mysqlBin) {
+      try {
+        const sqlRes = await harvestCampaignViaReplicaSql(mysqlBin, cnfPath, code);
+        if (sqlRes && sqlRes.totalUploads > 0) {
           const uploadValues = Object.values(sqlRes.userCounts).sort((a, b) => b - a);
           const uploaderCount = uploadValues.length;
           const top10K = Math.max(1, Math.ceil(uploaderCount * 0.1));
@@ -405,48 +436,60 @@ async function runDailySync(): Promise<void> {
           };
           campaignsMap[code] = record;
           updatedCount++;
+          harvested = true;
 
           if (toolsDbName && sqlRes.totalUploads > 0) {
             try {
-              await syncRecordToToolsDb(cnfPath, toolsDbName, record);
+              await syncRecordToToolsDb(mysqlBin, cnfPath, toolsDbName, record);
             } catch {
               // Non-fatal if ToolsDB write is not enabled
             }
           }
-          return;
         }
+      } catch (err: any) {
+        console.warn(
+          JSON.stringify({
+            level: 'warn',
+            event: 'replica_sql_fallback',
+            code,
+            error: err?.message || String(err)
+          })
+        );
       }
+    }
 
-      // Fallback or API mode: harvest via Commons API & PTools
-      const countsMap = await getParticipantsWithUploadCounts(code);
-      const userCountsObj: Record<string, number> = {};
-      for (const [u, cnt] of countsMap.entries()) {
-        userCountsObj[u] = cnt;
-      }
-      const structural = await getCampaignStructuralMetrics(code);
-      const record: CampaignSnapshotRecord = {
-        code,
-        updated_at: new Date().toISOString(),
-        user_counts: userCountsObj,
-        structural_metrics: structural
-      };
-
-      if (deepRefresh && structural.total_uploads > 0) {
-        record.utility_deep = await computeContentUtilityDeep(code);
-        record.quality_deep = await computeQualityRecognitionDeep(code);
-      }
-
-      campaignsMap[code] = record;
-      updatedCount++;
-    } catch (err: any) {
-      console.error(
-        JSON.stringify({
-          level: 'warn',
-          event: 'campaign_sync_error',
+    if (!harvested) {
+      try {
+        const countsMap = await getParticipantsWithUploadCounts(code);
+        const userCountsObj: Record<string, number> = {};
+        for (const [u, cnt] of countsMap.entries()) {
+          userCountsObj[u] = cnt;
+        }
+        const structural = await getCampaignStructuralMetrics(code);
+        const record: CampaignSnapshotRecord = {
           code,
-          error: err?.message || String(err)
-        })
-      );
+          updated_at: new Date().toISOString(),
+          user_counts: userCountsObj,
+          structural_metrics: structural
+        };
+
+        if (deepRefresh && structural.total_uploads > 0) {
+          record.utility_deep = await computeContentUtilityDeep(code);
+          record.quality_deep = await computeQualityRecognitionDeep(code);
+        }
+
+        campaignsMap[code] = record;
+        updatedCount++;
+      } catch (err: any) {
+        console.error(
+          JSON.stringify({
+            level: 'warn',
+            event: 'campaign_sync_error',
+            code,
+            error: err?.message || String(err)
+          })
+        );
+      }
     }
   });
 
