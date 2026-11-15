@@ -357,3 +357,189 @@ test('FMT-01 & SYNC-01: ComparativeTableRow formats Latest/Average with units an
   analytics.setCommonsFetchMock(null);
 });
 
+test('UPGRADE-01: Pure-Node MariaDB/MySQL wire-protocol v10 client handshake & COM_QUERY parsing', async () => {
+  const { PassThrough } = await import('node:stream');
+  const { EventEmitter } = await import('node:events');
+  const { computeMysqlNativePasswordAuth, queryViaWireProtocol } = await import('../src/core/replicaClient.js');
+
+  // Verify deterministic 20-byte SHA-1 scramble output
+  const scramble = Buffer.from('12345678901234567890', 'utf8');
+  const token = computeMysqlNativePasswordAuth('test_secret', scramble);
+  assert.equal(token.length, 20, 'mysql_native_password scramble must be 20 bytes');
+
+  // Create an in-memory full-duplex socket mock speaking MariaDB wire protocol v10
+  const serverToClient = new PassThrough();
+  const clientToServer = new PassThrough();
+
+  const clientStream = new EventEmitter() as any;
+  serverToClient.on('data', (chunk) => clientStream.emit('data', chunk));
+  clientStream.write = (chunk: Buffer) => clientToServer.write(chunk);
+  clientStream.destroy = () => {
+    serverToClient.destroy();
+    clientToServer.destroy();
+  };
+
+  let stage = 'auth';
+  clientToServer.on('data', (chunk: Buffer) => {
+    if (stage === 'auth') {
+      stage = 'command';
+      const okPacket = Buffer.from([0x07, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00]);
+      serverToClient.write(okPacket);
+    } else if (stage === 'command') {
+      if (chunk[4] === 0x03) {
+        const makePacket = (seq: number, body: Buffer) => {
+          const h = Buffer.alloc(4);
+          h.writeUIntLE(body.length, 0, 3);
+          h[3] = seq;
+          return Buffer.concat([h, body]);
+        };
+        const makeLenEncStr = (s: string) => {
+          const b = Buffer.from(s, 'utf8');
+          return Buffer.concat([Buffer.from([b.length]), b]);
+        };
+        const colDef = (name: string) =>
+          Buffer.concat([
+            makeLenEncStr('def'),
+            makeLenEncStr('commonswiki_p'),
+            makeLenEncStr('actor'),
+            makeLenEncStr('actor'),
+            makeLenEncStr(name),
+            makeLenEncStr(name)
+          ]);
+        const eofBody = Buffer.from([0xfe, 0x00, 0x00, 0x02, 0x00]);
+        const row1 = Buffer.concat([makeLenEncStr('Alice'), makeLenEncStr('12')]);
+
+        serverToClient.write(
+          Buffer.concat([
+            makePacket(1, Buffer.from([2])),
+            makePacket(2, colDef('actor_name')),
+            makePacket(3, colDef('uploads')),
+            makePacket(4, eofBody),
+            makePacket(5, row1),
+            makePacket(6, eofBody)
+          ])
+        );
+      }
+    }
+  });
+
+  // Emit Initial Handshake Packet (v10) immediately after queryViaWireProtocol attaches listeners
+  setImmediate(() => {
+    const serverVersion = Buffer.from('10.6.18-MariaDB-log\0', 'utf8');
+    const threadId = Buffer.alloc(4);
+    threadId.writeUInt32LE(42, 0);
+    const authPart1 = Buffer.from('12345678', 'utf8');
+    const filler = Buffer.from([0x00]);
+    const capLower = Buffer.from([0xff, 0xf7]);
+    const charset = Buffer.from([0x21]);
+    const statusFlags = Buffer.from([0x02, 0x00]);
+    const capUpper = Buffer.from([0xff, 0x81]);
+    const authLen = Buffer.from([21]);
+    const reserved = Buffer.alloc(10, 0);
+    const authPart2 = Buffer.from('901234567890\0', 'utf8');
+    const pluginName = Buffer.from('mysql_native_password\0', 'utf8');
+
+    const greetingPayload = Buffer.concat([
+      Buffer.from([0x0a]),
+      serverVersion,
+      threadId,
+      authPart1,
+      filler,
+      capLower,
+      charset,
+      statusFlags,
+      capUpper,
+      authLen,
+      reserved,
+      authPart2,
+      pluginName
+    ]);
+    const greetingHeader = Buffer.alloc(4);
+    greetingHeader.writeUIntLE(greetingPayload.length, 0, 3);
+    greetingHeader[3] = 0;
+    serverToClient.write(Buffer.concat([greetingHeader, greetingPayload]));
+  });
+
+  const rows = await queryViaWireProtocol({
+    host: '127.0.0.1',
+    stream: clientStream,
+    user: 's54321',
+    password: 'test_secret',
+    database: 'commonswiki_p',
+    sql: 'SELECT actor_name, COUNT(*) AS uploads FROM revision',
+    timeoutMs: 3000
+  });
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows[0], ['Alice', '12']);
+});
+
+test('UPGRADE-04 & UPGRADE-05: Custom Category support and 30/60/90-day Post-Campaign Survival stats', async () => {
+  const customCode = 'Category:Images_from_Wiki_Loves_Science_2024_in_Germany';
+  const baseCustomCode = 'Category:Images_from_Wiki_Loves_Science_2023_in_Germany';
+
+  assert.equal(analytics.isCustomCategoryCode(customCode), true);
+  assert.equal(analytics.codeToCategory(customCode), 'Images_from_Wiki_Loves_Science_2024_in_Germany');
+  assert.ok(
+    analytics.getQualityCategoryCandidates(customCode).includes('Quality images from Wiki Loves Science 2024 in Germany')
+  );
+
+  analytics.primeParticipantCache(
+    baseCustomCode,
+    ['VeteranA'],
+    new Map([['VeteranA', 8]])
+  );
+  analytics.primeParticipantCache(
+    customCode,
+    ['VeteranA', 'Newcomer1', 'Newcomer2'],
+    new Map([
+      ['VeteranA', 12],
+      ['Newcomer1', 5],
+      ['Newcomer2', 2]
+    ])
+  );
+  analytics.primeParticipantCache(
+    'wlmde24',
+    ['VeteranA', 'Newcomer1'],
+    new Map([
+      ['VeteranA', 10],
+      ['Newcomer1', 4]
+    ])
+  );
+
+  analytics.setCommonsFetchMock(async (params: Record<string, string>) => {
+    if (params.list === 'usercontribs') {
+      if (params.ucuser === 'Newcomer1') {
+        return {
+          query: {
+            usercontribs: [
+              { days_after: 15, window: '30d' },
+              { days_after: 45, window: '60d' },
+              { days_after: 75, window: '90d' }
+            ]
+          }
+        };
+      }
+      return {
+        query: {
+          usercontribs: [{ days_after: 10, window: '30d' }]
+        }
+      };
+    }
+    return { query: { pages: {} } };
+  });
+
+  const healthRes = await analytics.computeHealthEvaluation(customCode, 'Northern & Western Europe');
+  assert.equal(healthRes.target_campaign, customCode);
+  assert.equal(healthRes.target_users_count, 3);
+  assert.ok(healthRes.survival_stats, 'HealthEvaluationResult must include survival_stats');
+  assert.equal(healthRes.survival_stats?.newcomers_evaluated, 2);
+  assert.equal(healthRes.survival_stats?.survived_30d_count, 2);
+  assert.equal(healthRes.survival_stats?.survived_60d_count, 1);
+  assert.equal(healthRes.survival_stats?.survived_90d_count, 1);
+  assert.equal(healthRes.survival_stats?.survived_30d_pct, 100);
+  assert.equal(healthRes.survival_stats?.survived_90d_pct, 50);
+
+  analytics.setCommonsFetchMock(null);
+});
+
+

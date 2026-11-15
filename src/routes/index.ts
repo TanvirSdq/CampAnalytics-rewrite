@@ -1,4 +1,7 @@
 import { Router, Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getGlobalContext } from '../core/context.js';
 import { handleHealth } from './health.js';
 import { handleInflux } from './influx.js';
@@ -8,6 +11,10 @@ import { handleDiversity } from './diversity.js';
 import { handleUtility } from './utility.js';
 import { handleQuality } from './quality.js';
 import { handleDocumentation } from './documentation.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, '../..');
 
 const router = Router();
 
@@ -47,6 +54,22 @@ router.get('/tools', (req: Request, res: Response) => {
     PAGE_TITLE: 'CampTools',
     mode: 'Tools'
   });
+});
+
+// Self-hosted TopoJSON asset endpoint for zero-external-dependency Choropleth projections
+router.get('/topojson/:filename', (req: Request, res: Response) => {
+  const filename = String(req.params.filename || '').replace(/[^a-zA-Z0-9_.-]/g, '');
+  if (!filename.endsWith('.json')) {
+    res.status(400).json({ error: 'Invalid TopoJSON filename' });
+    return;
+  }
+  const cachedFile = path.join(PROJECT_ROOT, 'data', 'topojson', filename);
+  if (fs.existsSync(cachedFile)) {
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    res.type('application/json').sendFile(cachedFile);
+    return;
+  }
+  res.status(404).json({ error: `TopoJSON asset '${filename}' not cached locally.` });
 });
 
 export default router;

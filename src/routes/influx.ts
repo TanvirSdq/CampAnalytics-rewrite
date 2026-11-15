@@ -195,7 +195,13 @@ export async function handleInfluxApi(req: Request, res: Response): Promise<void
   }
   try {
     const result = await analytics.computeYoYInflux(valid);
-    res.json({ influx_codes: valid, records: result.records, profile: result.lifecycle, summary: result.summary });
+    res.json({
+      influx_codes: valid,
+      records: result.records,
+      profile: result.lifecycle,
+      summary: result.summary,
+      survival_stats: result.survival_stats
+    });
   } catch (err: any) {
     console.error('Influx YoY computation failed:', err);
     res.status(500).json({ error: 'An internal error occurred while processing contributor influx trends.' });

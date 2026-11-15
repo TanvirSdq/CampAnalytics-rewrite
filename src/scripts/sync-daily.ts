@@ -4,32 +4,40 @@
  * Designed for Wikimedia Toolforge (`toolforge jobs load jobs.yaml`).
  * Supports two execution engines:
  *   1. Wiki Replica MariaDB SQL (`commonswiki.analytics.db.svc.wikimedia.cloud`)
- *      via `/data/project/camptools/replica.my.cnf` + optional ToolsDB persistence.
+ *      via `/data/project/camptools/replica.my.cnf` using pure-Node TCP wire protocol
+ *      (or `mysql` CLI if installed) + optional ToolsDB persistence.
  *   2. Concurrent Wikimedia Commons Action API & PTools harvesting fallback.
  *
  * Writes an atomic materialized snapshot (`camptools_daily_snapshot.json`) to
  * `$TOOL_DATA_DIR/data/` so the stateless webservice serves requests in <15ms.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-
 import {
   EVENT_MAP,
   COUNTRY_MAP,
+  COUNTRY_TO_REGION,
+  countryDisplayName,
   getCategoryCandidates,
   getQualityCategoryCandidates,
   getFeaturedCategoryCandidates,
   isEventScopedForCountry,
   isBotAccount,
   normalizeMediaWikiUsername,
+  resolveCommonsThumbUrl,
   getParticipantsWithUploadCounts,
   getCampaignStructuralMetrics,
   computeContentUtilityDeep,
   computeQualityRecognitionDeep
 } from '../core/analytics.js';
+
+import {
+  findReplicaCnf,
+  loadReplicaCredentials,
+  findMysqlBinary,
+  resolveToolsDbName,
+  escapeSqlLiteral,
+  executeMariaDbQuery
+} from '../core/replicaClient.js';
 
 import {
   loadDailySnapshot,
@@ -41,82 +49,17 @@ import {
 
 import { mapConcurrent } from '../core/utils.js';
 
-const execFileAsync = promisify(execFile);
-
-const REPLICA_CNF_CANDIDATES = [
-  process.env.REPLICA_MY_CNF || '',
-  process.env.TOOL_DATA_DIR ? path.join(process.env.TOOL_DATA_DIR, 'replica.my.cnf') : '',
-  '/data/project/camptools/replica.my.cnf',
-  path.join(process.env.HOME || '', 'replica.my.cnf')
-].filter(Boolean);
-
-function findReplicaCnf(): string | null {
-  for (const p of REPLICA_CNF_CANDIDATES) {
-    try {
-      if (fs.existsSync(p)) return p;
-    } catch {
-      // Ignore permission errors
-    }
-  }
-  return null;
-}
-
-async function findMysqlBinary(): Promise<string | null> {
-  const candidates = [
-    process.env.MYSQL_BIN || '',
-    'mysql',
-    '/usr/bin/mysql',
-    '/usr/local/bin/mysql',
-    '/layers/heroku_deb-packages/packages/usr/bin/mysql',
-    '/layers/heroku_deb-packages/packages/usr/bin/mariadb'
-  ].filter(Boolean);
-
-  for (const bin of candidates) {
-    try {
-      await execFileAsync(bin, ['--version']);
-      return bin;
-    } catch {
-      // Ignore not found
-    }
-  }
-  return null;
-}
-
-/**
- * Executes a read-only SQL query against `commonswiki_p` on Wikimedia Wiki Replicas
- * using the standard Toolforge `mysql` client and `replica.my.cnf`.
- * Strictly adheres to Wikimedia DBA rules: queries indexed `cl_to`, `page_id`, `img_name`, `actor_id`.
- */
-async function queryCommonsReplicaTsv(mysqlBin: string, cnfPath: string, sql: string): Promise<string[][]> {
-  const host = process.env.WIKI_REPLICA_HOST || 'commonswiki.analytics.db.svc.wikimedia.cloud';
-  const db = process.env.WIKI_REPLICA_DB || 'commonswiki_p';
-
-  const { stdout } = await execFileAsync(
+async function queryCommonsReplica(
+  cnfPath: string,
+  mysqlBin: string | null,
+  sql: string
+): Promise<string[][]> {
+  return executeMariaDbQuery({
+    cnfPath,
     mysqlBin,
-    [
-      `--defaults-file=${cnfPath}`,
-      '-h',
-      host,
-      '-D',
-      db,
-      '--batch',
-      '--raw',
-      '--skip-column-names',
-      '-e',
-      sql
-    ],
-    { timeout: 60000, maxBuffer: 32 * 1024 * 1024 }
-  );
-
-  if (!stdout || !stdout.trim()) return [];
-  return stdout
-    .trim()
-    .split('\n')
-    .map((line) => line.split('\t'));
-}
-
-function escapeSqlLiteral(val: string): string {
-  return val.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    sql,
+    timeoutMs: 60000
+  });
 }
 
 /**
@@ -124,15 +67,18 @@ function escapeSqlLiteral(val: string): string {
  * directly from `commonswiki_p` using indexed `categorylinks` (`cl_to`) joins.
  */
 async function harvestCampaignViaReplicaSql(
-  mysqlBin: string,
+  mysqlBin: string | null,
   cnfPath: string,
   code: string
 ): Promise<{
+  activeCategory: string;
   userCounts: Record<string, number>;
   totalUploads: number;
   usedFilesCount: number;
   qualityCount: number;
   featuredCount: number;
+  activeQiCat: string;
+  activeFpCat: string;
 } | null> {
   const categories = getCategoryCandidates(code);
   if (categories.length === 0) return null;
@@ -153,7 +99,7 @@ async function harvestCampaignViaReplicaSql(
       WHERE cl.cl_to = '${dbCat}' AND cl.cl_type = 'file'
       GROUP BY a.actor_name;
     `;
-    const rows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, sql);
+    const rows = await queryCommonsReplica(cnfPath, mysqlBin, sql);
     if (rows.length > 0) {
       activeCat = dbCat;
       for (const [rawUser, cntStr] of rows) {
@@ -170,11 +116,14 @@ async function harvestCampaignViaReplicaSql(
 
   if (!activeCat || totalUploads === 0) {
     return {
+      activeCategory: '',
       userCounts: {},
       totalUploads: 0,
       usedFilesCount: 0,
       qualityCount: 0,
-      featuredCount: 0
+      featuredCount: 0,
+      activeQiCat: '',
+      activeFpCat: ''
     };
   }
 
@@ -188,7 +137,7 @@ async function harvestCampaignViaReplicaSql(
       INNER JOIN globalimagelinks gil ON gil.gil_to = p.page_title
       WHERE cl.cl_to = '${activeCat}' AND cl.cl_type = 'file';
     `;
-    const uRows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, usageSql);
+    const uRows = await queryCommonsReplica(cnfPath, mysqlBin, usageSql);
     if (uRows.length > 0 && uRows[0][0]) {
       usedFilesCount = parseInt(uRows[0][0], 10) || 0;
     }
@@ -198,6 +147,7 @@ async function harvestCampaignViaReplicaSql(
 
   // Indexed Quality Images count
   let qualityCount = 0;
+  let activeQiCat = '';
   const qiCats = getQualityCategoryCandidates(code);
   if (qiCats.length > 0) {
     const inList = qiCats.map((c) => `'${escapeSqlLiteral(c.replace(/\s+/g, '_'))}'`).join(',');
@@ -210,8 +160,9 @@ async function harvestCampaignViaReplicaSql(
         ORDER BY cnt DESC
         LIMIT 1;
       `;
-      const qRows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, qiSql);
+      const qRows = await queryCommonsReplica(cnfPath, mysqlBin, qiSql);
       if (qRows.length > 0 && qRows[0][1]) {
+        activeQiCat = qRows[0][0] || '';
         qualityCount = parseInt(qRows[0][1], 10) || 0;
       }
     } catch {
@@ -221,6 +172,7 @@ async function harvestCampaignViaReplicaSql(
 
   // Indexed Featured Pictures count
   let featuredCount = 0;
+  let activeFpCat = '';
   const fpCats = getFeaturedCategoryCandidates(code);
   if (fpCats.length > 0) {
     const inList = fpCats.map((c) => `'${escapeSqlLiteral(c.replace(/\s+/g, '_'))}'`).join(',');
@@ -233,8 +185,9 @@ async function harvestCampaignViaReplicaSql(
         ORDER BY cnt DESC
         LIMIT 1;
       `;
-      const fRows = await queryCommonsReplicaTsv(mysqlBin, cnfPath, fpSql);
+      const fRows = await queryCommonsReplica(cnfPath, mysqlBin, fpSql);
       if (fRows.length > 0 && fRows[0][1]) {
+        activeFpCat = fRows[0][0] || '';
         featuredCount = parseInt(fRows[0][1], 10) || 0;
       }
     } catch {
@@ -243,20 +196,284 @@ async function harvestCampaignViaReplicaSql(
   }
 
   return {
+    activeCategory: activeCat,
     userCounts,
     totalUploads,
     usedFilesCount,
     qualityCount,
-    featuredCount
+    featuredCount,
+    activeQiCat,
+    activeFpCat
+  };
+}
+
+/**
+ * Harvests deep Content Utility metrics (`utility_deep`) via MariaDB Replica SQL
+ * so `/utility` loads in `0.002s` without live pagination.
+ */
+async function harvestUtilityDeepViaReplicaSql(
+  mysqlBin: string | null,
+  cnfPath: string,
+  code: string,
+  activeCat: string,
+  totalUploads: number,
+  distinctUploaders: number,
+  usedFilesCount: number
+): Promise<any | null> {
+  if (!activeCat || totalUploads === 0) return null;
+
+  const m = /^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/.exec(code);
+  const evt = m ? m[1] : 'wlm';
+  const cc = m ? m[2] : 'de';
+  const yr = m ? 2000 + parseInt(m[3], 10) : 2024;
+  const cName = countryDisplayName(cc);
+  const eventName = EVENT_MAP[evt] || evt.toUpperCase();
+  const primaryWiki = `${cc === 'de' ? 'de' : cc === 'it' ? 'it' : cc === 'fr' ? 'fr' : cc === 'es' ? 'es' : cc === 'bd' ? 'bn' : 'en'}.wikipedia.org`;
+
+  const sql = `
+    SELECT p.page_title, a.actor_name, gil.gil_wiki, gil.gil_page_title
+    FROM categorylinks cl
+    INNER JOIN page p ON p.page_id = cl.cl_from AND p.page_namespace = 6
+    INNER JOIN image img ON img.img_name = p.page_title
+    INNER JOIN actor_image a ON a.actor_id = img.img_actor
+    INNER JOIN globalimagelinks gil ON gil.gil_to = p.page_title
+    WHERE cl.cl_to = '${escapeSqlLiteral(activeCat)}' AND cl.cl_type = 'file'
+    LIMIT 15000;
+  `;
+
+  const rows = await queryCommonsReplica(cnfPath, mysqlBin, sql);
+  let totalUsages = 0;
+  const uniqueArticles = new Set<string>();
+  const projectDist: Record<string, number> = {};
+  const mediaUsages: any[] = [];
+  const uploaderUtility: Record<string, { used_files: Set<string>; total_usages: number; articles: Set<string> }> = {};
+
+  for (const [rawTitle, rawUser, rawWiki, rawArticle] of rows) {
+    const uploader = normalizeMediaWikiUsername(rawUser || '');
+    if (!uploader || isBotAccount(uploader)) continue;
+    const fileTitle = `File:${(rawTitle || '').replace(/_/g, ' ')}`;
+    const wiki = rawWiki || primaryWiki;
+    const art = (rawArticle || '').replace(/_/g, ' ');
+    totalUsages++;
+    projectDist[wiki] = (projectDist[wiki] || 0) + 1;
+    uniqueArticles.add(`${wiki}:${art}`);
+
+    if (!uploaderUtility[uploader]) {
+      uploaderUtility[uploader] = { used_files: new Set<string>(), total_usages: 0, articles: new Set<string>() };
+    }
+    uploaderUtility[uploader].used_files.add(rawTitle);
+    uploaderUtility[uploader].total_usages++;
+    uploaderUtility[uploader].articles.add(`${wiki}:${art}`);
+
+    if (mediaUsages.length < 25) {
+      mediaUsages.push({
+        file_title: (rawTitle || '').replace(/_/g, ' '),
+        full_title: fileTitle,
+        article: art,
+        wiki,
+        commons_url: `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(rawTitle || '')}`,
+        thumb_url: resolveCommonsThumbUrl(fileTitle)
+      });
+    }
+  }
+
+  const usageRate = totalUploads > 0 ? parseFloat(((usedFilesCount / totalUploads) * 100).toFixed(1)) : 0.0;
+  const topProject = Object.keys(projectDist).sort((a, b) => projectDist[b] - projectDist[a])[0] || primaryWiki;
+
+  const topPhotographers = Object.keys(uploaderUtility)
+    .filter((u) => !isBotAccount(u))
+    .sort((a, b) => uploaderUtility[b].total_usages - uploaderUtility[a].total_usages)
+    .slice(0, 15)
+    .map((u, i) => ({
+      rank: i + 1,
+      uploader: u,
+      username: u,
+      used_files_count: uploaderUtility[u].used_files.size,
+      used_images_count: uploaderUtility[u].used_files.size,
+      total_usages: uploaderUtility[u].total_usages,
+      distinct_articles_count: uploaderUtility[u].articles.size,
+      article_keys: Array.from(uploaderUtility[u].articles).slice(0, 200),
+      primary_wiki: primaryWiki
+    }));
+
+  const projectDistribution = Object.entries(projectDist)
+    .sort((a, b) => b[1] - a[1])
+    .map(([wiki, count]) => ({
+      project: wiki,
+      count,
+      percentage: totalUsages > 0 ? parseFloat(((count / totalUsages) * 100).toFixed(1)) : 0.0
+    }));
+
+  return {
+    code,
+    year: yr,
+    country: cName,
+    event: eventName,
+    global_utility_rate_pct: usageRate,
+    usage_rate_pct: usageRate,
+    total_global_usages: totalUsages,
+    unique_articles_count: uniqueArticles.size,
+    unique_article_keys: Array.from(uniqueArticles).slice(0, 500),
+    top_consuming_project: topProject,
+    total_sampled: totalUploads,
+    total_uploads: totalUploads,
+    distinct_uploaders: distinctUploaders,
+    distinct_used_images: usedFilesCount,
+    distinct_articles: uniqueArticles.size,
+    cross_wiki_projects_count: Object.keys(projectDist).length,
+    media_usages: mediaUsages,
+    top_photographers: topPhotographers,
+    project_distribution: projectDistribution
+  };
+}
+
+/**
+ * Harvests deep Quality Recognition metrics (`quality_deep`) via MariaDB Replica SQL
+ * so `/quality` loads in `0.002s` without live pagination.
+ */
+async function harvestQualityDeepViaReplicaSql(
+  mysqlBin: string | null,
+  cnfPath: string,
+  code: string,
+  totalUploads: number,
+  qiCount: number,
+  fpCount: number,
+  activeQiCat: string,
+  activeFpCat: string
+): Promise<any | null> {
+  const m = /^(all|wla|wlf|wle|wlm|wlb)([a-z]{0,2})(\d{2})$/.exec(code);
+  const evt = m ? m[1] : 'wlm';
+  const cc = m ? m[2] : 'de';
+  const yr = m ? 2000 + parseInt(m[3], 10) : 2024;
+  const cName = countryDisplayName(cc);
+  const eventName = EVENT_MAP[evt] || evt.toUpperCase();
+
+  const recognizedByTitle = new Map<string, any>();
+  const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
+  let dualHonoredCount = 0;
+
+  if (activeQiCat && qiCount > 0) {
+    const qiSql = `
+      SELECT p.page_title, a.actor_name
+      FROM categorylinks cl
+      INNER JOIN page p ON p.page_id = cl.cl_from AND p.page_namespace = 6
+      INNER JOIN image img ON img.img_name = p.page_title
+      INNER JOIN actor_image a ON a.actor_id = img.img_actor
+      WHERE cl.cl_to = '${escapeSqlLiteral(activeQiCat)}' AND cl.cl_type = 'file'
+      LIMIT 5000;
+    `;
+    const qiRows = await queryCommonsReplica(cnfPath, mysqlBin, qiSql);
+    for (const [rawTitle, rawUser] of qiRows) {
+      const uploader = normalizeMediaWikiUsername(rawUser || '');
+      if (!uploader || isBotAccount(uploader)) continue;
+      const title = `File:${(rawTitle || '').replace(/_/g, ' ')}`;
+      const commonsUrl = `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(rawTitle || '')}`;
+      if (!recognizedByTitle.has(title)) {
+        recognizedByTitle.set(title, {
+          title,
+          file_title: title,
+          thumb_url: resolveCommonsThumbUrl(title),
+          honors: ['Quality Image'],
+          uploader,
+          commons_url: commonsUrl,
+          details: 'Certified as Quality Image on Wikimedia Commons.'
+        });
+      }
+      if (!uploaderHonors[uploader]) uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+      uploaderHonors[uploader].qi++;
+    }
+  }
+
+  if (activeFpCat && fpCount > 0) {
+    const fpSql = `
+      SELECT p.page_title, a.actor_name
+      FROM categorylinks cl
+      INNER JOIN page p ON p.page_id = cl.cl_from AND p.page_namespace = 6
+      INNER JOIN image img ON img.img_name = p.page_title
+      INNER JOIN actor_image a ON a.actor_id = img.img_actor
+      WHERE cl.cl_to = '${escapeSqlLiteral(activeFpCat)}' AND cl.cl_type = 'file'
+      LIMIT 2000;
+    `;
+    const fpRows = await queryCommonsReplica(cnfPath, mysqlBin, fpSql);
+    for (const [rawTitle, rawUser] of fpRows) {
+      const uploader = normalizeMediaWikiUsername(rawUser || '');
+      if (!uploader || isBotAccount(uploader)) continue;
+      const title = `File:${(rawTitle || '').replace(/_/g, ' ')}`;
+      const commonsUrl = `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(rawTitle || '')}`;
+      const existing = recognizedByTitle.get(title);
+      if (existing) {
+        if (!existing.honors.includes('Featured Picture')) {
+          existing.honors.unshift('Featured Picture');
+          existing.details = 'Certified as Featured Picture and Quality Image on Wikimedia Commons.';
+          dualHonoredCount++;
+        }
+      } else {
+        recognizedByTitle.set(title, {
+          title,
+          file_title: title,
+          thumb_url: resolveCommonsThumbUrl(title),
+          honors: ['Featured Picture'],
+          uploader,
+          commons_url: commonsUrl,
+          details: 'Certified as Featured Picture on Wikimedia Commons.'
+        });
+      }
+      if (!uploaderHonors[uploader]) uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+      uploaderHonors[uploader].fp++;
+    }
+  }
+
+  const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => {
+    const aFp = a.honors.includes('Featured Picture') ? 1 : 0;
+    const bFp = b.honors.includes('Featured Picture') ? 1 : 0;
+    return bFp - aFp;
+  });
+  const totalRecognized = Math.max(recognizedByTitle.size, Math.max(0, fpCount + qiCount - dualHonoredCount));
+  const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
+  const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
+
+  const leaderboard = distinctHonoredPhotographers
+    .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
+    .slice(0, 10)
+    .map((u, i) => ({
+      rank: i + 1,
+      uploader: u,
+      username: u,
+      total_honors: uploaderHonors[u].qi + uploaderHonors[u].fp,
+      qi_count: uploaderHonors[u].qi,
+      fp_count: uploaderHonors[u].fp,
+      vi_count: 0,
+      recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp,
+      quality_share_pct:
+        totalRecognized > 0
+          ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp) / totalRecognized) * 100).toFixed(1))
+          : 0.0
+    }));
+
+  return {
+    code,
+    year: yr,
+    country: cName,
+    event: eventName,
+    total_uploads: totalUploads,
+    quality_rate_pct: qualityRate,
+    qi_count: qiCount,
+    fp_count: fpCount,
+    vi_count: 0,
+    honored_photographers_count: distinctHonoredPhotographers.length,
+    recognized_count: totalRecognized,
+    recognized_files: recognizedFiles.slice(0, 30),
+    leaderboard,
+    all_uploader_honors: uploaderHonors
   };
 }
 
 /**
  * Optional ToolsDB (`tools.db.svc.wikimedia.cloud`) schema & table synchronization.
- * Creates `<user>__camptools_p.campaign_editions` if `TOOLSDB_ENABLED=1` and `replica.my.cnf` is present.
+ * Creates `<user>__camptools_p.campaign_editions` if `replica.my.cnf` is present.
  */
 async function syncRecordToToolsDb(
-  mysqlBin: string,
+  mysqlBin: string | null,
   cnfPath: string,
   dbName: string,
   rec: CampaignSnapshotRecord
@@ -304,25 +521,14 @@ async function syncRecordToToolsDb(
     );
   `;
 
-  await execFileAsync(mysqlBin, [`--defaults-file=${cnfPath}`, '-h', host, '-e', sql], {
-    timeout: 30000
+  await executeMariaDbQuery({
+    host,
+    database: '',
+    sql,
+    cnfPath,
+    mysqlBin,
+    timeoutMs: 30000
   });
-}
-
-function resolveToolsDbName(cnfPath: string): string | null {
-  if (process.env.CAMPTOOLS_TOOLSDB_NAME) {
-    return process.env.CAMPTOOLS_TOOLSDB_NAME;
-  }
-  try {
-    const cnfContent = fs.readFileSync(cnfPath, 'utf-8');
-    const userMatch = /^\s*user\s*=\s*['"]?([a-zA-Z0-9_]+)['"]?/m.exec(cnfContent);
-    if (userMatch && userMatch[1]) {
-      return `${userMatch[1]}__camptools_p`;
-    }
-  } catch {
-    // Ignore read error
-  }
-  return null;
 }
 
 async function runDailySync(): Promise<void> {
@@ -352,18 +558,22 @@ async function runDailySync(): Promise<void> {
   };
 
   const cnfPath = findReplicaCnf();
+  const creds = loadReplicaCredentials(cnfPath);
   const mysqlBin = await findMysqlBinary();
   const toolsDbName = cnfPath ? resolveToolsDbName(cnfPath) : null;
-  const useReplicaSql = Boolean(cnfPath && mysqlBin) && !args.includes('--api-only');
+  // Pure-Node wire protocol works whenever replica.my.cnf credentials exist, even without /usr/bin/mysql!
+  const useReplicaSql = Boolean(creds || (cnfPath && mysqlBin)) && !args.includes('--api-only');
 
   console.log(
     JSON.stringify({
       level: 'info',
       event: 'daily_sync_start',
       mode: useReplicaSql ? 'wiki_replica_sql' : 'commons_api',
+      transport: creds ? 'pure_node_wire_protocol' : mysqlBin ? 'mysql_cli' : 'http_api',
       replica_cnf: cnfPath,
       mysql_binary: mysqlBin,
       toolsdb_schema: toolsDbName,
+      deep_refresh: deepRefresh,
       years: `${startYear}-${endYear}`,
       events_count: events.length,
       countries_count: countries.length,
@@ -385,11 +595,18 @@ async function runDailySync(): Promise<void> {
   let updatedCount = 0;
   let skippedHistoricalCount = 0;
   const nowMs = Date.now();
-  const dailyCadenceMs = 20 * 60 * 60 * 1000; // 20 hours cadence guarantees daily refresh while preventing intra-day retry stampedes
+  const dailyCadenceMs = 20 * 60 * 60 * 1000;
 
   await mapConcurrent(targetCodes, useReplicaSql ? 6 : 8, async ({ code, year }) => {
     const existing = campaignsMap[code];
-    if (!fullRefresh && existing) {
+    const shouldHarvestDeep = deepRefresh || year >= currentYear - 2;
+    const missingDeep =
+      shouldHarvestDeep &&
+      existing &&
+      (existing.structural_metrics?.total_uploads || 0) > 0 &&
+      (!existing.utility_deep || !existing.quality_deep);
+
+    if (!fullRefresh && existing && !missingDeep) {
       const updatedMs = Date.parse(existing.updated_at || '');
       if (!isNaN(updatedMs) && nowMs - updatedMs < dailyCadenceMs) {
         skippedHistoricalCount++;
@@ -399,7 +616,7 @@ async function runDailySync(): Promise<void> {
 
     let harvested = false;
 
-    if (useReplicaSql && cnfPath && mysqlBin) {
+    if (useReplicaSql && cnfPath) {
       try {
         const sqlRes = await harvestCampaignViaReplicaSql(mysqlBin, cnfPath, code);
         if (sqlRes && sqlRes.totalUploads > 0) {
@@ -434,6 +651,33 @@ async function runDailySync(): Promise<void> {
               sampled_files_count: sqlRes.totalUploads
             }
           };
+
+          if (shouldHarvestDeep) {
+            try {
+              record.utility_deep = await harvestUtilityDeepViaReplicaSql(
+                mysqlBin,
+                cnfPath,
+                code,
+                sqlRes.activeCategory,
+                sqlRes.totalUploads,
+                uploaderCount,
+                sqlRes.usedFilesCount
+              );
+              record.quality_deep = await harvestQualityDeepViaReplicaSql(
+                mysqlBin,
+                cnfPath,
+                code,
+                sqlRes.totalUploads,
+                sqlRes.qualityCount,
+                sqlRes.featuredCount,
+                sqlRes.activeQiCat,
+                sqlRes.activeFpCat
+              );
+            } catch {
+              // Non-fatal deep SQL error
+            }
+          }
+
           campaignsMap[code] = record;
           updatedCount++;
           harvested = true;
@@ -475,7 +719,7 @@ async function runDailySync(): Promise<void> {
           structural_metrics: structural
         };
 
-        if (deepRefresh && structural.total_uploads > 0) {
+        if (shouldHarvestDeep && structural.total_uploads > 0) {
           record.utility_deep = await computeContentUtilityDeep(code);
           record.quality_deep = await computeQualityRecognitionDeep(code);
         }
@@ -561,7 +805,7 @@ async function runDailySync(): Promise<void> {
         campaignsMap[allCode] = record;
         compositeAllCount++;
 
-        if (useReplicaSql && cnfPath && mysqlBin && toolsDbName) {
+        if (useReplicaSql && cnfPath && toolsDbName) {
           try {
             await syncRecordToToolsDb(mysqlBin, cnfPath, toolsDbName, record);
           } catch {
@@ -573,7 +817,7 @@ async function runDailySync(): Promise<void> {
   }
 
   const snapshotData: DailySnapshotStoreData = {
-    version: '1.1.0',
+    version: '1.2.0',
     generated_at: new Date().toISOString(),
     source: useReplicaSql ? 'wiki_replica_sql' : 'commons_api',
     campaigns: campaignsMap

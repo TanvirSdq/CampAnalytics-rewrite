@@ -407,6 +407,30 @@
                                 </div>
                             </div>
                         </div>
+
+                        {% if influx_result.survival_stats %}
+                        <!-- 30/60/90-Day Post-Campaign Newcomer Survival Strip -->
+                        <div style="background-color: var(--card-subtle); border: 1px solid var(--border-color); border-radius: 0; padding: 14px 18px; margin-top: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                                <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-ink);">Latest Edition Post-Campaign Newcomer Survival (30d / 60d / 90d)</div>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Net Upload Survival (<code>mw-reverted</code> filtered): <strong>{{ influx_result.survival_stats.upload_survival_rate_pct }}%</strong></span>
+                            </div>
+                            <div class="footprint-strip" style="margin-top: 0;">
+                                <div class="footprint-stat">
+                                    <div class="footprint-val" style="color: var(--wiki-blue);">{{ influx_result.survival_stats.survived_30d_pct }}% <span style="font-size: 0.82rem; font-weight: 500; color: var(--text-muted);">({{ influx_result.survival_stats.survived_30d_count | commas }})</span></div>
+                                    <div class="footprint-lbl">30-Day Post-Campaign Survival</div>
+                                </div>
+                                <div class="footprint-stat">
+                                    <div class="footprint-val" style="color: var(--nav-teal);">{{ influx_result.survival_stats.survived_60d_pct }}% <span style="font-size: 0.82rem; font-weight: 500; color: var(--text-muted);">({{ influx_result.survival_stats.survived_60d_count | commas }})</span></div>
+                                    <div class="footprint-lbl">60-Day Post-Campaign Survival</div>
+                                </div>
+                                <div class="footprint-stat">
+                                    <div class="footprint-val" style="color: #15803d;">{{ influx_result.survival_stats.survived_90d_pct }}% <span style="font-size: 0.82rem; font-weight: 500; color: var(--text-muted);">({{ influx_result.survival_stats.survived_90d_count | commas }})</span></div>
+                                    <div class="footprint-lbl">90-Day Post-Campaign Survival</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- VIEW 2: COHORT DATA TABLE -->

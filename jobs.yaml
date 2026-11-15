@@ -1,8 +1,9 @@
 # Wikimedia Toolforge Scheduled Jobs Manifest (toolforge jobs load jobs.yaml)
-# Runs daily at 03:15 UTC to harvest and pre-aggregate campaign data from
-# Wikimedia Commons Replicas / Action API into ToolsDB & persistent storage.
+# Runs daily at 03:15 UTC to harvest and pre-aggregate campaign data (including
+# --deep Content Utility & Quality Recognition leaderboards) from Wikimedia
+# Commons Replicas / Action API into ToolsDB & persistent storage.
 - name: camptools-daily-sync
-  command: npm run sync:daily
+  command: npm run sync:daily -- --deep
   image: tool-camptools/tool-camptools:latest
   schedule: "15 3 * * *"
   mount: all

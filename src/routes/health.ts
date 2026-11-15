@@ -203,6 +203,7 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     target_users_count: result ? result.target_users_count : 0,
     base_users_count: result ? result.baseline_users_count : 0,
     intersect_users_count: result ? result.overlap_users_count : 0,
+    survival_stats: result ? result.survival_stats : null,
     overall_report: result ? result.overall_report : null
   });
 }
@@ -213,16 +214,19 @@ export async function handleHealthApi(req: Request, res: Response): Promise<void
     res.status(400).json({ error: 'Missing target_campaign parameter' });
     return;
   }
-  const m = analytics.CODE_RE.exec(targetCampaign.toLowerCase());
-  if (!m) {
+  const isCustom = analytics.isCustomCategoryCode(targetCampaign);
+  const m = !isCustom ? analytics.CODE_RE.exec(targetCampaign.toLowerCase()) : null;
+  if (!m && !isCustom) {
     res.status(400).json({ error: `Invalid campaign code format '${targetCampaign}'` });
     return;
   }
-  const [, evt, cc] = m;
-  const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
-  if (scopeNotice) {
-    res.status(400).json({ error: scopeNotice });
-    return;
+  if (m) {
+    const [, evt, cc] = m;
+    const scopeNotice = analytics.getCampaignScopeNotice(evt, cc);
+    if (scopeNotice) {
+      res.status(400).json({ error: scopeNotice });
+      return;
+    }
   }
   try {
     const region = asScalarString(req.query.region).trim();
