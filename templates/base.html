@@ -311,12 +311,101 @@
         const EVENT_SCOPE_MAP = {{ EVENT_COUNTRY_SCOPE | tojson }};
         const COUNTRY_NAME_MAP = {{ COUNTRY_MAP | tojson }};
 
-        // Choropleth Regional Scope Selector
+        // Choropleth Regional Scope Selector Presets
+        const CHOROPLETH_SCOPE_PRESETS = {
+            world: {
+                'geo.scope': 'world',
+                'geo.projection.type': 'natural earth',
+                'geo.projection.rotation.lon': 0,
+                'geo.projection.rotation.lat': 0,
+                'geo.projection.scale': 1,
+                'geo.center.lon': 0,
+                'geo.center.lat': 12,
+                'geo.lonaxis.range': null,
+                'geo.lataxis.range': null
+            },
+            europe: {
+                'geo.scope': 'europe',
+                'geo.projection.type': 'mercator',
+                'geo.projection.rotation.lon': 0,
+                'geo.projection.rotation.lat': 0,
+                'geo.projection.scale': 1,
+                'geo.center.lon': null,
+                'geo.center.lat': null,
+                'geo.lonaxis.range': null,
+                'geo.lataxis.range': null
+            },
+            africa: {
+                'geo.scope': 'africa',
+                'geo.projection.type': 'mercator',
+                'geo.projection.rotation.lon': 0,
+                'geo.projection.rotation.lat': 0,
+                'geo.projection.scale': 1,
+                'geo.center.lon': null,
+                'geo.center.lat': null,
+                'geo.lonaxis.range': null,
+                'geo.lataxis.range': null
+            },
+            asia: {
+                'geo.scope': 'asia',
+                'geo.projection.type': 'mercator',
+                'geo.projection.rotation.lon': 0,
+                'geo.projection.rotation.lat': 0,
+                'geo.projection.scale': 1,
+                'geo.center.lon': null,
+                'geo.center.lat': null,
+                'geo.lonaxis.range': null,
+                'geo.lataxis.range': null
+            },
+            americas: {
+                'geo.scope': 'world',
+                'geo.projection.type': 'mercator',
+                'geo.projection.rotation.lon': 0,
+                'geo.projection.rotation.lat': 0,
+                'geo.projection.scale': 1,
+                'geo.center.lon': -82,
+                'geo.center.lat': 14,
+                'geo.lonaxis.range': [-145, -25],
+                'geo.lataxis.range': [-56, 72]
+            },
+            'north america': {
+                'geo.scope': 'north america',
+                'geo.projection.type': 'mercator',
+                'geo.projection.rotation.lon': 0,
+                'geo.projection.rotation.lat': 0,
+                'geo.projection.scale': 1,
+                'geo.center.lon': null,
+                'geo.center.lat': null,
+                'geo.lonaxis.range': null,
+                'geo.lataxis.range': null
+            },
+            'south america': {
+                'geo.scope': 'south america',
+                'geo.projection.type': 'mercator',
+                'geo.projection.rotation.lon': 0,
+                'geo.projection.rotation.lat': 0,
+                'geo.projection.scale': 1,
+                'geo.center.lon': null,
+                'geo.center.lat': null,
+                'geo.lonaxis.range': null,
+                'geo.lataxis.range': null
+            }
+        };
+
         function setChoroplethScope(scopeName, btn) {
-            if (typeof Plotly !== 'undefined' && document.getElementById('retention-worldmap')) {
-                Plotly.relayout('retention-worldmap', {
-                    'geo.scope': scopeName
-                });
+            const mapEl = document.getElementById('retention-worldmap');
+            if (typeof Plotly !== 'undefined' && mapEl) {
+                const normKey = (scopeName || '').toLowerCase().trim();
+                const update = CHOROPLETH_SCOPE_PRESETS[normKey] || {
+                    'geo.scope': normKey,
+                    'geo.projection.type': 'mercator',
+                    'geo.projection.rotation.lon': 0,
+                    'geo.center.lon': null,
+                    'geo.center.lat': null,
+                    'geo.lonaxis.range': null,
+                    'geo.lataxis.range': null
+                };
+                Plotly.relayout(mapEl, update);
                 document.querySelectorAll('.map-scope-btn').forEach(b => b.classList.remove('active'));
                 if (btn) btn.classList.add('active');
             }
