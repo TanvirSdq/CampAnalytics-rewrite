@@ -2954,7 +2954,7 @@ export async function computePostCampaignSurvival(
   newcomerUsers?: Set<string>,
   totalUploadsInput?: number,
   fallbackNewcomerCount?: number
-): Promise<PostCampaignSurvivalStats> {
+): Promise<PostCampaignSurvivalStats | undefined> {
   const clean = isCustomCategoryCode(code) ? normalizeCampaignKey(code) : code.replace(/\s+/g, '').toLowerCase();
   if (!_commonsFetchMock) {
     const snap = getSnapshotCampaignRecord(clean);
@@ -2964,28 +2964,13 @@ export async function computePostCampaignSurvival(
   }
 
   const users = newcomerUsers || (await getParticipants(code));
-  const countsMap = await getParticipantsWithUploadCounts(code);
-  const totalUploads = typeof totalUploadsInput === 'number' && totalUploadsInput > 0
-    ? totalUploadsInput
-    : Array.from(countsMap.values()).reduce((a, b) => a + b, 0);
   const newcomersTotal = typeof fallbackNewcomerCount === 'number' ? fallbackNewcomerCount : users.size;
 
   if (newcomersTotal === 0) {
-    return {
-      newcomers_evaluated: 0,
-      survived_30d_count: 0,
-      survived_60d_count: 0,
-      survived_90d_count: 0,
-      survived_30d_pct: 0,
-      survived_60d_pct: 0,
-      survived_90d_pct: 0,
-      reverted_uploads_count: 0,
-      net_surviving_uploads_count: totalUploads,
-      upload_survival_rate_pct: totalUploads > 0 ? 100 : 0
-    };
+    return undefined;
   }
 
-  // If a custom mock or live API provides usercontribs for sampled newcomers, inspect post-campaign windows
+  // If a custom mock or live API provides authentic usercontribs for sampled newcomers, inspect post-campaign windows
   if (_commonsFetchMock && newcomerUsers && newcomerUsers.size > 0 && newcomerUsers.size <= 15) {
     let s30 = 0;
     let s60 = 0;
@@ -3013,8 +2998,6 @@ export async function computePostCampaignSurvival(
     }
     if (anyContribsMocked) {
       const n = newcomerUsers.size;
-      const revEst = Math.min(totalUploads, Math.round(totalUploads * 0.012));
-      const netUp = Math.max(0, totalUploads - revEst);
       return {
         newcomers_evaluated: n,
         survived_30d_count: s30,
@@ -3022,49 +3005,17 @@ export async function computePostCampaignSurvival(
         survived_90d_count: s90,
         survived_30d_pct: parseFloat(((s30 / n) * 100).toFixed(1)),
         survived_60d_pct: parseFloat(((s60 / n) * 100).toFixed(1)),
-        survived_90d_pct: parseFloat(((s90 / n) * 100).toFixed(1)),
-        reverted_uploads_count: revEst,
-        net_surviving_uploads_count: netUp,
-        upload_survival_rate_pct: totalUploads > 0 ? parseFloat(((netUp / totalUploads) * 100).toFixed(1)) : 100
+        survived_90d_pct: parseFloat(((s90 / n) * 100).toFixed(1))
       };
     }
   }
 
-  // Cohort-calibrated survival model based on multi-upload engagement distribution
-  let multiUploaders = 0;
-  let powerUploaders = 0;
-  for (const [, c] of countsMap.entries()) {
-    if (c >= 2) multiUploaders++;
-    if (c >= 6) powerUploaders++;
-  }
-  const totalCohort = Math.max(1, countsMap.size);
-  const multiRatio = multiUploaders / totalCohort;
-  const powerRatio = powerUploaders / totalCohort;
-
-  const rate30 = Math.min(0.65, Math.max(0.12, 0.14 + multiRatio * 0.32));
-  const rate60 = Math.min(rate30, Math.max(0.07, rate30 * 0.64 + powerRatio * 0.12));
-  const rate90 = Math.min(rate60, Math.max(0.04, rate60 * 0.72 + powerRatio * 0.08));
-
-  const s30Count = Math.min(newcomersTotal, Math.max(1, Math.round(newcomersTotal * rate30)));
-  const s60Count = Math.min(s30Count, Math.max(0, Math.round(newcomersTotal * rate60)));
-  const s90Count = Math.min(s60Count, Math.max(0, Math.round(newcomersTotal * rate90)));
-
-  const revertedUploads = totalUploads > 0 ? Math.max(0, Math.round(totalUploads * 0.014)) : 0;
-  const netSurvivingUploads = Math.max(0, totalUploads - revertedUploads);
-  const uploadSurvivalPct = totalUploads > 0 ? parseFloat(((netSurvivingUploads / totalUploads) * 100).toFixed(1)) : 100.0;
-
-  return {
-    newcomers_evaluated: newcomersTotal,
-    survived_30d_count: s30Count,
-    survived_60d_count: s60Count,
-    survived_90d_count: s90Count,
-    survived_30d_pct: parseFloat(((s30Count / newcomersTotal) * 100).toFixed(1)),
-    survived_60d_pct: parseFloat(((s60Count / newcomersTotal) * 100).toFixed(1)),
-    survived_90d_pct: parseFloat(((s90Count / newcomersTotal) * 100).toFixed(1)),
-    reverted_uploads_count: revertedUploads,
-    net_surviving_uploads_count: netSurvivingUploads,
-    upload_survival_rate_pct: uploadSurvivalPct
-  };
+  // Strict Zero-Synthetic Invariant:
+  // Never fabricate survival rates with heuristic multipliers or decay models.
+  // If authentic empirical post-campaign tracking is not recorded in the snapshot
+  // or verifiable via primary database logs, return undefined so no synthetic
+  // indicators are presented.
+  return undefined;
 }
 
 export async function computeHealthEvaluation(

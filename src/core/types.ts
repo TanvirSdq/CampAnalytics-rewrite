@@ -96,9 +96,9 @@ export interface PostCampaignSurvivalStats {
   survived_30d_pct: number;
   survived_60d_pct: number;
   survived_90d_pct: number;
-  reverted_uploads_count: number;
-  net_surviving_uploads_count: number;
-  upload_survival_rate_pct: number;
+  reverted_uploads_count?: number;
+  net_surviving_uploads_count?: number;
+  upload_survival_rate_pct?: number;
   net_survival_rate_pct?: number;
 }
 

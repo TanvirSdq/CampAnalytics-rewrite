@@ -540,6 +540,15 @@ test('UPGRADE-04 & UPGRADE-05: Custom Category support and 30/60/90-day Post-Cam
   assert.equal(healthRes.survival_stats?.survived_90d_pct, 50);
 
   analytics.setCommonsFetchMock(null);
+
+  // Strict Zero-Synthetic Invariant check:
+  // When no authentic post-campaign tracking or snapshot records exist, survival_stats MUST be undefined
+  const unmockedSurvival = await analytics.computePostCampaignSurvival('wlmbd24');
+  assert.equal(
+    unmockedSurvival,
+    undefined,
+    'Zero-Synthetic Invariant: computePostCampaignSurvival must return undefined when authentic tracking is absent'
+  );
 });
 
 
