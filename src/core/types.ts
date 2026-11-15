@@ -87,21 +87,6 @@ export interface GlobalRetentionDataRow {
   events: string[];
 }
 
-export interface PostCampaignSurvivalStats {
-  newcomers_evaluated: number;
-  cohort_size?: number;
-  survived_30d_count: number;
-  survived_60d_count: number;
-  survived_90d_count: number;
-  survived_30d_pct: number;
-  survived_60d_pct: number;
-  survived_90d_pct: number;
-  reverted_uploads_count?: number;
-  net_surviving_uploads_count?: number;
-  upload_survival_rate_pct?: number;
-  net_survival_rate_pct?: number;
-}
-
 export interface OverallCampaignReport {
   campaign_code: string;
   campaign_name: string;
@@ -130,7 +115,6 @@ export interface OverallCampaignReport {
   benchmarks_median?: HealthBenchmarks;
   historical_series?: HistoricalEditionPoint[];
   peer_comparisons?: PeerComparisonPoint[];
-  survival_stats?: PostCampaignSurvivalStats;
   insights?: any[];
 }
 
@@ -173,7 +157,6 @@ export interface HealthEvaluationResult {
   historical_series?: HistoricalEditionPoint[];
   peer_comparisons?: PeerComparisonPoint[];
   overall_report?: OverallCampaignReport;
-  survival_stats?: PostCampaignSurvivalStats;
 }
 
 export interface InfluxRecord {
@@ -191,7 +174,6 @@ export interface InfluxResult {
   records: InfluxRecord[];
   lifecycle?: any;
   summary?: any;
-  survival_stats?: PostCampaignSurvivalStats;
 }
 
 export interface HeatmapItem {

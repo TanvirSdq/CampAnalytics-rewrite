@@ -473,7 +473,7 @@ test('UPGRADE-01: Pure-Node MariaDB/MySQL wire-protocol v10 client handshake & C
   assert.deepEqual(rows[0], ['Alice', '12']);
 });
 
-test('UPGRADE-04 & UPGRADE-05: Custom Category support and 30/60/90-day Post-Campaign Survival stats', async () => {
+test('UPGRADE-04: Custom Category support for ad-hoc Commons campaigns', async () => {
   const customCode = 'Category:Images_from_Wiki_Loves_Science_2024_in_Germany';
   const baseCustomCode = 'Category:Images_from_Wiki_Loves_Science_2023_in_Germany';
 
@@ -497,58 +497,16 @@ test('UPGRADE-04 & UPGRADE-05: Custom Category support and 30/60/90-day Post-Cam
       ['Newcomer2', 2]
     ])
   );
-  analytics.primeParticipantCache(
-    'wlmde24',
-    ['VeteranA', 'Newcomer1'],
-    new Map([
-      ['VeteranA', 10],
-      ['Newcomer1', 4]
-    ])
-  );
 
-  analytics.setCommonsFetchMock(async (params: Record<string, string>) => {
-    if (params.list === 'usercontribs') {
-      if (params.ucuser === 'Newcomer1') {
-        return {
-          query: {
-            usercontribs: [
-              { days_after: 15, window: '30d' },
-              { days_after: 45, window: '60d' },
-              { days_after: 75, window: '90d' }
-            ]
-          }
-        };
-      }
-      return {
-        query: {
-          usercontribs: [{ days_after: 10, window: '30d' }]
-        }
-      };
-    }
-    return { query: { pages: {} } };
-  });
+  analytics.setCommonsFetchMock(async () => ({ query: { pages: {} } }));
 
   const healthRes = await analytics.computeHealthEvaluation(customCode, 'Northern & Western Europe');
   assert.equal(healthRes.target_campaign, customCode);
   assert.equal(healthRes.target_users_count, 3);
-  assert.ok(healthRes.survival_stats, 'HealthEvaluationResult must include survival_stats');
-  assert.equal(healthRes.survival_stats?.newcomers_evaluated, 2);
-  assert.equal(healthRes.survival_stats?.survived_30d_count, 2);
-  assert.equal(healthRes.survival_stats?.survived_60d_count, 1);
-  assert.equal(healthRes.survival_stats?.survived_90d_count, 1);
-  assert.equal(healthRes.survival_stats?.survived_30d_pct, 100);
-  assert.equal(healthRes.survival_stats?.survived_90d_pct, 50);
+  assert.equal(healthRes.baseline_users_count, 1);
+  assert.equal(healthRes.overlap_users_count, 1);
 
   analytics.setCommonsFetchMock(null);
-
-  // Strict Zero-Synthetic Invariant check:
-  // When no authentic post-campaign tracking or snapshot records exist, survival_stats MUST be undefined
-  const unmockedSurvival = await analytics.computePostCampaignSurvival('wlmbd24');
-  assert.equal(
-    unmockedSurvival,
-    undefined,
-    'Zero-Synthetic Invariant: computePostCampaignSurvival must return undefined when authentic tracking is absent'
-  );
 });
 
 

@@ -7,7 +7,6 @@ import {
   HealthEvaluationResult,
   HistoricalEditionPoint,
   PeerComparisonPoint,
-  PostCampaignSurvivalStats,
   OverallCampaignReport,
   TimeSeriesPoint,
   CountrySeries,
@@ -34,7 +33,6 @@ export type {
   HealthEvaluationResult,
   HistoricalEditionPoint,
   PeerComparisonPoint,
-  PostCampaignSurvivalStats,
   OverallCampaignReport,
   TimeSeriesPoint,
   CountrySeries,
@@ -1445,7 +1443,6 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
     repeat_2_3: number;
     core_4_plus: number;
   };
-  survival_stats?: PostCampaignSurvivalStats;
 }> {
   const cleanedCodes = campaignCodes.map((c) => c.replace(/\s+/g, '').toLowerCase()).filter((c) => CODE_RE.test(c));
   const codeToUsers = await fetchAllConcurrently(cleanedCodes);
@@ -1599,16 +1596,7 @@ export async function computeYoYInflux(campaignCodes: string[]): Promise<{
     };
   }
 
-  let survival_stats: PostCampaignSurvivalStats | undefined = undefined;
-  if (records.length > 0) {
-    const latestRec = records[records.length - 1];
-    const latestCode = yearToCodes[latestRec.year]?.[0] || cleanedCodes[cleanedCodes.length - 1];
-    if (latestCode) {
-      survival_stats = await computePostCampaignSurvival(latestCode, undefined, undefined, latestRec.new_contributors);
-    }
-  }
-
-  return { records, summary, lifecycle, survival_stats };
+  return { records, summary, lifecycle };
 }
 
 // Generate an SVG stacked bar chart with secondary cumulative pool line for YoY influx
@@ -2949,75 +2937,6 @@ export function resolveRegionName(input?: string, fallbackCc?: string): string {
   return 'Northern & Western Europe';
 }
 
-export async function computePostCampaignSurvival(
-  code: string,
-  newcomerUsers?: Set<string>,
-  totalUploadsInput?: number,
-  fallbackNewcomerCount?: number
-): Promise<PostCampaignSurvivalStats | undefined> {
-  const clean = isCustomCategoryCode(code) ? normalizeCampaignKey(code) : code.replace(/\s+/g, '').toLowerCase();
-  if (!_commonsFetchMock) {
-    const snap = getSnapshotCampaignRecord(clean);
-    if (snap && snap.survival_stats) {
-      return snap.survival_stats;
-    }
-  }
-
-  const users = newcomerUsers || (await getParticipants(code));
-  const newcomersTotal = typeof fallbackNewcomerCount === 'number' ? fallbackNewcomerCount : users.size;
-
-  if (newcomersTotal === 0) {
-    return undefined;
-  }
-
-  // If a custom mock or live API provides authentic usercontribs for sampled newcomers, inspect post-campaign windows
-  if (_commonsFetchMock && newcomerUsers && newcomerUsers.size > 0 && newcomerUsers.size <= 15) {
-    let s30 = 0;
-    let s60 = 0;
-    let s90 = 0;
-    let anyContribsMocked = false;
-    for (const u of Array.from(newcomerUsers)) {
-      try {
-        const ucData = await fetchCommonsApi({
-          action: 'query',
-          list: 'usercontribs',
-          ucuser: u,
-          uclimit: '50',
-          ucprop: 'timestamp|tags'
-        }, 4000);
-        const contribs = ucData?.query?.usercontribs;
-        if (Array.isArray(contribs)) {
-          anyContribsMocked = true;
-          if (contribs.some((c: any) => c.window === '30d' || c.days_after >= 1)) s30++;
-          if (contribs.some((c: any) => c.window === '60d' || c.days_after >= 31)) s60++;
-          if (contribs.some((c: any) => c.window === '90d' || c.days_after >= 61)) s90++;
-        }
-      } catch {
-        // Ignore individual usercontribs fallback error
-      }
-    }
-    if (anyContribsMocked) {
-      const n = newcomerUsers.size;
-      return {
-        newcomers_evaluated: n,
-        survived_30d_count: s30,
-        survived_60d_count: s60,
-        survived_90d_count: s90,
-        survived_30d_pct: parseFloat(((s30 / n) * 100).toFixed(1)),
-        survived_60d_pct: parseFloat(((s60 / n) * 100).toFixed(1)),
-        survived_90d_pct: parseFloat(((s90 / n) * 100).toFixed(1))
-      };
-    }
-  }
-
-  // Strict Zero-Synthetic Invariant:
-  // Never fabricate survival rates with heuristic multipliers or decay models.
-  // If authentic empirical post-campaign tracking is not recorded in the snapshot
-  // or verifiable via primary database logs, return undefined so no synthetic
-  // indicators are presented.
-  return undefined;
-}
-
 export async function computeHealthEvaluation(
   targetEvent: string,
   regionInput?: string,
@@ -3331,17 +3250,6 @@ export async function computeHealthEvaluation(
   const usageShare = targetStructural.usage_share || 0;
   const qualityShare = targetStructural.quality_image_share || 0;
 
-  const newcomerUserSet = new Set<string>();
-  for (const u of targetUsers) {
-    if (!allPriorUsers.has(u)) newcomerUserSet.add(u);
-  }
-  const survivalStats = await computePostCampaignSurvival(
-    targetEvent,
-    newcomerUserSet,
-    totalUploadsEst,
-    newcomerCount
-  );
-
   const overallReport: OverallCampaignReport = {
     campaign_code: isCustom ? targetEvent : targetEvent.toLowerCase(),
     campaign_name: isCustom && customCat ? customCat.replace(/_/g, ' ') : (EVENT_MAP[eventType] ? `Wiki Loves ${EVENT_MAP[eventType]}` : eventType.toUpperCase()),
@@ -3369,8 +3277,7 @@ export async function computeHealthEvaluation(
     benchmarks_median,
     benchmarks_mean,
     historical_series: historicalSeries,
-    peer_comparisons: peerComparisons,
-    survival_stats: survivalStats
+    peer_comparisons: peerComparisons
   };
 
   return {
@@ -3386,7 +3293,6 @@ export async function computeHealthEvaluation(
     benchmarks_mean,
     historical_series: historicalSeries,
     peer_comparisons: peerComparisons,
-    survival_stats: survivalStats,
     overall_report: overallReport
   };
 }

@@ -199,8 +199,7 @@ export async function handleInfluxApi(req: Request, res: Response): Promise<void
       influx_codes: valid,
       records: result.records,
       profile: result.lifecycle,
-      summary: result.summary,
-      survival_stats: result.survival_stats
+      summary: result.summary
     });
   } catch (err: any) {
     console.error('Influx YoY computation failed:', err);

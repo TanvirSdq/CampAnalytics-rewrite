@@ -22,20 +22,6 @@ export interface CampaignSnapshotRecord {
   };
   utility_deep?: any;
   quality_deep?: any;
-  survival_stats?: {
-    newcomers_evaluated: number;
-    cohort_size?: number;
-    survived_30d_count: number;
-    survived_60d_count: number;
-    survived_90d_count: number;
-    survived_30d_pct: number;
-    survived_60d_pct: number;
-    survived_90d_pct: number;
-    reverted_uploads_count?: number;
-    net_surviving_uploads_count?: number;
-    upload_survival_rate_pct?: number;
-    net_survival_rate_pct?: number;
-  };
 }
 
 export interface DailySnapshotStoreData {

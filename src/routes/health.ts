@@ -203,7 +203,6 @@ export async function handleHealth(req: Request, res: Response): Promise<void> {
     target_users_count: result ? result.target_users_count : 0,
     base_users_count: result ? result.baseline_users_count : 0,
     intersect_users_count: result ? result.overlap_users_count : 0,
-    survival_stats: result ? result.survival_stats : null,
     overall_report: result ? result.overall_report : null
   });
 }
