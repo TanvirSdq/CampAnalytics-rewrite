@@ -177,7 +177,7 @@
                     <div class="tier-bar-header">
                         <span>{{ rec.year }} ({{ rec.code }})</span>
                         <span style="color: var(--text-muted); font-weight: normal;">
-                            {{ rec.total_users|format }} uploaders · {{ rec.total_uploads|format }} media submissions · Gini: <strong>{{ rec.gini_coefficient }}</strong>
+                            {{ rec.total_users|commas }} uploaders · {{ rec.total_uploads|commas }} media submissions · Gini: <strong>{{ rec.gini_coefficient }}</strong>
                         </span>
                     </div>
                     <div class="tier-bar-track">
@@ -419,10 +419,10 @@ function renderNativeSvgLineChart(years, shares, pct) {
         var tick = yTicks[i];
         var yPos = getY(tick);
         svg += '<line x1="' + padLeft + '" y1="' + yPos + '" x2="' + (width - padRight) + '" y2="' + yPos + '" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="' + (tick === 0 ? 'none' : '3,3') + '" />';
-        svg += '<text x="' + (padLeft - 10) + '" y="' + (yPos + 4) + '" font-size="11" fill="#72777d" text-anchor="end">' + tick + '%</text>';
+        svg += '<text x="' + (padLeft - 10) + '" y="' + (yPos + 4) + '" font-size="11" fill="#54595d" text-anchor="end">' + tick + '%</text>';
     }
 
-    svg += '<line x1="' + padLeft + '" y1="' + getY(0) + '" x2="' + (width - padRight) + '" y2="' + getY(0) + '" stroke="#72777d" stroke-width="1.5" />';
+    svg += '<line x1="' + padLeft + '" y1="' + getY(0) + '" x2="' + (width - padRight) + '" y2="' + getY(0) + '" stroke="#54595d" stroke-width="1.5" />';
 
     var pts = [];
     for (var j = 0; j < numPts; j++) {

@@ -305,7 +305,7 @@
                                 <span>Total Global Usages</span>
                                 <span class="stat-kpi-badge badge-positive">Embeds</span>
                             </div>
-                            <div class="stat-kpi-value">{{ utility_result.total_global_usages }}</div>
+                            <div class="stat-kpi-value">{{ utility_result.total_global_usages|commas }}</div>
                             <div class="stat-kpi-subtext">Cumulative page embeds across wikis</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -313,7 +313,7 @@
                                 <span>Articles Reached</span>
                                 <span class="stat-kpi-badge badge-neutral">Reach</span>
                             </div>
-                            <div class="stat-kpi-value">{{ utility_result.unique_articles_count }}</div>
+                            <div class="stat-kpi-value">{{ utility_result.unique_articles_count|commas }}</div>
                             <div class="stat-kpi-subtext">Distinct articles illustrating content</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -329,7 +329,7 @@
                                 <span>Evaluated Upload Pool</span>
                                 <span class="stat-kpi-badge badge-neutral">Sample</span>
                             </div>
-                            <div class="stat-kpi-value">{{ utility_result.total_sampled }}</div>
+                            <div class="stat-kpi-value">{{ utility_result.total_sampled|commas }}</div>
                             <div class="stat-kpi-subtext">Submissions sampled for usage</div>
                         </div>
                     </div>
@@ -395,9 +395,9 @@
                                                         {{ p.uploader }}
                                                     </a>
                                                 </td>
-                                                <td style="text-align: right; font-weight: 600;">{{ p.used_files_count }}</td>
-                                                <td style="text-align: right; font-weight: 600; color: #0369a1;">{{ p.distinct_articles_count }}</td>
-                                                <td style="text-align: right; font-weight: 700; color: #7c3aed;">{{ p.total_usages }}</td>
+                                                <td style="text-align: right; font-weight: 600;">{{ p.used_files_count|commas }}</td>
+                                                <td style="text-align: right; font-weight: 600; color: #0369a1;">{{ p.distinct_articles_count|commas }}</td>
+                                                <td style="text-align: right; font-weight: 700; color: #7c3aed;">{{ p.total_usages|commas }}</td>
                                             </tr>
                                         {% else %}
                                             <tr>
@@ -459,7 +459,7 @@
                                             <tr>
                                                 <td>
                                                     {% if row.thumb_url %}
-                                                        <img src="{{ row.thumb_url }}" alt="Thumb" class="media-thumb-img" loading="lazy" style="border-radius: 0;">
+                                                        <img src="{{ row.thumb_url }}" alt="" class="media-thumb-img" loading="lazy" referrerpolicy="no-referrer" style="border-radius: 0;" onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(('{{ (row.full_title or row.file_title) | replace(\"'\", \"\\\\'\") }}').replace(/^File:/i, '').replace(/ /g, '_')) + '?width=120';}else{this.outerHTML='<div class=&quot;media-thumb-img&quot; style=&quot;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.7rem;border-radius:0;&quot;>File</div>';}">
                                                     {% else %}
                                                         <div class="media-thumb-img" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.7rem; border-radius: 0;">File</div>
                                                     {% endif %}

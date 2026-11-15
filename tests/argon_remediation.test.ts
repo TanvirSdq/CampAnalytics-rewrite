@@ -328,3 +328,32 @@ test('UTIL-ALL-01 & QUAL-PAG-01: All Campaigns unique articles deduplication, QI
 
   analytics.setCommonsFetchMock(null);
 });
+
+test('FMT-01 & SYNC-01: ComparativeTableRow formats Latest/Average with units and Gini precision', async () => {
+  analytics.setCommonsFetchMock(async () => ({ query: { pages: {} } }));
+  analytics.primeParticipantCache('wlmde21', ['U1', 'U2', 'U3', 'U4'], new Map([['U1', 50], ['U2', 5], ['U3', 2], ['U4', 1]]));
+  analytics.primeParticipantCache('wlmde22', ['U1', 'U2'], new Map([['U1', 40], ['U2', 10]]));
+
+  const retComp = await analytics.computeComparativeAnalytics({
+    module: 'retention',
+    eventType: 'wlm',
+    countryCodes: ['de'],
+    startYear: 2022,
+    endYear: 2022
+  });
+  assert.equal(retComp.table_data.rows[0].latest_formatted, '50.0%');
+  assert.equal(retComp.table_data.rows[0].average_formatted, '50.0%');
+
+  const divComp = await analytics.computeComparativeAnalytics({
+    module: 'diversity',
+    eventType: 'wlm',
+    countryCodes: ['de'],
+    startYear: 2021,
+    endYear: 2022
+  });
+  assert.match(divComp.table_data.rows[0].latest_formatted || '', /^\d+\.\d{3}$/, 'Gini latest_formatted must have 3 decimal places');
+  assert.match(divComp.table_data.rows[0].average_formatted || '', /^\d+\.\d{3}$/, 'Gini average_formatted must have 3 decimal places');
+
+  analytics.setCommonsFetchMock(null);
+});
+

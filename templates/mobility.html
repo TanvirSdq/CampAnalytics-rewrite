@@ -80,7 +80,7 @@
             <div class="camp-shell-right">
                 <span class="camp-telemetry-badge">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    <span>Ecosystem · <strong>{{ mobility_result.total_unique_ecosystem_users|format }}</strong> Photographers</span>
+                    <span>Ecosystem · <strong>{{ mobility_result.total_unique_ecosystem_users|commas }}</strong> Photographers</span>
                 </span>
                 <button type="button" class="btn-share-permalink" onclick="copyPermalink()" title="Copy shareable permalink to clipboard">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -96,7 +96,7 @@
         <div class="scorecard-grid" style="margin: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
             <div class="scorecard-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 14px;">
                 <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Ecosystem Total</div>
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-ink);">{{ mobility_result.total_unique_ecosystem_users|format }}</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-ink);">{{ mobility_result.total_unique_ecosystem_users|commas }}</div>
                 <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Unique participants across all campaigns</div>
             </div>
 
@@ -114,7 +114,7 @@
             <div class="scorecard-card" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 0; padding: 14px;">
                 <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Highest Shared Pool</div>
                 {% if mobility_result.summary.highest_overlap %}
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #008080;">{{ mobility_result.summary.highest_overlap.count|format }}</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #008080;">{{ mobility_result.summary.highest_overlap.count|commas }}</div>
                     <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">{{ mobility_result.summary.highest_overlap.source }} ∩ {{ mobility_result.summary.highest_overlap.target }}</div>
                 {% else %}
                     <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-muted);">0</div>
@@ -161,7 +161,7 @@
                             <th>
                                 <div>{{ row.source_name }}</div>
                                 <div style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted); margin-top: 2px;">
-                                    {{ row.source_users_count|format }} uploaders
+                                    {{ row.source_users_count|commas }} uploaders
                                 </div>
                             </th>
                         {% endfor %}
@@ -173,7 +173,7 @@
                             <td class="matrix-row-header">
                                 <div>{{ row.source_name }}</div>
                                 <div style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted); margin-top: 2px;">
-                                    {{ row.source_users_count|format }} uploaders
+                                    {{ row.source_users_count|commas }} uploaders
                                 </div>
                             </td>
                             {% for cell in row.cells %}
@@ -212,7 +212,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="camp-data-table" id="mobility-data-table">
+                <table class="camp-data-table" id="mobility-data-table" data-sortable="true">
                     <thead>
                         <tr>
                             <th>Source Campaign</th>

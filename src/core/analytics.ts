@@ -2070,6 +2070,16 @@ export function generateHealthMetrics(
 // CONTENT UTILITY DEEP ANALYSIS
 // =========================================================================
 
+export function resolveCommonsThumbUrl(fileTitle: string, rawThumbUrl?: string): string {
+  if (rawThumbUrl && typeof rawThumbUrl === 'string' && rawThumbUrl.trim()) {
+    // Normalize non-standard 300px widths to Wikimedia standard 120px step size to avoid Thumbor 429 rate-limits
+    return rawThumbUrl.trim().replace(/\/\d+px-/g, '/120px-');
+  }
+  const cleanFile = (fileTitle || '').replace(/^File:/i, '').trim().replace(/\s+/g, '_');
+  if (!cleanFile) return '';
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(cleanFile)}?width=120`;
+}
+
 export async function computeContentUtilityDeep(targetCampaign: string): Promise<any> {
   const clean = targetCampaign.replace(/\s+/g, '').toLowerCase();
   const ttl = getCampaignTtlMs(clean);
@@ -2080,6 +2090,11 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
   if (!_commonsFetchMock) {
     const snap = getSnapshotCampaignRecord(clean);
     if (snap && snap.utility_deep) {
+      if (Array.isArray(snap.utility_deep.media_usages)) {
+        for (const mu of snap.utility_deep.media_usages) {
+          mu.thumb_url = resolveCommonsThumbUrl(mu.full_title || mu.file_title, mu.thumb_url);
+        }
+      }
       _utilityDeepCache.set(clean, { data: snap.utility_deep, ts: Date.now() }, ttl);
       return snap.utility_deep;
     }
@@ -2264,7 +2279,7 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
             gcmlimit: '500',
             prop: 'imageinfo|globalusage',
             iiprop: 'user|url',
-            iiurlwidth: '300',
+            iiurlwidth: '120',
             gulimit: '500',
             ...(continueParams || {})
           };
@@ -2279,7 +2294,7 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
             const ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
             const rawUser = ii.user || '';
             const uploader = normalizeMediaWikiUsername(rawUser);
-            const thumbUrl = ii.thumburl || '';
+            const thumbUrl = resolveCommonsThumbUrl(title, ii.thumburl);
             const descUrl = ii.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
             if (gu.length > 0 && (!rawUser || (uploader && !isBotAccount(uploader)))) {
@@ -2396,6 +2411,11 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
   if (!_commonsFetchMock) {
     const snap = getSnapshotCampaignRecord(clean);
     if (snap && snap.quality_deep) {
+      if (Array.isArray(snap.quality_deep.recognized_files)) {
+        for (const rf of snap.quality_deep.recognized_files) {
+          rf.thumb_url = resolveCommonsThumbUrl(rf.title || rf.file_title, rf.thumb_url);
+        }
+      }
       _qualityDeepCache.set(clean, { data: snap.quality_deep, ts: Date.now() }, ttl);
       return snap.quality_deep;
     }
@@ -2577,7 +2597,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
                 gcmlimit: '500',
                 prop: 'imageinfo',
                 iiprop: 'user|timestamp|url',
-                iiurlwidth: '300'
+                iiurlwidth: '120'
               };
               if (gcmContinue) {
                 queryParams.gcmcontinue = gcmContinue;
@@ -2591,7 +2611,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
                 const rawUser = ii.user || '';
                 const uploader = normalizeMediaWikiUsername(rawUser);
                 if (!uploader || isBotAccount(uploader)) continue;
-                const thumb = ii.thumburl || '';
+                const thumb = resolveCommonsThumbUrl(title, ii.thumburl);
                 const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
                 if (!recognizedByTitle.has(title)) {
@@ -2652,7 +2672,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
                 gcmlimit: '500',
                 prop: 'imageinfo',
                 iiprop: 'user|timestamp|url',
-                iiurlwidth: '300'
+                iiurlwidth: '120'
               };
               if (gcmContinue) {
                 queryParams.gcmcontinue = gcmContinue;
@@ -2665,10 +2685,11 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
                 const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
                 const uploader = normalizeMediaWikiUsername(ii.user || '');
                 if (!uploader || isBotAccount(uploader)) continue;
-                const thumb = ii.thumburl || '';
+                const thumb = resolveCommonsThumbUrl(title, ii.thumburl);
                 const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
                 const existing = recognizedByTitle.get(title);
                 if (existing) {
+                  if (thumb) existing.thumb_url = thumb;
                   if (!existing.honors.includes('Featured Picture')) {
                     existing.honors.unshift('Featured Picture');
                     existing.details = 'Certified as Featured Picture and Quality Image on Wikimedia Commons.';
@@ -3439,6 +3460,20 @@ export async function computeComparativeAnalytics(
     }
 
     // Compute summary stats
+    const isGiniMetric = module === 'diversity' && !(params.metricKey === 'top_10_percent_share' || params.metricKey === 'top10_share');
+    const isQualRateMetric = module === 'quality' && (params.metricKey === 'quality_rate_pct' || params.metricKey === 'quality_rate');
+    const isPctMetric =
+      module === 'retention' ||
+      module === 'mobility' ||
+      isQualRateMetric ||
+      (module === 'influx' && (params.metricKey === 'newcomer_share_pct' || params.metricKey === 'newcomer_share')) ||
+      (module === 'utility' &&
+        (params.metricKey === 'utility_rate' ||
+          params.metricKey === 'utility_rate_pct' ||
+          params.metricKey === 'global_utility_rate' ||
+          params.metricKey === 'global_utility_rate_pct')) ||
+      (module === 'diversity' && (params.metricKey === 'top_10_percent_share' || params.metricKey === 'top10_share'));
+
     const validPoints = points.filter((p) => p.value !== null);
     const latestPoint = validPoints.length > 0 ? validPoints[validPoints.length - 1] : null;
     const latestYear = latestPoint ? latestPoint.year : endYear;
@@ -3446,9 +3481,23 @@ export async function computeComparativeAnalytics(
     const latestFormatted = latestPoint ? latestPoint.formatted_value : '—';
     const minValue = validPoints.length > 0 ? Math.min(...validPoints.map((p) => p.value!)) : 0;
     const maxValue = validPoints.length > 0 ? Math.max(...validPoints.map((p) => p.value!)) : 0;
-    const avgValue = validPoints.length > 0
-      ? parseFloat((validPoints.reduce((sum, p) => sum + p.value!, 0) / validPoints.length).toFixed(1))
+    const rawAvg = validPoints.length > 0
+      ? validPoints.reduce((sum, p) => sum + p.value!, 0) / validPoints.length
       : 0;
+    const avgValue = validPoints.length > 0
+      ? parseFloat(rawAvg.toFixed(isGiniMetric ? 3 : isQualRateMetric ? 2 : 1))
+      : 0;
+    const avgFormatted = validPoints.length === 0
+      ? '—'
+      : isGiniMetric
+      ? avgValue.toFixed(3)
+      : isQualRateMetric
+      ? `${avgValue.toFixed(2)}%`
+      : isPctMetric
+      ? `${avgValue.toFixed(1)}%`
+      : Number.isInteger(avgValue)
+      ? avgValue.toLocaleString()
+      : avgValue.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
     let yoyChangePct: number | null = null;
     if (validPoints.length >= 2) {
@@ -3473,6 +3522,7 @@ export async function computeComparativeAnalytics(
         yoy_change_pct: yoyChangePct
       }
     });
+    (series[series.length - 1].summary as any).avg_formatted = avgFormatted;
   }
 
   // Build ComparativeTableRow[]
@@ -3494,7 +3544,9 @@ export async function computeComparativeAnalytics(
       values,
       formatted_values,
       latest: s.summary.latest_value,
+      latest_formatted: s.summary.latest_formatted || String(s.summary.latest_value),
       average: s.summary.avg_value,
+      average_formatted: (s.summary as any).avg_formatted || String(s.summary.avg_value),
       yoy_change: yoy,
       yoy_change_formatted: yoyFormatted,
       is_positive: isPositive

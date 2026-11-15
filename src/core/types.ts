@@ -222,7 +222,9 @@ export interface ComparativeTableRow {
   values: Record<number, number | null>;
   formatted_values: Record<number, string>;
   latest: number | null;
+  latest_formatted?: string;
   average: number | null;
+  average_formatted?: string;
   yoy_change: number | null;
   yoy_change_formatted?: string;
   is_positive?: boolean | null;

@@ -99,6 +99,7 @@ export function saveDailySnapshot(data: DailySnapshotStoreData): string {
 }
 
 export function getSnapshotCampaignRecord(code: string): CampaignSnapshotRecord | null {
+  if (process.env.CAMPTOOLS_BYPASS_SNAPSHOT === '1') return null;
   const snap = loadDailySnapshot();
   if (!snap || !snap.campaigns) return null;
   const clean = code.replace(/\s+/g, '').toLowerCase();

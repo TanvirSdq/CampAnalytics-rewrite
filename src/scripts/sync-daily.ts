@@ -459,6 +459,8 @@ async function runDailySync(): Promise<void> {
     }
 
     if (!harvested) {
+      const prevBypass = process.env.CAMPTOOLS_BYPASS_SNAPSHOT;
+      process.env.CAMPTOOLS_BYPASS_SNAPSHOT = '1';
       try {
         const countsMap = await getParticipantsWithUploadCounts(code);
         const userCountsObj: Record<string, number> = {};
@@ -489,6 +491,12 @@ async function runDailySync(): Promise<void> {
             error: err?.message || String(err)
           })
         );
+      } finally {
+        if (prevBypass === undefined) {
+          delete process.env.CAMPTOOLS_BYPASS_SNAPSHOT;
+        } else {
+          process.env.CAMPTOOLS_BYPASS_SNAPSHOT = prevBypass;
+        }
       }
     }
   });

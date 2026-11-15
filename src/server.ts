@@ -36,7 +36,7 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: https://upload.wikimedia.org https://commons.wikimedia.org; connect-src 'self' https://commons.wikimedia.org; frame-ancestors 'none';"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.plot.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://upload.wikimedia.org https://commons.wikimedia.org https://*.wikimedia.org; connect-src 'self' https://commons.wikimedia.org https://upload.wikimedia.org https://cdn.plot.ly https://cdn.jsdelivr.net; frame-ancestors 'none';"
   );
   next();
 });

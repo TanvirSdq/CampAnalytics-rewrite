@@ -304,7 +304,7 @@
                                 <span>Quality Images (QI)</span>
                                 <span class="stat-kpi-badge badge-positive">Community Reviewed</span>
                             </div>
-                            <div class="stat-kpi-value">{{ quality_result.qi_count }}</div>
+                            <div class="stat-kpi-value">{{ quality_result.qi_count|commas }}</div>
                             <div class="stat-kpi-subtext">Assessed by Commons Quality Image reviewers</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -312,7 +312,7 @@
                                 <span>Featured Pictures (FP)</span>
                                 <span class="stat-kpi-badge badge-neutral">Featured</span>
                             </div>
-                            <div class="stat-kpi-value">{{ quality_result.fp_count }}</div>
+                            <div class="stat-kpi-value">{{ quality_result.fp_count|commas }}</div>
                             <div class="stat-kpi-subtext">Featured media files on Commons</div>
                         </div>
                         <div class="stat-kpi-card">
@@ -320,7 +320,7 @@
                                 <span>Top Photographers</span>
                                 <span class="stat-kpi-badge badge-positive">Contributors</span>
                             </div>
-                            <div class="stat-kpi-value">{{ quality_result.honored_photographers_count }}</div>
+                            <div class="stat-kpi-value">{{ quality_result.honored_photographers_count|commas }}</div>
                             <div class="stat-kpi-subtext">Distinct recognized photographers</div>
                         </div>
                     </div>
@@ -334,24 +334,24 @@
                             <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 16px; margin-bottom: 20px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                     <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-ink); text-transform: uppercase; letter-spacing: 0.5px;">Award Category Distribution</span>
-                                    <span style="font-size: 0.78rem; color: var(--text-muted);">{{ total_h }} Total Awards</span>
+                                    <span style="font-size: 0.78rem; color: var(--text-muted);">{{ total_h|commas }} Total Awards</span>
                                 </div>
                                 <div style="display: flex; height: 14px; border-radius: 0; overflow: hidden; background: #e2e8f0; gap: 2px;">
                                     {% if quality_result.fp_count > 0 %}
-                                        <div style="width: {{ (quality_result.fp_count / total_h * 100)|round(1) }}%; background: #eab308;" title="Featured Pictures: {{ quality_result.fp_count }} ({{ (quality_result.fp_count / total_h * 100)|round(1) }}%)"></div>
+                                        <div style="width: {{ (quality_result.fp_count / total_h * 100)|round(1) }}%; background: #eab308;" title="Featured Pictures: {{ quality_result.fp_count|commas }} ({{ (quality_result.fp_count / total_h * 100)|round(1) }}%)"></div>
                                     {% endif %}
                                     {% if quality_result.qi_count > 0 %}
-                                        <div style="width: {{ (quality_result.qi_count / total_h * 100)|round(1) }}%; background: #0284c7;" title="Quality Images: {{ quality_result.qi_count }} ({{ (quality_result.qi_count / total_h * 100)|round(1) }}%)"></div>
+                                        <div style="width: {{ (quality_result.qi_count / total_h * 100)|round(1) }}%; background: #0284c7;" title="Quality Images: {{ quality_result.qi_count|commas }} ({{ (quality_result.qi_count / total_h * 100)|round(1) }}%)"></div>
                                     {% endif %}
                                 </div>
                                 <div style="display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap;">
                                     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
                                         <span style="width: 8px; height: 8px; border-radius: 0; background: #eab308; display: inline-block;"></span>
-                                        <span>Featured Pictures (FP): <strong>{{ quality_result.fp_count }}</strong></span>
+                                        <span>Featured Pictures (FP): <strong>{{ quality_result.fp_count|commas }}</strong></span>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
                                         <span style="width: 8px; height: 8px; border-radius: 0; background: #0284c7; display: inline-block;"></span>
-                                        <span>Quality Images (QI): <strong>{{ quality_result.qi_count }}</strong></span>
+                                        <span>Quality Images (QI): <strong>{{ quality_result.qi_count|commas }}</strong></span>
                                     </div>
                                 </div>
                             </div>
@@ -385,7 +385,7 @@
                                              <tr>
                                                 <td>
                                                     {% if row.thumb_url %}
-                                                        <img src="{{ row.thumb_url }}" alt="Thumb" class="media-thumb-img" loading="lazy" style="border-radius: 0;">
+                                                        <img src="{{ row.thumb_url }}" alt="" class="media-thumb-img" loading="lazy" referrerpolicy="no-referrer" style="border-radius: 0;" onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(('{{ row.title | replace(\"'\", \"\\\\'\") }}').replace(/^File:/i, '').replace(/ /g, '_')) + '?width=120';}else{this.outerHTML='<div class=&quot;media-thumb-img&quot; style=&quot;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.7rem;border-radius:0;&quot;>QI</div>';}">
                                                     {% else %}
                                                         <div class="media-thumb-img" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.7rem; border-radius: 0;">QI</div>
                                                     {% endif %}
@@ -478,9 +478,9 @@
                                                         {{ p.uploader }}
                                                     </a>
                                                 </td>
-                                                <td style="text-align: right; font-weight: 700; color: #ca8a04;">{{ p.total_honors }}</td>
-                                                <td style="text-align: right; font-weight: 600; color: #0369a1;">{{ p.qi_count }}</td>
-                                                <td style="text-align: right; font-weight: 600; color: #92400e;">{{ p.fp_count }}</td>
+                                                <td style="text-align: right; font-weight: 700; color: #ca8a04;">{{ p.total_honors|commas }}</td>
+                                                <td style="text-align: right; font-weight: 600; color: #0369a1;">{{ p.qi_count|commas }}</td>
+                                                <td style="text-align: right; font-weight: 600; color: #92400e;">{{ p.fp_count|commas }}</td>
                                             </tr>
                                         {% else %}
                                             <tr>

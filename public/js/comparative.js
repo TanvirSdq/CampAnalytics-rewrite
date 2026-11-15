@@ -850,8 +850,17 @@ var CampComparativeSuite = (function () {
         html += '<td style="font-variant-numeric: tabular-nums;">' + escapeHtml(String(fmt)) + '</td>';
       });
 
-      html += '<td style="font-weight: 600; font-variant-numeric: tabular-nums;">' + escapeHtml(String(row.latest !== null && row.latest !== undefined ? row.latest : '—')) + '</td>' +
-        '<td style="font-variant-numeric: tabular-nums;">' + escapeHtml(String(row.average !== null && row.average !== undefined ? row.average : '—')) + '</td>';
+      var latestDisp = row.latest_formatted ||
+        (row.latest !== null && row.latest !== undefined
+          ? (state.data.indicator_unit === '%' ? row.latest + '%' : (typeof row.latest === 'number' ? row.latest.toLocaleString() : row.latest))
+          : '—');
+      var avgDisp = row.average_formatted ||
+        (row.average !== null && row.average !== undefined
+          ? (state.data.indicator_unit === '%' ? row.average + '%' : (typeof row.average === 'number' ? row.average.toLocaleString() : row.average))
+          : '—');
+
+      html += '<td style="font-weight: 600; font-variant-numeric: tabular-nums;">' + escapeHtml(String(latestDisp)) + '</td>' +
+        '<td style="font-variant-numeric: tabular-nums;">' + escapeHtml(String(avgDisp)) + '</td>';
 
       var yoyClass = row.is_positive === true ? 'badge-positive' : (row.is_positive === false ? 'badge-negative' : 'badge-neutral');
       var yoyDisplay = row.yoy_change_formatted || (typeof row.yoy_change === 'number' ? ((row.yoy_change >= 0 ? '+' : '') + row.yoy_change.toFixed(1) + '%') : (row.yoy_change || '—'));
