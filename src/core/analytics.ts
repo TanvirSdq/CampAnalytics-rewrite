@@ -1128,10 +1128,10 @@ export function createWorldMapHtml(
             text: ${jsonHover},
             hoverinfo: 'text',
             colorscale: [
-              [0.0, '#f0f9ff'],
-              [0.2, '#bae6fd'],
-              [0.45, '#38bdf8'],
-              [0.75, '#2563eb'],
+              [0.0, '#eff6ff'],
+              [0.2, '#bfdbfe'],
+              [0.48, '#60a5fa'],
+              [0.72, '#2563eb'],
               [1.0, '#1e40af']
             ],
             autocolorscale: false,
@@ -1249,24 +1249,24 @@ export function createHeatmapSvg(events: Record<string, Set<string>>, countryNam
 
   function getColor(pct: number): string {
     const clamped = Math.max(0, Math.min(100, pct));
-    if (clamped === 100) return '#0f172a'; // Full retention / self-cohort (Solid Dark Slate)
-    if (clamped >= 70) return '#172554';   // Peak Longitudinal Overlap (Solid Midnight Navy)
-    if (clamped >= 50) return '#1e3a8a';   // Exceptional Overlap >50% (Solid Deep Navy)
-    if (clamped >= 40) return '#1e40af';   // Very High upper (Solid Deep Cobalt)
-    if (clamped >= 30) return '#1d4ed8';   // Very High entry (Solid Royal Blue)
-    if (clamped >= 23) return '#2563eb';   // High (Solid Vivid Blue)
-    if (clamped >= 18) return '#0284c7';   // Sustained upper (Solid Ocean Blue)
-    if (clamped >= 13) return '#0ea5e9';   // Sustained (Solid Sky Blue)
-    if (clamped >= 9) return '#38bdf8';    // Developing upper (Solid Vibrant Light Blue)
-    if (clamped >= 5) return '#bae6fd';    // Developing (Solid Soft Sky Blue)
-    if (clamped > 0) return '#f0f9ff';     // Low (Solid Pale Ice Blue)
+    if (clamped === 100) return '#0f172a'; // Full retention / self-cohort (Solid Dark Slate, L=11%)
+    if (clamped >= 75) return '#172554';   // Peak Longitudinal Overlap (Solid Midnight Navy, L=21%)
+    if (clamped >= 60) return '#1e3a8a';   // Exceptional Overlap (Solid Deep Navy, L=33%)
+    if (clamped >= 45) return '#1e40af';   // Very High upper (Solid Dark Sapphire, L=40%)
+    if (clamped >= 35) return '#1d4ed8';   // Very High mid (Solid Deep Blue, L=48%)
+    if (clamped >= 27) return '#2563eb';   // Very High entry (Solid Royal Blue, L=53%)
+    if (clamped >= 20) return '#3b82f6';   // High (Solid Vivid Blue, L=60%)
+    if (clamped >= 15) return '#60a5fa';   // Sustained upper (Solid Light Blue, L=68%)
+    if (clamped >= 10) return '#93c5fd';   // Sustained baseline (Solid Soft Blue, L=79%)
+    if (clamped >= 6) return '#bfdbfe';    // Developing upper (Solid Pale Blue, L=87%)
+    if (clamped >= 3) return '#dbeafe';    // Developing baseline (Solid Ice Blue, L=93%)
+    if (clamped > 0) return '#eff6ff';     // Low (Solid Whisper Blue, L=97%)
     return '#f8fafc';                      // Zero overlap (Solid Neutral Off-White)
   }
 
   function getTextColor(pct: number): string {
-    if (pct >= 23 || pct === 100) return '#ffffff';
-    if (pct >= 13) return '#0f172a';
-    return '#334155';
+    if (pct >= 27 || pct === 100) return '#ffffff';
+    return '#0f172a';
   }
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="background:#ffffff; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;">`;
