@@ -47,6 +47,7 @@ pip-log.txt
 *.log
 *.tmp
 *.bak
+data/
 
 # Agent artifacts
 .agents/
