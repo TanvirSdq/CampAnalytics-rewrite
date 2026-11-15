@@ -27,7 +27,7 @@ import {
 } from './types.js';
 
 import { BoundedCache, mapConcurrent, computeEmpiricalMean, escapeHtml, safeJsonForScript, getCampaignTtlMs } from './utils.js';
-import { getSnapshotCampaignRecord } from './snapshotStore.js';
+import { getSnapshotCampaignRecord, loadDailySnapshot } from './snapshotStore.js';
 
 export type {
   HealthEvaluationResult,
@@ -575,13 +575,20 @@ export async function getParticipants(code: string): Promise<Set<string>> {
     return cached.users;
   }
 
-  if (!_commonsFetchMock) {
+  if (!_commonsFetchMock && process.env.CAMPTOOLS_BYPASS_SNAPSHOT !== '1') {
     const snap = getSnapshotCampaignRecord(clean);
-    const rawCounts = snap?.user_counts || snap?.upload_counts;
-    if (rawCounts && Object.keys(rawCounts).length > 0) {
+    if (snap) {
+      const rawCounts = snap.user_counts || snap.upload_counts || {};
       const snapUsers = new Set<string>(Object.keys(rawCounts));
       _participantCache.set(clean, { users: snapUsers, ts: Date.now() }, ttl);
       return snapUsers;
+    }
+    const globalSnap = loadDailySnapshot();
+    if (globalSnap && globalSnap.campaigns && Object.keys(globalSnap.campaigns).length > 0) {
+      // Authoritative daily snapshot is active: if not recorded in snapshot, return 0 empirical participants
+      const emptyUsers = new Set<string>();
+      _participantCache.set(clean, { users: emptyUsers, ts: Date.now() }, ttl);
+      return emptyUsers;
     }
   }
 
@@ -589,6 +596,12 @@ export async function getParticipants(code: string): Promise<Set<string>> {
   if (!match) return new Set<string>();
 
   const [_, event, cc, yr] = match;
+  if (!isEventScopedForCountry(event, cc)) {
+    const emptyUsers = new Set<string>();
+    _participantCache.set(clean, { users: emptyUsers, ts: Date.now() }, ttl);
+    return emptyUsers;
+  }
+
   if (event === 'all') {
     // Aggregate across campaigns
     const subCodes = getSubCampaignCodes(clean);
@@ -629,13 +642,20 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
     return cached.counts;
   }
 
-  if (!_commonsFetchMock) {
+  if (!_commonsFetchMock && process.env.CAMPTOOLS_BYPASS_SNAPSHOT !== '1') {
     const snap = getSnapshotCampaignRecord(clean);
-    const rawCounts = snap?.user_counts || snap?.upload_counts;
-    if (rawCounts && Object.keys(rawCounts).length > 0) {
+    if (snap) {
+      const rawCounts = snap.user_counts || snap.upload_counts || {};
       const snapCounts = new Map<string, number>(Object.entries(rawCounts));
       _userCountsCache.set(clean, { counts: snapCounts, ts: Date.now() }, ttl);
       return snapCounts;
+    }
+    const globalSnap = loadDailySnapshot();
+    if (globalSnap && globalSnap.campaigns && Object.keys(globalSnap.campaigns).length > 0) {
+      // Authoritative daily snapshot is active: if not recorded in snapshot, return empty counts
+      const emptyCounts = new Map<string, number>();
+      _userCountsCache.set(clean, { counts: emptyCounts, ts: Date.now() }, ttl);
+      return emptyCounts;
     }
   }
 
@@ -643,6 +663,12 @@ export async function getParticipantsWithUploadCounts(code: string): Promise<Map
   if (!match) return new Map<string, number>();
 
   const [_, event, cc, yr] = match;
+  if (!isEventScopedForCountry(event, cc)) {
+    const emptyCounts = new Map<string, number>();
+    _userCountsCache.set(clean, { counts: emptyCounts, ts: Date.now() }, ttl);
+    return emptyCounts;
+  }
+
   if (event === 'all') {
     const subCodes = getSubCampaignCodes(clean);
     const combinedCounts = new Map<string, number>();
