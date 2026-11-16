@@ -762,6 +762,29 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
   if (!_commonsFetchMock) {
     const snap = getSnapshotCampaignRecord(clean);
     if (snap && snap.structural_metrics) {
+      if (
+        snap.structural_metrics.vi_count === undefined &&
+        (snap.structural_metrics.total_uploads || 0) > 0 &&
+        !clean.startsWith('all')
+      ) {
+        try {
+          const viRes = await fetchValuedImagesIntersection(getCategoryCandidates(clean));
+          const qi = snap.structural_metrics.quality_images_count ?? 0;
+          const fp = snap.structural_metrics.fp_count ?? 0;
+          const totUp = snap.structural_metrics.total_uploads || 0;
+          const recCount = snap.quality_deep?.vi_harvested
+            ? (snap.quality_deep.recognized_count ?? (qi + fp + viRes.count))
+            : (qi + viRes.count);
+          snap.structural_metrics.vi_count = viRes.count;
+          snap.structural_metrics.recognized_count = recCount;
+          snap.structural_metrics.quality_images_count = recCount;
+          if (totUp > 0) {
+            snap.structural_metrics.quality_image_share = parseFloat(((recCount / totUp) * 100).toFixed(1));
+          }
+        } catch {
+          snap.structural_metrics.vi_count = 0;
+        }
+      }
       _metricsCache.set(clean, { data: snap.structural_metrics, ts: Date.now() }, ttl);
       return snap.structural_metrics;
     }
@@ -2542,6 +2565,156 @@ export async function fetchValuedImagesIntersection(categories: string[]): Promi
   return { count: files.length, files };
 }
 
+function normFileTitleKey(title: string): string {
+  return (title || '').replace(/_/g, ' ').trim();
+}
+
+export function computeHonorScore(rf: { honors?: string[] }): number {
+  const h = rf?.honors || [];
+  return (
+    (h.includes('Featured Picture') ? 4 : 0) +
+    (h.includes('Valued Image') ? 2 : 0) +
+    (h.includes('Quality Image') ? 1 : 0)
+  );
+}
+
+/**
+ * Selects up to `limit` recognized media files sorted by honor prestige while
+ * guaranteeing that up to 10 Valued Image (`◆ VI`) files are represented even
+ * when a campaign has >= 30 Featured Pictures or > 1,000 Quality Images.
+ */
+export function selectRepresentativeRecognizedFiles(allFiles: any[], limit = 30): any[] {
+  const sorted = [...allFiles].sort((a, b) => computeHonorScore(b) - computeHonorScore(a));
+  if (sorted.length <= limit) return sorted;
+
+  const viFiles = sorted.filter((rf) => Array.isArray(rf.honors) && rf.honors.includes('Valued Image'));
+  if (viFiles.length === 0) {
+    return sorted.slice(0, limit);
+  }
+
+  const topSlice = sorted.slice(0, limit);
+  const targetViQuota = Math.min(10, viFiles.length);
+  const currentViInTop = topSlice.filter((rf) => Array.isArray(rf.honors) && rf.honors.includes('Valued Image'));
+  if (currentViInTop.length >= targetViQuota) {
+    return topSlice;
+  }
+
+  const neededVi = viFiles.filter((vf) => !topSlice.includes(vf)).slice(0, targetViQuota - currentViInTop.length);
+  const keepCount = Math.max(0, limit - neededVi.length);
+  return [...topSlice.slice(0, keepCount), ...neededVi].sort((a, b) => computeHonorScore(b) - computeHonorScore(a));
+}
+
+async function hydrateStaleSnapshotQualityDeep(clean: string, snap: any): Promise<void> {
+  const qd = snap?.quality_deep;
+  if (!qd || qd.vi_harvested) return;
+  const totalUploads = qd.total_uploads || snap.structural_metrics?.total_uploads || 0;
+  if (totalUploads <= 0) {
+    qd.vi_count = qd.vi_count ?? 0;
+    qd.vi_harvested = true;
+    return;
+  }
+
+  const categories = getCategoryCandidates(clean);
+  if (categories.length === 0) {
+    qd.vi_count = qd.vi_count ?? 0;
+    qd.vi_harvested = true;
+    return;
+  }
+
+  const viRes = await fetchValuedImagesIntersection(categories);
+  const existingFiles: any[] = Array.isArray(qd.recognized_files) ? [...qd.recognized_files] : [];
+  const byKey = new Map<string, any>();
+  for (const rf of existingFiles) {
+    byKey.set(normFileTitleKey(rf.title || rf.file_title), rf);
+  }
+
+  const uploaderHonors: Record<string, { qi: number; fp: number; vi: number }> = {};
+  if (qd.all_uploader_honors && typeof qd.all_uploader_honors === 'object') {
+    for (const [u, h] of Object.entries(qd.all_uploader_honors as Record<string, any>)) {
+      uploaderHonors[u] = { qi: h.qi || 0, fp: h.fp || 0, vi: 0 };
+    }
+  } else if (Array.isArray(qd.leaderboard)) {
+    for (const lb of qd.leaderboard) {
+      const u = normalizeMediaWikiUsername(lb.uploader || lb.username || '');
+      if (u && !isBotAccount(u)) {
+        uploaderHonors[u] = { qi: lb.qi_count || 0, fp: lb.fp_count || 0, vi: 0 };
+      }
+    }
+  }
+
+  let newDualWithVi = 0;
+  for (const vf of viRes.files) {
+    const key = normFileTitleKey(vf.title);
+    const existing = byKey.get(key);
+    if (existing) {
+      if (!Array.isArray(existing.honors)) existing.honors = [];
+      if (!existing.honors.includes('Valued Image')) {
+        existing.honors.push('Valued Image');
+        newDualWithVi++;
+      }
+      if (vf.thumb_url && !existing.thumb_url) existing.thumb_url = vf.thumb_url;
+    } else {
+      const added = {
+        title: vf.title,
+        file_title: vf.title,
+        thumb_url: vf.thumb_url,
+        honors: ['Valued Image'],
+        uploader: vf.uploader,
+        commons_url: vf.commons_url,
+        details: 'Certified as Valued Image on Wikimedia Commons.'
+      };
+      existingFiles.push(added);
+      byKey.set(key, added);
+    }
+    if (!uploaderHonors[vf.uploader]) {
+      uploaderHonors[vf.uploader] = { qi: 0, fp: 0, vi: 0 };
+    }
+    uploaderHonors[vf.uploader].vi++;
+  }
+
+  const qiCount = qd.qi_count || 0;
+  const fpCount = qd.fp_count || 0;
+  const viCount = viRes.count;
+  const prevRecognized = qd.recognized_count || (qiCount + fpCount);
+  const totalRecognized = Math.max(prevRecognized, prevRecognized + Math.max(0, viCount - newDualWithVi));
+  const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
+
+  qd.vi_count = viCount;
+  qd.recognized_count = totalRecognized;
+  qd.quality_rate_pct = qualityRate;
+  qd.recognized_files = selectRepresentativeRecognizedFiles(existingFiles, 30);
+  qd.all_uploader_honors = uploaderHonors;
+
+  const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
+  if (distinctHonoredPhotographers.length > 0) {
+    qd.honored_photographers_count = Math.max(qd.honored_photographers_count || 0, distinctHonoredPhotographers.length);
+    qd.leaderboard = distinctHonoredPhotographers
+      .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp + uploaderHonors[b].vi) - (uploaderHonors[a].qi + uploaderHonors[a].fp + uploaderHonors[a].vi))
+      .slice(0, 10)
+      .map((u, i) => ({
+        rank: i + 1,
+        uploader: u,
+        username: u,
+        total_honors: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
+        qi_count: uploaderHonors[u].qi,
+        fp_count: uploaderHonors[u].fp,
+        vi_count: uploaderHonors[u].vi,
+        recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
+        quality_share_pct: totalRecognized > 0
+          ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi) / totalRecognized) * 100).toFixed(1))
+          : 0.0
+      }));
+  }
+  qd.vi_harvested = true;
+
+  if (snap.structural_metrics) {
+    snap.structural_metrics.vi_count = viCount;
+    snap.structural_metrics.recognized_count = totalRecognized;
+    snap.structural_metrics.quality_images_count = totalRecognized;
+    snap.structural_metrics.quality_image_share = qualityRate;
+  }
+}
+
 export async function computeQualityRecognitionDeep(targetCampaign: string): Promise<any> {
   const clean = targetCampaign.replace(/\s+/g, '').toLowerCase();
   const ttl = getCampaignTtlMs(clean);
@@ -2552,10 +2725,18 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
   if (!_commonsFetchMock) {
     const snap = getSnapshotCampaignRecord(clean);
     if (snap && snap.quality_deep) {
+      if (!snap.quality_deep.vi_harvested) {
+        try {
+          await hydrateStaleSnapshotQualityDeep(clean, snap);
+        } catch {
+          // Non-fatal if live Commons API is temporarily unreachable
+        }
+      }
       if (Array.isArray(snap.quality_deep.recognized_files)) {
         for (const rf of snap.quality_deep.recognized_files) {
           rf.thumb_url = resolveCommonsThumbUrl(rf.title || rf.file_title, rf.thumb_url);
         }
+        snap.quality_deep.recognized_files = selectRepresentativeRecognizedFiles(snap.quality_deep.recognized_files, 30);
       }
       _qualityDeepCache.set(clean, { data: snap.quality_deep, ts: Date.now() }, ttl);
       return snap.quality_deep;
@@ -2590,6 +2771,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         qi_count: 0,
         fp_count: 0,
         vi_count: 0,
+        vi_harvested: true,
         honored_photographers_count: 0,
         recognized_count: 0,
         recognized_files: [],
@@ -2624,10 +2806,11 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         fpCount += subRes.fp_count || 0;
         viCount += subRes.vi_count || 0;
         for (const rf of (subRes.recognized_files || [])) {
-          const existing = seenTitles.get(rf.title);
+          const tKey = normFileTitleKey(rf.title);
+          const existing = seenTitles.get(tKey);
           if (!existing) {
             const clone = { ...rf, honors: [...(rf.honors || [])] };
-            seenTitles.set(rf.title, clone);
+            seenTitles.set(tKey, clone);
             recognizedFiles.push(clone);
           } else {
             for (const h of (rf.honors || [])) {
@@ -2695,9 +2878,10 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         qi_count: qiCount,
         fp_count: fpCount,
         vi_count: viCount,
+        vi_harvested: true,
         honored_photographers_count: distinctHonoredPhotographers.length,
         recognized_count: totalRecognized,
-        recognized_files: recognizedFiles.slice(0, 30),
+        recognized_files: selectRepresentativeRecognizedFiles(recognizedFiles, 30),
         leaderboard: leaderboard,
         all_uploader_honors: uploaderHonors
       };
@@ -2748,6 +2932,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
               for (const fPid of Object.keys(fPages)) {
                 const fpObj = fPages[fPid];
                 const title = fpObj.title || '';
+                const tKey = normFileTitleKey(title);
                 const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
                 const rawUser = ii.user || '';
                 const uploader = normalizeMediaWikiUsername(rawUser);
@@ -2755,8 +2940,8 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
                 const thumb = resolveCommonsThumbUrl(title, ii.thumburl);
                 const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
 
-                if (!recognizedByTitle.has(title)) {
-                  recognizedByTitle.set(title, {
+                if (!recognizedByTitle.has(tKey)) {
+                  recognizedByTitle.set(tKey, {
                     title,
                     file_title: title,
                     thumb_url: thumb,
@@ -2823,12 +3008,13 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
               for (const fpPid of Object.keys(fpPages)) {
                 const fpObj = fpPages[fpPid];
                 const title = fpObj.title || '';
+                const tKey = normFileTitleKey(title);
                 const ii = fpObj.imageinfo && fpObj.imageinfo[0] ? fpObj.imageinfo[0] : {};
                 const uploader = normalizeMediaWikiUsername(ii.user || '');
                 if (!uploader || isBotAccount(uploader)) continue;
                 const thumb = resolveCommonsThumbUrl(title, ii.thumburl);
                 const commonsUrl = `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`;
-                const existing = recognizedByTitle.get(title);
+                const existing = recognizedByTitle.get(tKey);
                 if (existing) {
                   if (thumb) existing.thumb_url = thumb;
                   if (!existing.honors.includes('Featured Picture')) {
@@ -2837,7 +3023,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
                     dualHonoredCount++;
                   }
                 } else {
-                  recognizedByTitle.set(title, {
+                  recognizedByTitle.set(tKey, {
                     title,
                     file_title: title,
                     thumb_url: thumb,
@@ -2869,7 +3055,8 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
     const viRes = await fetchValuedImagesIntersection(categories);
     viCount = viRes.count;
     for (const vf of viRes.files) {
-      const existing = recognizedByTitle.get(vf.title);
+      const tKey = normFileTitleKey(vf.title);
+      const existing = recognizedByTitle.get(tKey);
       if (existing) {
         if (vf.thumb_url && !existing.thumb_url) existing.thumb_url = vf.thumb_url;
         if (!existing.honors.includes('Valued Image')) {
@@ -2878,7 +3065,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
           dualHonoredCount++;
         }
       } else {
-        recognizedByTitle.set(vf.title, {
+        recognizedByTitle.set(tKey, {
           title: vf.title,
           file_title: vf.title,
           thumb_url: vf.thumb_url,
@@ -2892,11 +3079,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       uploaderHonors[vf.uploader].vi++;
     }
 
-    const honorScore = (rf: any) =>
-      (rf.honors.includes('Featured Picture') ? 4 : 0) +
-      (rf.honors.includes('Quality Image') ? 2 : 0) +
-      (rf.honors.includes('Valued Image') ? 1 : 0);
-    const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => honorScore(b) - honorScore(a));
+    const recognizedFiles = selectRepresentativeRecognizedFiles(Array.from(recognizedByTitle.values()), 30);
     const totalRecognized = Math.max(
       recognizedByTitle.size,
       Math.max(0, fpCount + qiCount + viCount - dualHonoredCount)
@@ -2931,9 +3114,10 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       qi_count: qiCount,
       fp_count: fpCount,
       vi_count: viCount,
+      vi_harvested: true,
       honored_photographers_count: distinctHonoredPhotographers.length,
       recognized_count: totalRecognized,
-      recognized_files: recognizedFiles.slice(0, 30),
+      recognized_files: recognizedFiles,
       leaderboard: leaderboard,
       all_uploader_honors: uploaderHonors
     };

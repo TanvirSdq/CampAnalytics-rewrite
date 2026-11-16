@@ -634,5 +634,27 @@ test('P3-SURVIVAL: computeComparativeAnalytics computes empirical +1/+2/+3 Yr ne
   analytics.setCommonsFetchMock(null);
 });
 
+test('P1-VI-GALLERY: selectRepresentativeRecognizedFiles guarantees ◆ VI representation even when >= 30 FPs exist', () => {
+  const manyFps = Array.from({ length: 35 }, (_, i) => ({
+    title: `File:FP_${i + 1}.jpg`,
+    honors: ['Featured Picture', 'Quality Image'],
+    uploader: 'UserFP'
+  }));
+  const manyQis = Array.from({ length: 100 }, (_, i) => ({
+    title: `File:QI_${i + 1}.jpg`,
+    honors: ['Quality Image'],
+    uploader: 'UserQI'
+  }));
+  const vis = [
+    { title: 'File:VI_1.jpg', honors: ['Valued Image'], uploader: 'UserVI1' },
+    { title: 'File:VI_2.jpg', honors: ['Quality Image', 'Valued Image'], uploader: 'UserVI2' }
+  ];
+
+  const selected = analytics.selectRepresentativeRecognizedFiles([...manyFps, ...manyQis, ...vis], 30);
+  assert.equal(selected.length, 30);
+  const selectedVis = selected.filter((f: any) => f.honors.includes('Valued Image'));
+  assert.equal(selectedVis.length, 2, 'Both Valued Images must be included in the 30-row gallery despite 35 Featured Pictures');
+});
+
 
 

@@ -27,7 +27,8 @@ import {
   getParticipantsWithUploadCounts,
   getCampaignStructuralMetrics,
   computeContentUtilityDeep,
-  computeQualityRecognitionDeep
+  computeQualityRecognitionDeep,
+  selectRepresentativeRecognizedFiles
 } from '../core/analytics.js';
 
 import {
@@ -491,11 +492,7 @@ async function harvestQualityDeepViaReplicaSql(
     }
   }
 
-  const honorScore = (rf: any) =>
-    (rf.honors.includes('Featured Picture') ? 4 : 0) +
-    (rf.honors.includes('Quality Image') ? 2 : 0) +
-    (rf.honors.includes('Valued Image') ? 1 : 0);
-  const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => honorScore(b) - honorScore(a));
+  const recognizedFiles = selectRepresentativeRecognizedFiles(Array.from(recognizedByTitle.values()), 30);
   const totalRecognized = Math.max(recognizedByTitle.size, Math.max(0, fpCount + qiCount + valuedCount - dualHonoredCount));
   const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
   const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
@@ -528,9 +525,10 @@ async function harvestQualityDeepViaReplicaSql(
     qi_count: qiCount,
     fp_count: fpCount,
     vi_count: valuedCount,
+    vi_harvested: true,
     honored_photographers_count: distinctHonoredPhotographers.length,
     recognized_count: totalRecognized,
-    recognized_files: recognizedFiles.slice(0, 30),
+    recognized_files: recognizedFiles,
     leaderboard,
     all_uploader_honors: uploaderHonors
   };
@@ -681,9 +679,13 @@ async function runDailySync(): Promise<void> {
       shouldHarvestDeep &&
       existing &&
       (existing.structural_metrics?.total_uploads || 0) > 0 &&
-      (!existing.utility_deep || !existing.quality_deep);
+      (!existing.utility_deep || !existing.quality_deep || !existing.quality_deep.vi_harvested);
+    const missingViStructural =
+      existing &&
+      (existing.structural_metrics?.total_uploads || 0) > 0 &&
+      existing.structural_metrics?.vi_count === undefined;
 
-    if (!fullRefresh && existing && !missingDeep) {
+    if (!fullRefresh && existing && !missingDeep && !missingViStructural) {
       const updatedMs = Date.parse(existing.updated_at || '');
       if (!isNaN(updatedMs) && nowMs - updatedMs < dailyCadenceMs) {
         skippedHistoricalCount++;
