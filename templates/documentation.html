@@ -383,11 +383,11 @@
                 </p>
                 <ol style="color: var(--text-ink); line-height: 1.6; padding-left: 20px;">
                     <li><strong>Campaign Query:</strong> Select target event, country, and year (e.g. <code>wlmde24</code>, <code>wleua21</code>).</li>
-                    <li><strong>Commons Category Tree Harvesting:</strong> Traverses structured subcategories including <code>Quality images from [Campaign]</code> and <code>Featured pictures from [Campaign]</code>. <em>(Category Mapping Limitation):</em> Valued Images (VI) are excluded from automated campaign harvesting because Wikimedia Commons does not maintain standardized campaign-level subcategory trees for VI, resulting in non-uniform categorization across contests.</li>
+                    <li><strong>Commons Category Tree &amp; Intersection Harvesting:</strong> Traverses structured subcategories including <code>Quality images from [Campaign]</code> and <code>Featured pictures from [Campaign]</code>, and resolves Valued Images (VI) by intersecting each campaign's upload category directly with <code>Category:Valued_images_sorted_by_promotion_date</code>. Multi-awarded files are deduplicated before computing the overall quality rate.</li>
                     <li><strong>Quality Recognition Outputs:</strong>
                         <ul style="margin-top: 4px; padding-left: 18px;">
                             <li><strong>Overall Quality Rate (%):</strong> Percentage of submissions achieving formal quality recognition.</li>
-                            <li><strong>Awards Breakdown:</strong> Itemized counts of Quality Images (QI) and Featured Pictures (FP).</li>
+                            <li><strong>Awards Breakdown:</strong> Itemized counts of Quality Images (QI), Featured Pictures (FP), and Valued Images (VI).</li>
                             <li><strong>Recognized Media Files:</strong> Interactive media gallery with lazy-loaded thumbnails, file titles, badge tags, and direct Commons links.</li>
                             <li><strong>Top Contributing Photographers:</strong> Distinct accredited photographers whose works received quality designations.</li>
                         </ul>
@@ -400,7 +400,7 @@
                         Measures the proportion of submitted photographs that earned formal community quality designations:
                     </p>
                     <div class="math-formula">
-                        \[ \text{Quality Recognition Rate} = \frac{\text{Awarded Photos (Quality Images or Featured Pictures)}}{\text{Total Contest Submissions}} \times 100\% \]
+                        \[ \text{Quality Recognition Rate} = \frac{\text{Awarded Photos (QI, FP, or VI)}}{\text{Total Contest Submissions}} \times 100\% \]
                     </div>
                 </div>
 
@@ -479,8 +479,8 @@
                             </tr>
                             <tr>
                                 <td><strong>Quality Recognition Rate</strong></td>
-                                <td>\(\frac{\text{Awarded Photos (QI or FP)}}{\text{Total Submissions}} \times 100\%\)</td>
-                                <td>Proportion of submissions receiving formal Commons designations (Quality Images, Featured Pictures).</td>
+                                <td>\(\frac{\text{Awarded Photos (QI, FP, or VI)}}{\text{Total Submissions}} \times 100\%\)</td>
+                                <td>Proportion of submissions receiving formal Commons designations (Quality Images, Featured Pictures, Valued Images).</td>
                             </tr>
                             <tr>
                                 <td><strong>Newcomer Influx</strong></td>

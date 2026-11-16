@@ -15,6 +15,7 @@ import {
   IndicatorMetadata,
   ComparativeAnalyticsResult,
   ComparativeParams,
+  CohortSurvivalHorizonPoint,
   MobilityMatrixCell,
   MobilityMatrixRow,
   MobilityResult,
@@ -743,6 +744,9 @@ export async function fetchAllConcurrently(
 export async function getCampaignStructuralMetrics(code: string): Promise<{
   quality_image_share: number;
   quality_images_count?: number;
+  fp_count?: number;
+  vi_count?: number;
+  recognized_count?: number;
   top10_uploader_share: number;
   usage_share: number;
   total_uploads: number;
@@ -803,6 +807,9 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
     const subCodes = getSubCampaignCodes(clean);
     let totalSubUploads = 0;
     let totalQualityCount = 0;
+    let totalFpCount = 0;
+    let totalViCount = 0;
+    let totalRecognizedCount = 0;
     let weightedUsageSum = 0;
     let weightedTop10Sum = 0;
     let totalUsedSampleCount = 0;
@@ -816,6 +823,9 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
       if (subMetrics.total_uploads > 0) {
         totalSubUploads += subMetrics.total_uploads;
         totalQualityCount += (subMetrics.quality_images_count ?? 0);
+        totalFpCount += (subMetrics.fp_count ?? 0);
+        totalViCount += (subMetrics.vi_count ?? 0);
+        totalRecognizedCount += (subMetrics.recognized_count ?? subMetrics.quality_images_count ?? 0);
         weightedUsageSum += (subMetrics.total_uploads * subMetrics.usage_share);
         weightedTop10Sum += (subMetrics.total_uploads * subMetrics.top10_uploader_share);
         totalUsedSampleCount += (subMetrics.used_images_sample_count ?? 0);
@@ -826,6 +836,9 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
     const aggregated = {
       quality_image_share: totalSubUploads > 0 ? Number(((totalQualityCount / totalSubUploads) * 100).toFixed(2)) : 0,
       quality_images_count: totalQualityCount,
+      fp_count: totalFpCount,
+      vi_count: totalViCount,
+      recognized_count: totalRecognizedCount,
       top10_uploader_share: totalSubUploads > 0 ? Number((weightedTop10Sum / totalSubUploads).toFixed(1)) : 0,
       usage_share: totalSubUploads > 0 ? Number((weightedUsageSum / totalSubUploads).toFixed(1)) : 0,
       total_uploads: totalSubUploads,
@@ -838,72 +851,107 @@ export async function getCampaignStructuralMetrics(code: string): Promise<{
 
   const categories = getCategoryCandidates(clean);
 
-  // Real Quality Images category discovery
+  // Real Quality Images, Featured Pictures, and Valued Images discovery
+  let qiCount = 0;
+  let fpCount = 0;
+  let viCount = 0;
   let qualityCount = 0;
-  const qiCandidates = getQualityCategoryCandidates(clean);
-  for (const qcat of qiCandidates) {
-    const count = await getCategoryFileCountSafe(qcat);
-    if (count > 0) {
-      qualityCount = count;
-      break;
+
+  const cachedQualDeep = _qualityDeepCache.get(clean);
+  if (cachedQualDeep && Date.now() - cachedQualDeep.ts < ttl) {
+    qiCount = cachedQualDeep.data.qi_count ?? 0;
+    fpCount = cachedQualDeep.data.fp_count ?? 0;
+    viCount = cachedQualDeep.data.vi_count ?? 0;
+    qualityCount = cachedQualDeep.data.recognized_count ?? (qiCount + fpCount + viCount);
+  } else {
+    const qiCandidates = getQualityCategoryCandidates(clean);
+    for (const qcat of qiCandidates) {
+      const count = await getCategoryFileCountSafe(qcat);
+      if (count > 0) {
+        qiCount = count;
+        break;
+      }
     }
+    const fpCandidates = getFeaturedCategoryCandidates(clean);
+    for (const fcat of fpCandidates) {
+      const count = await getCategoryFileCountSafe(fcat);
+      if (count > 0) {
+        fpCount = count;
+        break;
+      }
+    }
+    if (totalUploads > 0) {
+      const viRes = await fetchValuedImagesIntersection(categories);
+      viCount = viRes.count;
+    }
+    qualityCount = qiCount + fpCount + viCount;
   }
 
   const qualityShare = totalUploads > 0 ? parseFloat(((qualityCount / totalUploads) * 100).toFixed(1)) : 0.0;
 
-  // Full-category Global Usage evaluation (paginated 500-file batches with gulimit=500)
-  const seenPids = new Set<string>();
-  const usedPids = new Set<string>();
-  for (const cat of categories) {
-    try {
-      let continueParams: Record<string, string> | undefined = undefined;
-      let iterations = 0;
-      const startTime = Date.now();
+  // Full-category Global Usage evaluation (reuse utilityDeepCache if warm to avoid duplicate 60-page pagination)
+  let sampledFiles = 0;
+  let usedFiles = 0;
+  const cachedUtilDeep = _utilityDeepCache.get(clean);
+  if (cachedUtilDeep && Date.now() - cachedUtilDeep.ts < ttl) {
+    sampledFiles = cachedUtilDeep.data.total_sampled ?? 0;
+    usedFiles = cachedUtilDeep.data.distinct_used_images ?? 0;
+  } else {
+    const seenPids = new Set<string>();
+    const usedPids = new Set<string>();
+    for (const cat of categories) {
+      try {
+        let continueParams: Record<string, string> | undefined = undefined;
+        let iterations = 0;
+        const startTime = Date.now();
 
-      while (iterations < 60 && Date.now() - startTime < 12000) {
-        iterations++;
-        const queryParams: Record<string, string> = {
-          action: 'query',
-          generator: 'categorymembers',
-          gcmtitle: `Category:${cat}`,
-          gcmtype: 'file',
-          gcmlimit: '500',
-          prop: 'globalusage',
-          gulimit: '500',
-          ...(continueParams || {})
-        };
-        const uData = await fetchCommonsApi(queryParams, 6000);
-        const pages = uData?.query?.pages || {};
-        for (const pid of Object.keys(pages)) {
-          if (pid === '-1') continue;
-          seenPids.add(pid);
-          const gu = pages[pid]?.globalusage || [];
-          if (gu.length > 0) usedPids.add(pid);
-        }
-        if (uData?.continue) {
-          continueParams = {};
-          for (const [k, v] of Object.entries(uData.continue)) {
-            if (typeof v === 'string' || typeof v === 'number') {
-              continueParams[k] = String(v);
-            }
+        while (iterations < 60 && Date.now() - startTime < 12000) {
+          iterations++;
+          const queryParams: Record<string, string> = {
+            action: 'query',
+            generator: 'categorymembers',
+            gcmtitle: `Category:${cat}`,
+            gcmtype: 'file',
+            gcmlimit: '500',
+            prop: 'globalusage',
+            gulimit: '500',
+            ...(continueParams || {})
+          };
+          const uData = await fetchCommonsApi(queryParams, 6000);
+          const pages = uData?.query?.pages || {};
+          for (const pid of Object.keys(pages)) {
+            if (pid === '-1') continue;
+            seenPids.add(pid);
+            const gu = pages[pid]?.globalusage || [];
+            if (gu.length > 0) usedPids.add(pid);
           }
-        } else {
-          break;
+          if (uData?.continue) {
+            continueParams = {};
+            for (const [k, v] of Object.entries(uData.continue)) {
+              if (typeof v === 'string' || typeof v === 'number') {
+                continueParams[k] = String(v);
+              }
+            }
+          } else {
+            break;
+          }
         }
+      } catch {
+        // Fall through if transient timeout on continuation page
       }
-    } catch {
-      // Fall through if transient timeout on continuation page
+      if (seenPids.size > 0) break;
     }
-    if (seenPids.size > 0) break;
+    sampledFiles = seenPids.size;
+    usedFiles = usedPids.size;
   }
-
-  const sampledFiles = seenPids.size;
-  const usedFiles = usedPids.size;
   const usageShare = sampledFiles > 0 ? parseFloat(((usedFiles / sampledFiles) * 100).toFixed(1)) : 0.0;
 
   const metrics = {
     quality_image_share: qualityShare,
     quality_images_count: qualityCount,
+    fp_count: fpCount,
+    vi_count: viCount,
+    recognized_count: qualityCount,
     top10_uploader_share: countsMap.size > 0 ? top10Share : 0.0,
     usage_share: usageShare,
     total_uploads: totalUploads,
@@ -2433,6 +2481,67 @@ export async function computeContentUtilityDeep(targetCampaign: string): Promise
   });
 }
 
+export async function fetchValuedImagesIntersection(categories: string[]): Promise<{
+  count: number;
+  files: Array<{ title: string; uploader: string; thumb_url: string; commons_url: string }>;
+}> {
+  const files: Array<{ title: string; uploader: string; thumb_url: string; commons_url: string }> = [];
+  const seenTitles = new Set<string>();
+
+  for (const cat of categories) {
+    const dbCat = cat.replace(/\s+/g, '_');
+    try {
+      let gsrOffset: string | undefined = undefined;
+      let iterations = 0;
+      const startTime = Date.now();
+      while (iterations < 10 && Date.now() - startTime < 8000) {
+        iterations++;
+        const queryParams: Record<string, string> = {
+          action: 'query',
+          generator: 'search',
+          gsrsearch: `incategory:"${dbCat}" incategory:"Valued_images_sorted_by_promotion_date"`,
+          gsrnamespace: '6',
+          gsrlimit: '500',
+          prop: 'imageinfo',
+          iiprop: 'user|timestamp|url',
+          iiurlwidth: '120'
+        };
+        if (gsrOffset !== undefined) {
+          queryParams.gsroffset = gsrOffset;
+        }
+        const data = await fetchCommonsApi(queryParams, 6000);
+        const pages = data?.query?.pages || {};
+        for (const pid of Object.keys(pages)) {
+          if (pid === '-1') continue;
+          const pObj = pages[pid];
+          const title = pObj.title || '';
+          if (!title || seenTitles.has(title)) continue;
+          const ii = pObj.imageinfo && pObj.imageinfo[0] ? pObj.imageinfo[0] : {};
+          const uploader = normalizeMediaWikiUsername(ii.user || '');
+          if (!uploader || isBotAccount(uploader)) continue;
+          seenTitles.add(title);
+          files.push({
+            title,
+            uploader,
+            thumb_url: resolveCommonsThumbUrl(title, ii.thumburl),
+            commons_url: `https://commons.wikimedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, '_'))}`
+          });
+        }
+        if (data?.continue?.gsroffset !== undefined) {
+          gsrOffset = String(data.continue.gsroffset);
+        } else {
+          break;
+        }
+      }
+    } catch {
+      // Fall through if transient API/search failure
+    }
+    if (seenTitles.size > 0) break;
+  }
+
+  return { count: files.length, files };
+}
+
 export async function computeQualityRecognitionDeep(targetCampaign: string): Promise<any> {
   const clean = targetCampaign.replace(/\s+/g, '').toLowerCase();
   const ttl = getCampaignTtlMs(clean);
@@ -2560,7 +2669,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
 
       const leaderboard = distinctHonoredPhotographers
-        .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
+        .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp + uploaderHonors[b].vi) - (uploaderHonors[a].qi + uploaderHonors[a].fp + uploaderHonors[a].vi))
         .slice(0, 10)
         .map((u, i) => ({
           rank: i + 1,
@@ -2572,7 +2681,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
           vi_count: uploaderHonors[u].vi,
           recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
           quality_share_pct: totalRecognized > 0
-            ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp) / totalRecognized) * 100).toFixed(1))
+            ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi) / totalRecognized) * 100).toFixed(1))
             : 0.0
         }));
 
@@ -2756,11 +2865,38 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
       if (fpCount > 0) break;
     }
 
-    const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => {
-      const aFp = a.honors.includes('Featured Picture') ? 1 : 0;
-      const bFp = b.honors.includes('Featured Picture') ? 1 : 0;
-      return bFp - aFp;
-    });
+    const categories = getCategoryCandidates(clean);
+    const viRes = await fetchValuedImagesIntersection(categories);
+    viCount = viRes.count;
+    for (const vf of viRes.files) {
+      const existing = recognizedByTitle.get(vf.title);
+      if (existing) {
+        if (vf.thumb_url && !existing.thumb_url) existing.thumb_url = vf.thumb_url;
+        if (!existing.honors.includes('Valued Image')) {
+          existing.honors.push('Valued Image');
+          existing.details = `Certified as ${existing.honors.join(' and ')} on Wikimedia Commons.`;
+          dualHonoredCount++;
+        }
+      } else {
+        recognizedByTitle.set(vf.title, {
+          title: vf.title,
+          file_title: vf.title,
+          thumb_url: vf.thumb_url,
+          honors: ['Valued Image'],
+          uploader: vf.uploader,
+          commons_url: vf.commons_url,
+          details: 'Certified as Valued Image on Wikimedia Commons.'
+        });
+      }
+      if (!uploaderHonors[vf.uploader]) uploaderHonors[vf.uploader] = { qi: 0, fp: 0, vi: 0 };
+      uploaderHonors[vf.uploader].vi++;
+    }
+
+    const honorScore = (rf: any) =>
+      (rf.honors.includes('Featured Picture') ? 4 : 0) +
+      (rf.honors.includes('Quality Image') ? 2 : 0) +
+      (rf.honors.includes('Valued Image') ? 1 : 0);
+    const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => honorScore(b) - honorScore(a));
     const totalRecognized = Math.max(
       recognizedByTitle.size,
       Math.max(0, fpCount + qiCount + viCount - dualHonoredCount)
@@ -2769,7 +2905,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
 
     const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
     const leaderboard = distinctHonoredPhotographers
-      .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
+      .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp + uploaderHonors[b].vi) - (uploaderHonors[a].qi + uploaderHonors[a].fp + uploaderHonors[a].vi))
       .slice(0, 10)
       .map((u, i) => ({
         rank: i + 1,
@@ -2781,7 +2917,7 @@ export async function computeQualityRecognitionDeep(targetCampaign: string): Pro
         vi_count: uploaderHonors[u].vi,
         recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
         quality_share_pct: totalRecognized > 0
-          ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp) / totalRecognized) * 100).toFixed(1))
+          ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi) / totalRecognized) * 100).toFixed(1))
           : 0.0
       }));
 
@@ -3229,12 +3365,10 @@ export async function computeComparativeAnalytics(
     years.push(y);
   }
 
-  // Pre-fetch codes: only fetch prior years when needed for longitudinal cohort continuity (influx/retention)
+  // Pre-fetch codes: fetch from 2010 when needed for longitudinal cohort continuity & newcomer survival (influx/retention)
   const fetchStart =
-    module === 'influx'
+    module === 'influx' || module === 'retention'
       ? 2010
-      : module === 'retention'
-      ? Math.max(2010, startYear - 1)
       : startYear;
   const allCodes: string[] = [];
   for (const cc of requestedCountries) {
@@ -3656,16 +3790,17 @@ export async function computeComparativeAnalytics(
       indicator_id: isRate ? 'quality_rate' : 'quality_honors',
       title: isRate ? 'Quality Recognition Rate' : 'Quality-Recognized Contributions',
       definition: isRate
-        ? 'Percentage of campaign media uploads designated as Quality Images or Featured Pictures.'
-        : 'Total count of campaign media uploads designated as Quality Images (QI) or Featured Pictures (FP) on Wikimedia Commons.',
-      data_source: 'Wikimedia Commons Assessment Categories & Picture of the Year Archives',
+        ? 'Percentage of campaign media uploads designated as Quality Images, Featured Pictures, or Valued Images.'
+        : 'Total count of campaign media uploads designated as Quality Images (QI), Featured Pictures (FP), or Valued Images (VI) on Wikimedia Commons.',
+      data_source: 'Wikimedia Commons Assessment Categories & Valued Images Intersection',
       metric_unit: isRate ? '%' : 'Recognized Works',
       coverage: 'Annual national campaign editions (2010–present)',
       license: 'CC BY-SA 4.0',
       methodology_notes: [
-        'Recognized media aggregates community-reviewed distinctions: Featured Pictures (FP) and Quality Images (QI).',
+        'Recognized media aggregates community-reviewed distinctions: Featured Pictures (FP), Quality Images (QI), and Valued Images (VI).',
+        'Valued Images are resolved via direct intersection with Category:Valued_images_sorted_by_promotion_date and deduplicated against QI/FP honors.',
         'Honors are tracked per media file and attributed back to the national campaign edition of original upload.',
-        'Quality rate expresses the proportion of recognized images relative to total campaign submissions.'
+        'Quality rate expresses the proportion of distinct recognized images relative to total campaign submissions.'
       ],
       caveats: [
         'Commons quality nominations occur post-campaign through open community review, introducing natural evaluation lag for recent editions.',
@@ -3744,6 +3879,53 @@ export async function computeComparativeAnalytics(
 
   const eventName = EVENT_MAP[eventType] || (eventType ? eventType.toUpperCase() : 'Campaigns');
 
+  // Compute empirical multi-edition newcomer survival horizons (+1 Yr, +2 Yr, +3 Yr) for influx & retention
+  let survivalHorizons: Record<string, CohortSurvivalHorizonPoint[]> | undefined;
+  if (module === 'influx' || module === 'retention') {
+    survivalHorizons = {};
+    for (const cc of requestedCountries) {
+      const seenPrior = new Set<string>();
+      for (let py = 2010; py < startYear; py++) {
+        const pCode = `${eventType}${cc}${String(py % 100).padStart(2, '0')}`;
+        const pUsers = participantResults[pCode] || new Set<string>();
+        for (const u of pUsers) seenPrior.add(u);
+      }
+
+      const pointsForCountry: CohortSurvivalHorizonPoint[] = [];
+      for (const y of years) {
+        const codeY = `${eventType}${cc}${String(y % 100).padStart(2, '0')}`;
+        const usersY = participantResults[codeY] || new Set<string>();
+        const cohortNewcomers = new Set<string>();
+        for (const u of usersY) {
+          if (!seenPrior.has(u)) cohortNewcomers.add(u);
+        }
+        for (const u of usersY) seenPrior.add(u);
+
+        const computeHorizon = (offset: number): number | null => {
+          const targetY = y + offset;
+          if (targetY > endYear || cohortNewcomers.size === 0) return null;
+          const targetCode = `${eventType}${cc}${String(targetY % 100).padStart(2, '0')}`;
+          const targetUsers = participantResults[targetCode] || new Set<string>();
+          if (targetUsers.size === 0) return null;
+          let survived = 0;
+          for (const u of cohortNewcomers) {
+            if (targetUsers.has(u)) survived++;
+          }
+          return parseFloat(((survived / cohortNewcomers.size) * 100).toFixed(1));
+        };
+
+        pointsForCountry.push({
+          cohort_year: y,
+          cohort_size: cohortNewcomers.size,
+          survival_1y_pct: computeHorizon(1),
+          survival_2y_pct: computeHorizon(2),
+          survival_3y_pct: computeHorizon(3)
+        });
+      }
+      survivalHorizons[cc] = pointsForCountry;
+    }
+  }
+
   return {
     module,
     indicator_id: meta.indicator_id,
@@ -3759,7 +3941,8 @@ export async function computeComparativeAnalytics(
       rows: tableRows
     },
     map_timeline_data: mapTimelineData,
-    metadata_card: meta
+    metadata_card: meta,
+    ...(survivalHorizons ? { survival_horizons: survivalHorizons } : {})
   };
 }
 

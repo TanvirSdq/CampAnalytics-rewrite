@@ -473,4 +473,166 @@ test('UPGRADE-01: Pure-Node MariaDB/MySQL wire-protocol v10 client handshake & C
   assert.deepEqual(rows[0], ['Alice', '12']);
 });
 
+test('P1-VI: Valued_images_sorted_by_promotion_date CirrusSearch intersection and QI+FP+VI deduplication', async () => {
+  analytics.primeParticipantCache('wlmua24', ['Alice', 'Bob', 'Carol'], new Map([['Alice', 5], ['Bob', 3], ['Carol', 2]]));
+
+  analytics.setCommonsFetchMock(async (params: Record<string, string>) => {
+    if (params.prop === 'categoryinfo') {
+      if (params.titles?.includes('Quality images from Wiki Loves Monuments 2024 in Ukraine')) {
+        return { query: { pages: { '600': { categoryinfo: { files: 1 } } } } };
+      }
+      if (params.titles?.includes('Featured pictures from Wiki Loves Monuments 2024 in Ukraine')) {
+        return { query: { pages: { '601': { categoryinfo: { files: 1 } } } } };
+      }
+      return { query: { pages: {} } };
+    }
+    if (params.prop === 'imageinfo' && params.gcmtitle?.includes('Quality images from Wiki Loves Monuments 2024 in Ukraine')) {
+      return {
+        query: {
+          pages: {
+            '701': { title: 'File:Ternopil_Castle.jpg', imageinfo: [{ user: 'Alice', thumburl: '/t1.jpg' }] }
+          }
+        }
+      };
+    }
+    if (params.prop === 'imageinfo' && params.gcmtitle?.includes('Featured pictures from Wiki Loves Monuments 2024 in Ukraine')) {
+      return {
+        query: {
+          pages: {
+            '702': { title: 'File:Kyiv_Monastery.jpg', imageinfo: [{ user: 'Bob', thumburl: '/t2.jpg' }] }
+          }
+        }
+      };
+    }
+    if (params.generator === 'search' && params.gsrsearch?.includes('Valued_images_sorted_by_promotion_date')) {
+      return {
+        query: {
+          pages: {
+            // File:Ternopil_Castle.jpg holds both QI and VI; File:Drama_Theater.jpg holds VI only
+            '701': { title: 'File:Ternopil_Castle.jpg', imageinfo: [{ user: 'Alice', thumburl: '/t1.jpg' }] },
+            '703': { title: 'File:Drama_Theater.jpg', imageinfo: [{ user: 'Carol', thumburl: '/t3.jpg' }] }
+          }
+        }
+      };
+    }
+    return { query: { pages: {} } };
+  });
+
+  const qual = await analytics.computeQualityRecognitionDeep('wlmua24');
+  assert.equal(qual.qi_count, 1);
+  assert.equal(qual.fp_count, 1);
+  assert.equal(qual.vi_count, 2);
+  assert.equal(qual.recognized_count, 3, 'QI+VI overlap on Ternopil_Castle.jpg must be deduplicated');
+  assert.equal(qual.honored_photographers_count, 3);
+  const ternopil = qual.recognized_files.find((f: any) => f.title === 'File:Ternopil_Castle.jpg');
+  assert.ok(ternopil);
+  assert.deepEqual(ternopil.honors, ['Quality Image', 'Valued Image']);
+  const aliceEntry = qual.leaderboard.find((l: any) => l.uploader === 'Alice');
+  assert.ok(aliceEntry);
+  assert.equal(aliceEntry.qi_count, 1);
+  assert.equal(aliceEntry.vi_count, 1);
+  assert.equal(aliceEntry.total_honors, 2);
+
+  analytics.setCommonsFetchMock(null);
+});
+
+test('P2-CACHE: getCampaignStructuralMetrics reuses warm utility_deep cache without re-paginating globalusage', async () => {
+  analytics.primeParticipantCache('wlmpl24', ['User1', 'User2'], new Map([['User1', 4], ['User2', 6]]));
+
+  let globalUsageCalls = 0;
+  analytics.setCommonsFetchMock(async (params: Record<string, string>) => {
+    if (params.prop === 'imageinfo|globalusage') {
+      globalUsageCalls++;
+      return {
+        query: {
+          pages: {
+            '801': {
+              title: 'File:Wawel.jpg',
+              imageinfo: [{ user: 'User1', thumburl: '/w.jpg' }],
+              globalusage: [{ wiki: 'pl.wikipedia.org', title: 'Wawel' }]
+            },
+            '802': {
+              title: 'File:Gdansk.jpg',
+              imageinfo: [{ user: 'User2', thumburl: '/g.jpg' }],
+              globalusage: []
+            }
+          }
+        }
+      };
+    }
+    if (params.prop === 'globalusage') {
+      globalUsageCalls++;
+    }
+    return { query: { pages: {} } };
+  });
+
+  const util = await analytics.computeContentUtilityDeep('wlmpl24');
+  assert.equal(util.distinct_used_images, 1);
+  assert.equal(globalUsageCalls, 1);
+
+  const struct = await analytics.getCampaignStructuralMetrics('wlmpl24');
+  assert.equal(struct.used_images_sample_count, 1);
+  assert.equal(struct.sampled_files_count, 2);
+  assert.equal(struct.usage_share, 50.0);
+  assert.equal(globalUsageCalls, 1, 'getCampaignStructuralMetrics must reuse warm _utilityDeepCache instead of re-paginating');
+
+  analytics.setCommonsFetchMock(null);
+});
+
+test('P3-SURVIVAL: computeComparativeAnalytics computes empirical +1/+2/+3 Yr newcomer survival horizons', async () => {
+  analytics.setCommonsFetchMock(async () => ({ query: { pages: {} } }));
+  // 2021 newcomers: U1, U2, U3, U4 (4)
+  analytics.primeParticipantCache('wlmde21', ['U1', 'U2', 'U3', 'U4'], new Map([['U1', 1], ['U2', 1], ['U3', 1], ['U4', 1]]));
+  // 2022: U1, U2 return (2/4 = 50.0%), plus U5 new (1)
+  analytics.primeParticipantCache('wlmde22', ['U1', 'U2', 'U5'], new Map([['U1', 1], ['U2', 1], ['U5', 1]]));
+  // 2023: unheld / empty -> survival_2y for 2021 and survival_1y for 2022 must be null
+  analytics.primeParticipantCache('wlmde23', [], new Map());
+  // 2024: U1 returns (1/4 = 25.0% of 2021 cohort at +3 Yr; 0/1 = 0.0% of 2022 cohort at +2 Yr)
+  analytics.primeParticipantCache('wlmde24', ['U1', 'U6'], new Map([['U1', 1], ['U6', 1]]));
+
+  const res = await analytics.computeComparativeAnalytics({
+    module: 'influx',
+    eventType: 'wlm',
+    countryCodes: ['de'],
+    startYear: 2021,
+    endYear: 2024
+  });
+
+  assert.ok(res.survival_horizons);
+  const deHorizons = res.survival_horizons.de;
+  assert.equal(deHorizons.length, 4);
+
+  assert.deepEqual(deHorizons[0], {
+    cohort_year: 2021,
+    cohort_size: 4,
+    survival_1y_pct: 50.0,
+    survival_2y_pct: null,
+    survival_3y_pct: 25.0
+  });
+  assert.deepEqual(deHorizons[1], {
+    cohort_year: 2022,
+    cohort_size: 1,
+    survival_1y_pct: null,
+    survival_2y_pct: 0.0,
+    survival_3y_pct: null
+  });
+  assert.deepEqual(deHorizons[2], {
+    cohort_year: 2023,
+    cohort_size: 0,
+    survival_1y_pct: null,
+    survival_2y_pct: null,
+    survival_3y_pct: null
+  });
+  assert.deepEqual(deHorizons[3], {
+    cohort_year: 2024,
+    cohort_size: 1,
+    survival_1y_pct: null,
+    survival_2y_pct: null,
+    survival_3y_pct: null
+  });
+
+  analytics.setCommonsFetchMock(null);
+});
+
+
 

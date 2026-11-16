@@ -14,6 +14,9 @@ export interface CampaignSnapshotRecord {
   structural_metrics?: {
     quality_image_share: number;
     quality_images_count?: number;
+    fp_count?: number;
+    vi_count?: number;
+    recognized_count?: number;
     top10_uploader_share: number;
     usage_share: number;
     total_uploads: number;
@@ -114,6 +117,9 @@ export function getSnapshotCampaignRecord(code: string): CampaignSnapshotRecord 
     const mergedCounts: Record<string, number> = {};
     let totalUploads = 0;
     let qualityCount = 0;
+    let fpCount = 0;
+    let viCount = 0;
+    let recognizedCount = 0;
     let usedCount = 0;
     let foundAny = false;
 
@@ -129,6 +135,9 @@ export function getSnapshotCampaignRecord(code: string): CampaignSnapshotRecord 
         if (subRec.structural_metrics) {
           totalUploads += subRec.structural_metrics.total_uploads || 0;
           qualityCount += subRec.structural_metrics.quality_images_count || 0;
+          fpCount += subRec.structural_metrics.fp_count || 0;
+          viCount += subRec.structural_metrics.vi_count || 0;
+          recognizedCount += subRec.structural_metrics.recognized_count ?? subRec.structural_metrics.quality_images_count ?? 0;
           usedCount += subRec.structural_metrics.used_images_sample_count || 0;
         }
       }
@@ -149,6 +158,9 @@ export function getSnapshotCampaignRecord(code: string): CampaignSnapshotRecord 
         structural_metrics: {
           total_uploads: totalUploads,
           quality_images_count: qualityCount,
+          fp_count: fpCount,
+          vi_count: viCount,
+          recognized_count: recognizedCount,
           used_images_sample_count: usedCount,
           quality_image_share: qualityShare,
           usage_share: usageShare,

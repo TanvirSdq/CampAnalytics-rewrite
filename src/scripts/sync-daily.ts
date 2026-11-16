@@ -77,6 +77,7 @@ async function harvestCampaignViaReplicaSql(
   usedFilesCount: number;
   qualityCount: number;
   featuredCount: number;
+  valuedCount: number;
   activeQiCat: string;
   activeFpCat: string;
 } | null> {
@@ -122,6 +123,7 @@ async function harvestCampaignViaReplicaSql(
       usedFilesCount: 0,
       qualityCount: 0,
       featuredCount: 0,
+      valuedCount: 0,
       activeQiCat: '',
       activeFpCat: ''
     };
@@ -195,6 +197,26 @@ async function harvestCampaignViaReplicaSql(
     }
   }
 
+  // Indexed Valued Images intersection against Category:Valued_images_sorted_by_promotion_date
+  let valuedCount = 0;
+  try {
+    const viSql = `
+      SELECT COUNT(DISTINCT cl1.cl_from)
+      FROM categorylinks cl1
+      INNER JOIN categorylinks cl2 ON cl1.cl_from = cl2.cl_from
+      WHERE cl1.cl_to = '${activeCat}'
+        AND cl1.cl_type = 'file'
+        AND cl2.cl_to = 'Valued_images_sorted_by_promotion_date'
+        AND cl2.cl_type = 'file';
+    `;
+    const vRows = await queryCommonsReplica(cnfPath, mysqlBin, viSql);
+    if (vRows.length > 0 && vRows[0][0]) {
+      valuedCount = parseInt(vRows[0][0], 10) || 0;
+    }
+  } catch {
+    valuedCount = 0;
+  }
+
   return {
     activeCategory: activeCat,
     userCounts,
@@ -202,6 +224,7 @@ async function harvestCampaignViaReplicaSql(
     usedFilesCount,
     qualityCount,
     featuredCount,
+    valuedCount,
     activeQiCat,
     activeFpCat
   };
@@ -335,9 +358,11 @@ async function harvestQualityDeepViaReplicaSql(
   mysqlBin: string | null,
   cnfPath: string,
   code: string,
+  activeCat: string,
   totalUploads: number,
   qiCount: number,
   fpCount: number,
+  valuedCount: number,
   activeQiCat: string,
   activeFpCat: string
 ): Promise<any | null> {
@@ -423,30 +448,73 @@ async function harvestQualityDeepViaReplicaSql(
     }
   }
 
-  const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => {
-    const aFp = a.honors.includes('Featured Picture') ? 1 : 0;
-    const bFp = b.honors.includes('Featured Picture') ? 1 : 0;
-    return bFp - aFp;
-  });
-  const totalRecognized = Math.max(recognizedByTitle.size, Math.max(0, fpCount + qiCount - dualHonoredCount));
+  if (activeCat && valuedCount > 0) {
+    const viSql = `
+      SELECT p.page_title, a.actor_name
+      FROM categorylinks cl1
+      INNER JOIN categorylinks cl2 ON cl1.cl_from = cl2.cl_from
+      INNER JOIN page p ON p.page_id = cl1.cl_from AND p.page_namespace = 6
+      INNER JOIN image img ON img.img_name = p.page_title
+      INNER JOIN actor_image a ON a.actor_id = img.img_actor
+      WHERE cl1.cl_to = '${escapeSqlLiteral(activeCat)}'
+        AND cl1.cl_type = 'file'
+        AND cl2.cl_to = 'Valued_images_sorted_by_promotion_date'
+        AND cl2.cl_type = 'file'
+      LIMIT 2000;
+    `;
+    const viRows = await queryCommonsReplica(cnfPath, mysqlBin, viSql);
+    for (const [rawTitle, rawUser] of viRows) {
+      const uploader = normalizeMediaWikiUsername(rawUser || '');
+      if (!uploader || isBotAccount(uploader)) continue;
+      const title = `File:${(rawTitle || '').replace(/_/g, ' ')}`;
+      const commonsUrl = `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(rawTitle || '')}`;
+      const existing = recognizedByTitle.get(title);
+      if (existing) {
+        if (!existing.honors.includes('Valued Image')) {
+          existing.honors.push('Valued Image');
+          existing.details = `Certified as ${existing.honors.join(' and ')} on Wikimedia Commons.`;
+          dualHonoredCount++;
+        }
+      } else {
+        recognizedByTitle.set(title, {
+          title,
+          file_title: title,
+          thumb_url: resolveCommonsThumbUrl(title),
+          honors: ['Valued Image'],
+          uploader,
+          commons_url: commonsUrl,
+          details: 'Certified as Valued Image on Wikimedia Commons.'
+        });
+      }
+      if (!uploaderHonors[uploader]) uploaderHonors[uploader] = { qi: 0, fp: 0, vi: 0 };
+      uploaderHonors[uploader].vi++;
+    }
+  }
+
+  const honorScore = (rf: any) =>
+    (rf.honors.includes('Featured Picture') ? 4 : 0) +
+    (rf.honors.includes('Quality Image') ? 2 : 0) +
+    (rf.honors.includes('Valued Image') ? 1 : 0);
+  const recognizedFiles = Array.from(recognizedByTitle.values()).sort((a, b) => honorScore(b) - honorScore(a));
+  const totalRecognized = Math.max(recognizedByTitle.size, Math.max(0, fpCount + qiCount + valuedCount - dualHonoredCount));
   const qualityRate = totalUploads > 0 ? parseFloat(((totalRecognized / totalUploads) * 100).toFixed(2)) : 0.0;
   const distinctHonoredPhotographers = Object.keys(uploaderHonors).filter((u) => !isBotAccount(u));
 
   const leaderboard = distinctHonoredPhotographers
-    .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp) - (uploaderHonors[a].qi + uploaderHonors[a].fp))
+    .sort((a, b) => (uploaderHonors[b].qi + uploaderHonors[b].fp + uploaderHonors[b].vi) - (uploaderHonors[a].qi + uploaderHonors[a].fp + uploaderHonors[a].vi))
     .slice(0, 10)
     .map((u, i) => ({
       rank: i + 1,
       uploader: u,
       username: u,
-      total_honors: uploaderHonors[u].qi + uploaderHonors[u].fp,
+      total_honors: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
       qi_count: uploaderHonors[u].qi,
       fp_count: uploaderHonors[u].fp,
-      vi_count: 0,
-      recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp,
+      vi_count: uploaderHonors[u].vi,
+      recognized_files_count: uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi,
       quality_share_pct:
         totalRecognized > 0
-          ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp) / totalRecognized) * 100).toFixed(1))
+          ? parseFloat((((uploaderHonors[u].qi + uploaderHonors[u].fp + uploaderHonors[u].vi) / totalRecognized) * 100).toFixed(1))
           : 0.0
     }));
 
@@ -459,7 +527,7 @@ async function harvestQualityDeepViaReplicaSql(
     quality_rate_pct: qualityRate,
     qi_count: qiCount,
     fp_count: fpCount,
-    vi_count: 0,
+    vi_count: valuedCount,
     honored_photographers_count: distinctHonoredPhotographers.length,
     recognized_count: totalRecognized,
     recognized_files: recognizedFiles.slice(0, 30),
@@ -498,6 +566,9 @@ async function syncRecordToToolsDb(
       total_uploaders INT NOT NULL DEFAULT 0,
       total_uploads INT NOT NULL DEFAULT 0,
       quality_count INT NOT NULL DEFAULT 0,
+      fp_count INT NOT NULL DEFAULT 0,
+      vi_count INT NOT NULL DEFAULT 0,
+      recognized_count INT NOT NULL DEFAULT 0,
       used_files_count INT NOT NULL DEFAULT 0,
       quality_share_pct DECIMAL(6,2) NOT NULL DEFAULT 0.00,
       usage_share_pct DECIMAL(6,2) NOT NULL DEFAULT 0.00,
@@ -505,13 +576,19 @@ async function syncRecordToToolsDb(
       user_counts_json LONGTEXT,
       updated_at DATETIME NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ALTER TABLE campaign_editions ADD COLUMN IF NOT EXISTS fp_count INT NOT NULL DEFAULT 0;
+    ALTER TABLE campaign_editions ADD COLUMN IF NOT EXISTS vi_count INT NOT NULL DEFAULT 0;
+    ALTER TABLE campaign_editions ADD COLUMN IF NOT EXISTS recognized_count INT NOT NULL DEFAULT 0;
     REPLACE INTO campaign_editions
-      (code, total_uploaders, total_uploads, quality_count, used_files_count, quality_share_pct, usage_share_pct, top10_share_pct, user_counts_json, updated_at)
+      (code, total_uploaders, total_uploads, quality_count, fp_count, vi_count, recognized_count, used_files_count, quality_share_pct, usage_share_pct, top10_share_pct, user_counts_json, updated_at)
     VALUES (
       '${codeSafe}',
       ${uploadersCount},
       ${metrics.total_uploads || 0},
       ${metrics.quality_images_count || 0},
+      ${metrics.fp_count || 0},
+      ${metrics.vi_count || 0},
+      ${metrics.recognized_count || metrics.quality_images_count || 0},
       ${metrics.used_images_sample_count || 0},
       ${metrics.quality_image_share || 0},
       ${metrics.usage_share || 0},
@@ -628,9 +705,10 @@ async function runDailySync(): Promise<void> {
             sqlRes.totalUploads > 0 && top10Uploads > 0
               ? parseFloat(((top10Uploads / sqlRes.totalUploads) * 100).toFixed(1))
               : 0;
+          const totalQualRaw = sqlRes.qualityCount + sqlRes.featuredCount + sqlRes.valuedCount;
           const qualityShare =
             sqlRes.totalUploads > 0
-              ? parseFloat(((sqlRes.qualityCount / sqlRes.totalUploads) * 100).toFixed(1))
+              ? parseFloat(((totalQualRaw / sqlRes.totalUploads) * 100).toFixed(1))
               : 0;
           const usageShare =
             sqlRes.totalUploads > 0
@@ -643,7 +721,10 @@ async function runDailySync(): Promise<void> {
             user_counts: sqlRes.userCounts,
             structural_metrics: {
               quality_image_share: qualityShare,
-              quality_images_count: sqlRes.qualityCount,
+              quality_images_count: totalQualRaw,
+              fp_count: sqlRes.featuredCount,
+              vi_count: sqlRes.valuedCount,
+              recognized_count: totalQualRaw,
               top10_uploader_share: top10Share,
               usage_share: usageShare,
               total_uploads: sqlRes.totalUploads,
@@ -667,12 +748,19 @@ async function runDailySync(): Promise<void> {
                 mysqlBin,
                 cnfPath,
                 code,
+                sqlRes.activeCategory,
                 sqlRes.totalUploads,
                 sqlRes.qualityCount,
                 sqlRes.featuredCount,
+                sqlRes.valuedCount,
                 sqlRes.activeQiCat,
                 sqlRes.activeFpCat
               );
+              if (record.quality_deep && record.structural_metrics) {
+                record.structural_metrics.recognized_count = record.quality_deep.recognized_count;
+                record.structural_metrics.quality_images_count = record.quality_deep.recognized_count;
+                record.structural_metrics.quality_image_share = record.quality_deep.quality_rate_pct;
+              }
             } catch {
               // Non-fatal deep SQL error
             }
@@ -754,6 +842,9 @@ async function runDailySync(): Promise<void> {
       const mergedCounts: Record<string, number> = {};
       let totalUploads = 0;
       let qualityCount = 0;
+      let fpCount = 0;
+      let viCount = 0;
+      let recognizedCount = 0;
       let usedCount = 0;
       let foundAny = false;
 
@@ -769,6 +860,9 @@ async function runDailySync(): Promise<void> {
           if (sub.structural_metrics) {
             totalUploads += sub.structural_metrics.total_uploads || 0;
             qualityCount += sub.structural_metrics.quality_images_count || 0;
+            fpCount += sub.structural_metrics.fp_count || 0;
+            viCount += sub.structural_metrics.vi_count || 0;
+            recognizedCount += sub.structural_metrics.recognized_count ?? sub.structural_metrics.quality_images_count ?? 0;
             usedCount += sub.structural_metrics.used_images_sample_count || 0;
           }
         }
@@ -794,6 +888,9 @@ async function runDailySync(): Promise<void> {
           structural_metrics: {
             quality_image_share: qualityShare,
             quality_images_count: qualityCount,
+            fp_count: fpCount,
+            vi_count: viCount,
+            recognized_count: recognizedCount,
             top10_uploader_share: top10Share,
             usage_share: usageShare,
             total_uploads: totalUploads,

@@ -259,7 +259,7 @@
                 <div class="camp-shell-header">
                     <div class="camp-shell-left">
                         <h2 class="camp-shell-title">Quality Recognition &amp; Top Photographers</h2>
-                        <div class="camp-shell-subtitle">Commons community-reviewed distinctions (QI) and recognized photographer portfolios for {{ quality_result.code|upper }} ({{ quality_result.year }}).</div>
+                        <div class="camp-shell-subtitle">Commons community-reviewed distinctions (FP, QI, VI) and recognized photographer portfolios for {{ quality_result.code|upper }} ({{ quality_result.year }}).</div>
                     </div>
                     <div class="camp-shell-right">
                         <span class="camp-telemetry-badge">
@@ -317,6 +317,14 @@
                         </div>
                         <div class="stat-kpi-card">
                             <div class="stat-kpi-label">
+                                <span>Valued Images (VI)</span>
+                                <span class="stat-kpi-badge badge-vi">Valued</span>
+                            </div>
+                            <div class="stat-kpi-value" style="color: #6b21a8;">{{ (quality_result.vi_count or 0)|commas }}</div>
+                            <div class="stat-kpi-subtext">Recognized as Valued Images on Commons</div>
+                        </div>
+                        <div class="stat-kpi-card">
+                            <div class="stat-kpi-label">
                                 <span>Top Photographers</span>
                                 <span class="stat-kpi-badge badge-positive">Contributors</span>
                             </div>
@@ -329,7 +337,7 @@
 
                     <!-- VIEW 1: AWARDED FILES -->
                     <div id="quality-view-visual" class="camp-view-panel">
-                        {% set total_h = (quality_result.fp_count + quality_result.qi_count) %}
+                        {% set total_h = (quality_result.fp_count + quality_result.qi_count + (quality_result.vi_count or 0)) %}
                         {% if total_h > 0 %}
                             <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 16px; margin-bottom: 20px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -343,6 +351,9 @@
                                     {% if quality_result.qi_count > 0 %}
                                         <div style="width: {{ (quality_result.qi_count / total_h * 100)|round(1) }}%; background: #0284c7;" title="Quality Images: {{ quality_result.qi_count|commas }} ({{ (quality_result.qi_count / total_h * 100)|round(1) }}%)"></div>
                                     {% endif %}
+                                    {% if (quality_result.vi_count or 0) > 0 %}
+                                        <div style="width: {{ ((quality_result.vi_count or 0) / total_h * 100)|round(1) }}%; background: #8b5cf6;" title="Valued Images: {{ (quality_result.vi_count or 0)|commas }} ({{ ((quality_result.vi_count or 0) / total_h * 100)|round(1) }}%)"></div>
+                                    {% endif %}
                                 </div>
                                 <div style="display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap;">
                                     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
@@ -352,6 +363,10 @@
                                     <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
                                         <span style="width: 8px; height: 8px; border-radius: 0; background: #0284c7; display: inline-block;"></span>
                                         <span>Quality Images (QI): <strong>{{ quality_result.qi_count|commas }}</strong></span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-ink);">
+                                        <span style="width: 8px; height: 8px; border-radius: 0; background: #8b5cf6; display: inline-block;"></span>
+                                        <span>Valued Images (VI): <strong>{{ (quality_result.vi_count or 0)|commas }}</strong></span>
                                     </div>
                                 </div>
                             </div>
@@ -401,6 +416,9 @@
                                                     {% endif %}
                                                     {% if 'Quality Image' in row.honors %}
                                                         <span class="badge-qi" style="border-radius: 0;">✓ QI</span>
+                                                    {% endif %}
+                                                    {% if 'Valued Image' in row.honors %}
+                                                        <span class="badge-vi" style="border-radius: 0;">◆ VI</span>
                                                     {% endif %}
                                                 </td>
                                                 <td>
@@ -467,6 +485,7 @@
                                             <th style="text-align: right;">Total Awards</th>
                                             <th style="text-align: right;">QI Count</th>
                                             <th style="text-align: right;">FP Count</th>
+                                            <th style="text-align: right;">VI Count</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -481,10 +500,11 @@
                                                 <td style="text-align: right; font-weight: 700; color: #ca8a04;">{{ p.total_honors|commas }}</td>
                                                 <td style="text-align: right; font-weight: 600; color: #0369a1;">{{ p.qi_count|commas }}</td>
                                                 <td style="text-align: right; font-weight: 600; color: #92400e;">{{ p.fp_count|commas }}</td>
+                                                <td style="text-align: right; font-weight: 600; color: #6b21a8;">{{ (p.vi_count or 0)|commas }}</td>
                                             </tr>
                                         {% else %}
                                             <tr>
-                                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">
                                                     No individual contributor leaderboard records.
                                                 </td>
                                             </tr>
@@ -505,7 +525,7 @@
                             <div class="camp-data-notes-grid">
                                 <div class="camp-data-notes-col">
                                     <span class="camp-data-notes-heading">Quality Hierarchy</span>
-                                    <p class="camp-data-notes-text">Quality designations track <strong>Featured Pictures (FP)</strong> and <strong>Quality Images (QI)</strong> assessed through Wikimedia Commons community reviews. <em>Note on Valued Images (VI):</em> Valued Images are excluded from automated tracking because Commons does not maintain campaign-level subcategory trees for VI, leading to non-uniform categorization across campaigns.</p>
+                                    <p class="camp-data-notes-text">Quality designations track <strong>Featured Pictures (FP)</strong>, <strong>Quality Images (QI)</strong>, and <strong>Valued Images (VI)</strong> assessed through Wikimedia Commons community reviews. Valued Images are resolved by intersecting each campaign's upload category with <code>Category:Valued_images_sorted_by_promotion_date</code>, with multi-awarded files deduplicated in the overall quality rate.</p>
                                 </div>
                                 <div class="camp-data-notes-col">
                                     <span class="camp-data-notes-heading">Assessment Timing &amp; Caveats</span>
