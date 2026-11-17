@@ -90,7 +90,7 @@ Provides empirical, non-imputed visibility into volunteer mobilization, multi-ye
 * **Grassroots Participation Equity**: Analyzes production concentration across contributor volume tiers to ensure campaigns are broad-based rather than oligarchical.
 * **Discrete Gini Inequality**: Calculates the exact Gini coefficient ($G \in [0, 1]$) on contributor upload distribution:
   $$G = \frac{\sum_{i=1}^n \sum_{j=1}^n |y_i - y_j|}{2n \sum_{i=1}^n y_i}$$
-* **Pareto Top-Decile Share ($c_{10\%}$)**: Proportion of total campaign media submitted by the top 10% most prolific contributors.
+* **Pareto Top-Decile Share ($c_{10}$)**: Proportion of total campaign media submitted by the top 10% most prolific contributors.
 * **4-Tier Contributor Classification**: Partitions contributors into 1-time uploaders (1 file), Low volume (2–5 files), Moderate volume (6–20 files), and Power uploaders (21+ files).
 * **Interactive Views**: Tiers Distribution bar chart, Cumulative Pareto curve, Longitudinal Gini trajectory, and Contributor Volume Ledger.
 
